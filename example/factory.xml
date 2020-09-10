@@ -2,3 +2,40 @@
 	<workshop id="ws1">
 		<workcenter id="wc1.1">
 			<operation ref="shaftprocessing"></operation>
+		</workcenter>
+		<workcenter id="wc1.2">
+			<operation ref="shaftprocessing"></operation>
+		</workcenter>
+		<shopwarehouse id="swh-1">
+		</shopwarehouse>
+		<productwarehouse id="pwh-1">
+		</productwarehouse>
+	</workshop>
+	<workshop id="ws2">
+		<workcenter id="wc2.1">
+			<operation ref="shaftwheelassemble"></operation>
+		</workcenter>
+		<workcenter id="wc2.2">
+			<operation ref="qualitycheck"></operation>
+		</workcenter>
+		<productwarehouse id="pwh-2">
+		</productwarehouse>
+		<shopwarehouse id="swh-2">
+		</shopwarehouse>
+	</workshop>
+	<centralwarehouse id="cwh" income="">
+	</centralwarehouse>
+	<productwarehouse id="pwh" outcome="">
+	</productwarehouse>
+	<route id="1" from="cwh" to="swh-1" reverse="1"></route>
+	<route id="2" from="cwh" to="swh-2" reverse="1"></route>
+	<route id="3" from="wc2.1" to="wc2.2" reverse="1"></route>
+	<route id="4" from="wc2.2" to="pwh-2" reverse="0"></route>
+	<route id="5" from="pwh-2" to="pwh" reverse="0"></route>
+	<route id="6" from="pwh-1" to="swh-2" reverse="0"></route>
+	<route id="7" from="swh-1" to="wc1.1" reverse="0"></route>
+	<route id="8" from="swh-1" to="wc1.2" reverse="0"></route>
+	<route id="9" from="swh-2" to="wc2.1" reverse="0"></route>
+	<route id="10" from="wc1.1" to="pwh-1" reverse="1"></route>
+	<route id="11" from="wc1.2" to="pwh-1" reverse="0"></route>
+</factory>
