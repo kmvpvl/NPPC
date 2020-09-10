@@ -1,0 +1,15 @@
+<product id="wheelpair" ref="wheelpair">
+	<operation ref="shaftwheelassemble">
+		<operation ref="shaftwheelassemble">
+			<material id="shaft" ref="shaft">
+			</material>
+			<material id="wheel1" ref="wheel">
+			</material>
+		</operation>
+		<material id="wheel2" ref="wheel">
+		</material>
+	</operation>
+	<operation id="transtoqc" ref="transportinws1"/>
+	<operation id="qc" ref="qualitycheck"/>
+	<operation id="transtofwh" ref="transportinws1"/>
+</product>

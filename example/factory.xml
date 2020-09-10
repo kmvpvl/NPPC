@@ -1,0 +1,4 @@
+<factory>
+	<workshop id="ws1">
+		<workcenter id="wc1.1">
+			<operation ref="shaftprocessing"></operation>

@@ -1,0 +1,5 @@
+<stocks>
+	<material ref="wheel" count="2" wh="cwh">
+		<reserved project="prj1" count=1/>
+	</material>
+</stocks>

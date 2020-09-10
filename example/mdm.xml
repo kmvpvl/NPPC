@@ -1,0 +1,38 @@
+<dictionary>
+	<material id="wheel">
+		<operation ref="supplierselection"></operation>
+		<operation ref="suppliercontraction"></operation>
+		<operation ref="deliverytocwh"/>
+	</material>
+	<material id="blankshaft">
+		<operation ref="orderblankshaft"></operation>
+	</material>
+	<material id="box">
+		<supplier ref="s1"></supplier>
+		<supplier ref="s2"></supplier>
+	</material>
+	<product id="wheelpair"></product>
+	<material id="shaft">
+		<operation ref="shaftprocessing">
+			<material ref="blankshaft"></material>
+		</operation>
+	</material>
+	<operation id="shaftprocessing"></operation>
+	<operation id="shaftwheelassemble"></operation>
+	<operation id="deliveryfromcwh"></operation>
+	<operation id="deliverytofwh"></operation>
+	<operation id="deliverytocwh"></operation>
+	<operation id="qualitycheck"></operation>
+	<operation id="transportinws1"></operation>
+	<operation id="supplierselection"></operation>
+	<operation id="supplierselection"></operation>
+	<operation id="suppliercontraction"></operation>
+	<operation id="orderblankshaft">
+		<operation id="bookblankshaft"/>
+		<operation ref="deliverytocwh"/>
+	</operation>
+	<supplier id="s1"></supplier>
+	<supplier id="s2"></supplier>
+	<customer id="c1"></customer>
+	<customer id="c2"></customer>
+</dictionary>
