@@ -5,8 +5,8 @@ import xml.etree.ElementTree as ET
 
 from classORMNavi import ORMNavi as ORM
 
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
-logging.info('\n=================Create Order Started====================')
+logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
+logging.info('\n=================Create route Started====================')
 
 
 try :
