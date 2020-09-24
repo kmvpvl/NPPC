@@ -1,43 +1,40 @@
-<factory>
-	<workcenter id="ws1">
-		<workcenter id="wc1.1">
+<factory img="factory.jpg" map="53.3834919,50.1689624;53.3780572,50.1744053">
+	<workcenter id="ws1" location="53.381755467434715,50.173636890588234;53.381755467434715,50.17363106930481">
+		<workcenter id="wc1.1" location="53.381826427419355,50.17341568181818;53.3818306015361,50.17341568181818">
 			<operation ref="shaftprocessing"></operation>
 		</workcenter>
-		<workcenter id="wc1.2">
+		<workcenter id="wc1.2" location="53.381822253302616,50.17292087272727;53.381826427419355,50.17292087272727">
 			<operation ref="shaftprocessing"></operation>
 		</workcenter>
-		<workcenter id="swh-1">
+		<workcenter id="swh-1" location="53.381137698156685,50.173601962887695;53.381137698156685,50.17359614160428">
 			Income warehouse
 			<operation ref="orderblankshaft"/>
 			<operation ref="bookblankshaft"/>
 		</workcenter>
-		<workcenter id="pwh-1">
+		<workcenter id="pwh-1" location="53.3811293499232,50.172711306524064;53.38113352403994,50.172711306524064">
 			Outcome warehouse
 		</workcenter>
 	</workcenter>
-	<workcenter id="ws2">
+	<workcenter id="ws2" location="53.379117425652844,50.17362524802139;53.37912159976958,50.17362524802139">
 		<operation ref="transportinws2"/>
-		<workcenter id="wc2.1">
+		<workcenter id="wc2.1" location="53.37919255975422,50.17292087272727;53.37919255975422,50.172915051443844">
 			<operation ref="shaftwheelassemble"></operation>
 		</workcenter>
-		<workcenter id="wc2.2">
+		<workcenter id="wc2.2" location="53.379188385637484,50.17340403925133;53.379188385637484,50.17340403925133">
 			<operation ref="qualitycheck"></operation>
 		</workcenter>
-		<workcenter id="wc2.3">
-			<operation ref="shaftwheelassemble"></operation>
+		<workcenter id="pwh-2" location="53.37983119961598,50.172711306524064;53.37983119961598,50.172711306524064">
 		</workcenter>
-		<workcenter id="pwh-2">
-		</workcenter>
-		<workcenter id="swh-2">
+		<workcenter id="swh-2" location="53.37983119961598,50.17359614160428;53.37983537373272,50.17359614160428">
 		</workcenter>
 	</workcenter>
-	<workcenter id="cwh">
+	<workcenter id="cwh" location="53.378879500998465,50.17093581508021;53.378879500998465,50.17092999379679">
 		Central Warehouse
 		<operation ref="deliverytocwh"/>
 		<operation ref="suppliercontraction"/>
 		<operation ref="supplierselection"/>
 	</workcenter>
-	<workcenter id="pwh">
+	<workcenter id="pwh" location="53.38163024393241,50.17092417251337;53.38163441804916,50.17091835122994">
 		Finishing products warehouse
 	</workcenter>
 	<route id="1" from="cwh" to="swh-1" reverse="1"></route>

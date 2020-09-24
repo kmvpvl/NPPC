@@ -1,0 +1,27 @@
+<body onload="onl();">
+<script>
+var startX, startY, endX, endY;
+x1 = 53.3834919;
+x2 = 53.3780572;
+y1 = 50.1689624;
+y2 = 50.1744053;
+wth = 0
+hgh = 0
+function onl() {
+	wth = document.getElementById("div1").offsetWidth;
+	hgh = document.getElementById("div1").offsetHeight;
+}
+function mdown(event) {
+	startX = event.offsetX * (x2-x1)/wth + x1;
+	startY = event.offsetY * (y2 - y1)/hgh + y1;
+	document.getElementById("info").innerHTML = "Start: X= " + startX + ", Y= " + startY
+}
+function mup(event) {
+	finX = event.offsetX * (x2-x1)/wth + x1;
+	finY = event.offsetY * (y2 - y1)/hgh + y1;
+	document.getElementById("info").innerHTML = 'location="' + startX + "," + startY + ";" + finX + "," + finY + '"'
+}
+</script>
+<img id="div1" style="max-width: 100%;height: auto;" src="factory.jpg" onclick="mdown(event);" ondblclick="mup(event);"></img>
+<text id="info" style="background-color:grey; position: fixed;left: 100px;top: 150px;" onclick=""></text>
+</body>
