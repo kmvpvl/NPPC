@@ -35,8 +35,8 @@
 			<operation ref="bookblankshaft"/>
 		</operation>
 	</operation>
-	<supplier id="s1"></supplier>
-	<supplier id="s2"></supplier>
-	<customer id="c1"></customer>
-	<customer id="c2"></customer>
+	<supplier id="s1" location="53.37981032903226,50.16992003770197"></supplier>
+	<supplier id="s2" location="53.37906700232258,50.16991026588869"></supplier>
+	<customer id="c1" location="53.382538197806454,50.169978668581685"></customer>
+	<customer id="c2" location="53.381928108903224,50.16995912495511"></customer>
 </dictionary>
