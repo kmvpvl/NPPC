@@ -1,26 +1,20 @@
 <body onload="onl();">
+<script src="naviNPPC.js"></script>
 <script>
-var startX, startY, endX, endY;
-x1 = 53.3834919;
-x2 = 53.3780572;
-y1 = 50.1689624;
-y2 = 50.1744053;
-wth = 0;
-hgh = 0;
+var map;
 function onl() {
 	wth = document.getElementById("div1").offsetWidth;
 	hgh = document.getElementById("div1").offsetHeight;
+	lr = "53.3834919,50.1689624;53.3780572,50.1744053";
+	map = new nppcMap(lr, wth, hgh);
 }
 function mdown(event) {
-	startX = event.offsetX * (x2-x1)/wth + x1;
-	startY = event.offsetY * (y2 - y1)/hgh + y1;
+	startX = map.X2LAT(event.offsetX);
+	startY = map.Y2LNG(event.offsetY);
 	if (document.getElementById("info").innerHTML != "") document.getElementById("info").innerHTML += ";"; 
 	document.getElementById("info").innerHTML += startX + "," + startY;
 }
 function mup(event) {
-	/*finX = event.offsetX * (x2-x1)/wth + x1;
-	finY = event.offsetY * (y2 - y1)/hgh + y1;
-	document.getElementById("info").innerHTML = 'location="' + startX + "," + startY + ";" + finX + "," + finY + '"'*/
 	document.getElementById("info").innerHTML = "";
 }
 </script>
