@@ -4,7 +4,7 @@
 //echo phpversion();
 if (!$z = simplexml_load_file('factory.xml')) die ("Factory XML is wrong!");
 
-assert ($z->getName() != "factory", "Factory XML is wrong!: root tag must be 'factory'");
+assert ((string)$z->getName() != "factory", "Factory XML is wrong!: root tag must be 'factory'");
 //var_dump($z->attributes());
 $map_img = $z["img"];
 $map_coords = $z["map"];
