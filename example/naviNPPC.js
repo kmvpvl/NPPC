@@ -29,12 +29,12 @@ class nppcMap {
 		return x * (this._rightEdge - this._leftEdge) / this._imageWidth + this._leftEdge;
 	}
 	LAT2X(x) {
-		return (x - this._leftEdge) * this._imageWidth / (this._rightEdge - this._leftEdge);
+		return Math.round((x - this._leftEdge) * this._imageWidth / (this._rightEdge - this._leftEdge));
 	}
 	Y2LNG(x) {
 		return x * (this._bottomEdge - this._topEdge) / this._imageHeight + this._topEdge;
 	}
 	LNG2Y(x) {
-		return (x - this._topEdge) * this._imageHeight / (this._bottomEdge - this._topEdge);
+		return Math.round((x - this._topEdge) * this._imageHeight / (this._bottomEdge - this._topEdge));
 	}
 };
