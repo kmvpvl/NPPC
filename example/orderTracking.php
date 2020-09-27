@@ -101,9 +101,9 @@ function drawWorkcenter($_wcxml){
 <?php
 	global $resize_add;
 	$resize_add .= "loc = '" . $_wcxml->attributes()['location'] . "'.split(';');\n";
-	$resize_add .= "wcx = document.getElementById('fimg').offsetLeft + map.LAT2X(loc[0].split(',')[0]);\n";
+	$resize_add .= "wcx = document.getElementById('fimg').offsetLeft + document.getElementById('content-div').offsetLeft + map.LAT2X(loc[0].split(',')[0]);\n";
 	$resize_add .= "wcw = map.LAT2X(loc[1].split(',')[0]) - map.LAT2X(loc[0].split(',')[0]);\n";
-	$resize_add .= "wcy = document.getElementById('fimg').offsetTop + map.LNG2Y(loc[0].split(',')[1]);\n";
+	$resize_add .= "wcy = document.getElementById('fimg').offsetTop + document.getElementById('content-div').offsetTop + map.LNG2Y(loc[0].split(',')[1]);\n";
 	$resize_add .= "wch = map.LNG2Y(loc[1].split(',')[1]) - map.LNG2Y(loc[0].split(',')[1]);\n";
 	$resize_add .= "document.getElementById('" . $_wcxml->attributes()['id'] . "').style.left = wcx + 'px';\n";
 	$resize_add .= "document.getElementById('" . $_wcxml->attributes()['id'] . "').style.top = wcy + 'px';\n";
@@ -135,6 +135,7 @@ foreach ($z as $wc) {
 ?>
 <script>
 function resize() {
+	$('#content-div').css('height', $(window).height()-$('#content-div').offset().top);
 	wth = document.getElementById("fimg").offsetWidth;
 	hgh = document.getElementById("fimg").offsetHeight;
 	lr = "<?=$map_coords?>";
@@ -142,7 +143,8 @@ function resize() {
 	<?=$resize_add?>
 }
 </script>
-<img id="fimg" style="max-width: 100%;height: auto;" src="<?=$map_img?>"></img>
+<div id="content-div">
+<img id="fimg" style="max-height: 70%;width: auto;" src="<?=$map_img?>"></img>
 <h4>Order events</h4>
 <div class="container-fluid">
 	<div class="row">
@@ -159,5 +161,5 @@ function resize() {
 	</div>
 </div>
 
-<div id="routedesc"></div>
+</div>
 <?php include "footer.php"?>

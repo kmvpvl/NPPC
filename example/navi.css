@@ -51,6 +51,8 @@ rect.workcenter:hover {
     margin: 0;
     width: 100%;
     overflow-y: auto;
+    opacity: 1;
+    z-index: -1;
 }
 .cell-data {
     border-left:1px solid;
