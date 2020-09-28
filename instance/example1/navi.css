@@ -1,0 +1,73 @@
+﻿body {
+  margin:5;
+  padding:0;
+  overflow:hidden;
+}
+
+a{
+    cursor:pointer;
+}
+svg.workcenter {
+    cursor:pointer;
+    position:absolute;    
+}
+svg.workcenter:hover {
+    
+}
+rect.workcenter {
+    opacity: 0;
+}
+.wc-damaged {
+    fill:rgb(127,0,0);
+    animation-name: anim-trouble;
+    animation-duration: 2s;
+    animation-iteration-count: infinite;
+}
+.wc-success {
+    fill:rgb(0,127,0);
+    animation-name: anim-trouble;
+    animation-duration: 2s;
+    animation-iteration-count: infinite;
+}
+@keyframes anim-trouble {  
+    0% {opacity:0;}
+    20% {opacity: 0.2;}
+    40% {opacity: 0.4;}
+    60% {opacity: 0.8;}
+    80% {opacity: 0.4;}
+    100% {opacity: 0.2;}
+}
+
+rect.workcenter:hover {
+    fill:rgb(127,127,127);
+    stroke-width:3;
+    stroke:rgb(0,0,0);
+    opacity:0.8;
+}
+#content-div {
+    position: absolute;
+    border: solid 0px red;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    overflow-y: auto;
+    opacity: 1;
+    z-index: -1;
+}
+.cell-data {
+    border-left:1px solid;
+    border-bottom:1px solid;
+    text-align:center;
+}
+.cell-data-left {
+    border-left:1px solid;
+    border-bottom:1px solid;
+    text-align:left;
+}
+.cell-header {
+    border-left:1px solid;
+    border-bottom:1px solid;
+    border-top:1px solid;
+    font-weight: bold;
+    text-align:center;
+}

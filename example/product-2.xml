@@ -1,6 +1,0 @@
-<product id="wheelpair" ref="wheelpair">
-	<operation id="transtofwh" ref="transportinws2">
-		<material id="shaft" ref="shaft">
-		</material>
-	</operation>
-</product>

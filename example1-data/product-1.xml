@@ -1,0 +1,18 @@
+<product id="wheelpair" ref="wheelpair">
+	<operation id="transtofwh" ref="transportinws2">
+		<operation id="qc" ref="qualitycheck">
+			<operation id="transtoqc" ref="transportinws2">
+				<operation ref="shaftwheelassemble" duration="60" cost="2">
+					<operation ref="shaftwheelassemble">
+						<material id="shaft" ref="shaft">
+						</material>
+						<material id="wheel1" ref="wheel">
+						</material>
+					</operation>
+					<material id="wheel2" ref="wheel">
+					</material>
+				</operation>
+			</operation>
+		</operation>
+	</operation>
+</product>
