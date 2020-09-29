@@ -1,86 +1,45 @@
-<?php include "header.php"?>
-<script src="naviNPPC.js"></script>
-<?php include "menu.php"?>
 <?php
-//echo phpversion();
-if (!$z = simplexml_load_file('factory.xml')) die ("Factory XML is wrong!");
+include "checkUser.php";
 
-//assert ((string) $z->getName() != "factory", "Factory XML is wrong!: root tag must be 'factory' but " . $z->getName());
-//var_dump($z->attributes());
-$map_img = $z["img"];
-$map_coords = $z["map"];
-$map_name = $z["name"];
 ?>
 <script>
-var map;
-$(document).ready(function(){
-	$('[data-toggle="tooltip"]').tooltip();   
-	$(window).resize();
-	$(".navitem, .active").removeClass("active");
-	$("#menuFactory").addClass("active");
-	$(".navbar-brand").text("FACTORY");
-})
-</script>
-<?php
-$resize_add = "";
-function drawWorkcenter($_wcxml){
-?>
-<svg id="<?=$_wcxml['id']?>" width="0" height="0" data-toggle="tooltip" class="workcenter" title="<?=((string) $_wcxml).trim()?>">
-<rect width="100%" height="100%" class="workcenter" />
-</svg>
-<?php
-	global $resize_add;
-	$resize_add .= "loc = '" . $_wcxml['location'] . "'.split(';');\n";
-	$resize_add .= "wcx = document.getElementById('fimg').offsetLeft + document.getElementById('content-div').offsetLeft + map.LAT2X(loc[0].split(',')[0]);\n";
-	$resize_add .= "wcw = map.LAT2X(loc[1].split(',')[0]) - map.LAT2X(loc[0].split(',')[0]);\n";
-	$resize_add .= "wcy = document.getElementById('fimg').offsetTop + document.getElementById('content-div').offsetTop + map.LNG2Y(loc[0].split(',')[1]);\n";
-	$resize_add .= "wch = map.LNG2Y(loc[1].split(',')[1]) - map.LNG2Y(loc[0].split(',')[1]);\n";
-	$resize_add .= "document.getElementById('" . $_wcxml['id'] . "').style.left = wcx + 'px';\n";
-	$resize_add .= "document.getElementById('" . $_wcxml['id'] . "').style.top = wcy + 'px';\n";
-	$resize_add .= "document.getElementById('" . $_wcxml['id'] . "').setAttribute('width', wcw + 'px');\n";
-	$resize_add .= "document.getElementById('" . $_wcxml['id'] . "').setAttribute('height', wch + 'px');\n";
-	//var_dump($resize_add);
-	//var_dump($_wcxml->attributes()["location"]);
-	//var_dump($_wcxml);
-	foreach ($_wcxml as $wc) {
-		switch ( $wc->getName()	) {
-			case "workcenter":
-				drawWorkcenter($wc);
-				break;
-		}
-	}
+$(".navitem, .active").removeClass("active");
+$("#menuFactory").addClass("active");
+$(".navbar-brand").text("<?= $navi->factoryName ?>");
+
+function factoryResize() {
+	$("#factoryMap").outerHeight($("#instance-div").outerHeight() * 0.5);
+	$("#content-div").css('height', $(window).height() - $("#content-div").offset().top + "px");
 }
 
-foreach ($z as $wc) {
-	switch ( $wc->getName()	) {
-		case "workcenter":
-			drawWorkcenter($wc);
-			break;
-		case "route":
-			break;
-		default:
-			die ("Unexpected tag " . $wc->getName() . " in factory");
-	}
-} 
-?>
-<script>
-$(window).resize(function() {
-	$('#content-div').css('height', $(window).height()-$('#content-div').offset().top);
-	wth = document.getElementById("fimg").offsetWidth;
-	hgh = document.getElementById("fimg").offsetHeight;
-	lr = "<?=$map_coords?>";
-	map = new nppcMap(lr, wth, hgh);
-	<?=$resize_add?>
-	$("#pwh-1 > .workcenter").addClass("wc-damaged");
-	$("#swh-2 > .workcenter").addClass("wc-damaged");
-	$("#pwh-2 > .workcenter").addClass("wc-success");
-	$('#toast1').toast('show');
-	$('#toast2').toast('show');
-	$('#toast3').toast('show');
-})
+$(window).on ('resize', factoryResize);
+factoryResize();
 </script>
-<div id="content-div">
-<img id="fimg" style="max-height: 70%;width: auto;" src="<?=$map_img?>"></img>
+<div class="input-group mb-3">
+	<input type="text" class="form-control" placeholder="Search orders...">
+	<div class="input-group-append">
+  		<button class="btn btn-success" type="submit">Go</button> 
+	</div>
+</div>
+<div id="factoryMap" class="ml-1 mr-1"></div>
+<ul class="nav nav-tabs">
+  <li class="nav-item">
+    <a class="nav-link active primary" href="#">All</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" href="#">Warnings</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" href="#">Info</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" href="#">Search</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" href="#">New</a>
+  </li>
+</ul>
+<div id="content-div" class="ml-1 mr-1">
 	<div class="row mt-0">
 		<div class="col-sm-6">
   <div class="toast fade show" data-autohide="false" id="toast1">
@@ -118,4 +77,3 @@ Quality check: Order #2 ready to upload
 		</div>
 	</div>
 </div>
-<?php include "footer.php"?>

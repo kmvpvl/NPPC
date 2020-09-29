@@ -1,4 +1,4 @@
-<factory name="My wheelpair factory" img="factory.jpg" map="53.3834919,50.1689624;53.3780572,50.1744053">
+<factory name="Wheelpair factory" img="factory.jpg" map="53.3834919,50.1689624;53.3780572,50.1744053">
 	<workcenter id="ws1" location="53.38250680844855,50.171867220427806;53.381755467434715,50.17364271187166">
 		Prefab Workshop
 		<workcenter id="wc1.1" location="53.38242750023042,50.17310133251337;53.381822253302616,50.1734215031016">
@@ -59,4 +59,5 @@
 	<route id="12" from="pwh-2" to="pwh" reverse="0">53.38015394232258,50.17245093734291;53.38032925522581,50.17150307145422;53.38188603380645,50.171288091561934;53.38225769716129,50.17084835996409</route>
 	<route id="13" from="pwh-2" to="customer*" reverse="0"></route>
 	<route id="14" from="pwh" to="customer*" reverse="0"></route>
+	<user id="David Rhuxel" md5="0b1c817f2c6510ec6f61c3c5262e2333" roles=""></user>
 </factory>

@@ -1,29 +1,41 @@
 <?php
+
+
 //------------------
 // naviClient class 
 //
 // 
 class naviClient {
-	private $client_id = 0;
-	private $safety_key = "";
-	private $time_zone = 3;
+    const MESSAGE_INFO = 'info';
+    const MESSAGE_WARNING = 'warning';
+    const MESSAGE_CRITICAL = 'critical';
+
+	private $factory = "";
+	private $time_zone = 0;
 	private $data_dir = "";
 	private $order_dir = "";
 	private $routes_dir = "";
 	private $product_dir = "";
+	private $message_dir = "";
+	private $factory_xml;
 	
-	function __construct($_id, $_safety_key, $_time_zone = null) {
-		if (strlen($_safety_key) != 36) throw new Exception("Wrong safety key");
-		$this->client_id = $_id;
-		$this->safety_key = $_safety_key;
+	function __construct(string $_user, string $_password, string $_factory, $_time_zone = null) {
+		$this->factory = $_factory;
 		$this->time_zone = $_time_zone;
-		$this->data_dir = "../" . $this->client_id . "-data/";
+		$this->data_dir = "../" . $this->factory . "-data/";
 		$settings = parse_ini_file($this->data_dir . "settings.ini", true);
 		if (array_key_exists("dir", $settings)) {
-			if (array_key_exists("products", $settings["dirs"])) $this->product_dir = $this->data_dir . $settings["dirs"]["products"];
-			if (array_key_exists("orders", $settings["dirs"])) $this->product_dir = $this->data_dir . $settings["dirs"]["orders"];
-			if (array_key_exists("routes", $settings["dirs"])) $this->product_dir = $this->data_dir . $settings["dirs"]["routes"];
+			if (array_key_exists("products", $settings["dir"])) $this->product_dir = $this->data_dir . $settings["dir"]["products"];
+			if (array_key_exists("orders", $settings["dir"])) $this->product_dir = $this->data_dir . $settings["dir"]["orders"];
+			if (array_key_exists("routes", $settings["dir"])) $this->product_dir = $this->data_dir . $settings["dir"]["routes"];
+			if (array_key_exists("messages", $settings["dir"])) $this->message_dir = $this->data_dir . $settings["dir"]["routes"];
 		}
+		$this->factory_xml = simplexml_load_file($this->data_dir . 'factory.xml');
+		if (!$this->factory_xml) throw new Exception ("Wrong factory XML: " . $this->data_dir . 'factory.xml');
+		$found = $this->factory_xml->xpath("//user[@id='" . $_user . "']");
+		if (!$found) throw new Exception ("User " . $_user . ' not found');
+		$hash = md5($_user . $_password);
+		if ((string) $found[0]["md5"] != $hash) throw new Exception ("Password incorrect! " . $hash);
 /*		var_dump($settings);
 		$this->dblink = new mysqli("localhost", $dbsettings["user"], $dbsettings["pwd"], $dbsettings["database"]);
 		if ($this->dblink->connect_errno) throw new Exception("Unable connect to database: " . $this->dblink->connect_errno . " - " . $this->dblink->connect_error);
@@ -46,6 +58,21 @@ class naviClient {
 		$found = $z->xpath("//route[@id='" . $_order . "." . $_id . "']");
 		if (!$found)  throw new Exception ("Route " . $_order . "." . $_id . " not found!");
 		return $found[0];
+	}
+	
+	function __get($prop) {
+		switch ($prop) {
+			case "factoryMap":
+				return $this->factory_xml["map"];
+			case "factoryName":
+				return $this->factory_xml["name"];
+			case "factorySatellite":
+				return $this->factory_xml["img"];
+			
+		}
+	}
+	
+	function createMessage($_messageType) {
 	}
 }
 ?>

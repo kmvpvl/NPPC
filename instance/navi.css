@@ -2,7 +2,7 @@
   font-size: 0.8rem;
 }
 body {
-  margin:5;
+  margin:0;
   padding:0;
   overflow:hidden;
 }
@@ -52,19 +52,21 @@ rect.workcenter:hover {
     border: solid 1px red;
     padding: 0;
     margin: 0;
-    margin-left: 2;
-    margin-right: 2;
+    padding-left: 2;
+    padding-right: 2;
     width: 100%;
     overflow-y: hidden;
 }
+#loadingSpinner {
+    position: relative;
+    display: none;
+}
 #content-div {
-    border: solid 0px red;
+    border: solid 1px red;
     padding: 0;
     margin: 0;
-    width: 100%;
     overflow-y: auto;
     opacity: 1;
-    z-index: -1;
 }
 .cell-data {
     border-left:1px solid;
@@ -82,4 +84,18 @@ rect.workcenter:hover {
     border-top:1px solid;
     font-weight: bold;
     text-align:center;
+}
+#loginform {
+    display: none;
+    position: relative;
+}
+#errorLoadingMessage {
+    display: none;
+    position: relative;
+}
+#factoryMap {
+    position: relative;
+    border: solid 1px red;
+    margin: 0;
+    padding: 0;
 }
