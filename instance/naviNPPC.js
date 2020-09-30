@@ -38,3 +38,5 @@ class nppcMap {
 		return Math.round((x - this._topEdge) * this._imageHeight / (this._bottomEdge - this._topEdge));
 	}
 };
+
+var map;

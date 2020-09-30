@@ -6,6 +6,7 @@ include "checkUser.php";
 $(".navitem, .active").removeClass("active");
 $("#menuFactory").addClass("active");
 $(".navbar-brand").text("<?= $navi->factoryName ?>");
+drawFactoryMap();
 
 function factoryResize() {
 	$("#factoryMap").outerHeight($("#instance-div").outerHeight() * 0.5);
@@ -14,6 +15,42 @@ function factoryResize() {
 
 $(window).on ('resize', factoryResize);
 factoryResize();
+
+function drawFactoryMap() {
+    $("#factoryMap").html = '';
+	showLoading();
+	var p = $.post("drawFactory.php",
+	{
+		username: $("#username").val(),
+		password: $("#password").val(),
+		factory:  $("#factory").val(),
+		language: $("#language").val(),
+		timezone: $("#timezone").val()
+	},
+	function(data, status){
+		hideLoading();
+		switch (status) {
+			case "success":
+				$("#factoryMap").html(data);
+				break;
+			default:
+                ;
+		}
+	});
+	p.fail(function(data, status) {
+		hideLoading();
+		switch (data.status) {
+			case 401:
+				clearInstance();
+				showLoginForm();
+				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
+				break;
+			default:				
+				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
+		}
+	})
+}
+
 </script>
 <div class="input-group mb-3">
 	<input type="text" class="form-control" placeholder="Search orders...">

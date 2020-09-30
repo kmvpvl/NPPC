@@ -56,7 +56,7 @@ function showLoginForm() {
 }
 function showLoadingError(_text) {
 	$("#loadingSpinner").hide();
-	$("#errorLoadingMessage > span").text(_text);
+	$("#errorLoadingMessage > span").html(_text);
 	$("#errorLoadingMessage").show();
 }
 function showLoading() {

@@ -4,9 +4,10 @@
 var map;
 function onload() {
 	wth = document.getElementById("div1").offsetWidth;
+	lr = "53.3834919,50.1689624;53.3780572,50.1744053".split(";");
+	document.getElementById("div1").style.height = Math.abs(wth * (lr[1].split(",")[1] - lr[0].split(",")[1])/(lr[1].split(",")[0] - lr[0].split(",")[0]));
 	hgh = document.getElementById("div1").offsetHeight;
-	lr = "53.3834919,50.1689624;53.3780572,50.1744053";
-	map = new nppcMap(lr, wth, hgh);
+	map = new nppcMap(lr.join(";"), wth, hgh);
 }
 function mdown(event) {
 	startX = map.X2LAT(event.offsetX);
@@ -18,6 +19,6 @@ function mup(event) {
 	document.getElementById("info").innerHTML = "";
 }
 </script>
-<img id="div1" style="max-width: 100%;height: auto;" src="factory.jpg" onclick="mdown(event);" ondblclick="mup(event);"></img>
+<div id="div1" style="max-width: 100%;border: solid 1px red;" src="" onclick="mdown(event);" ondblclick="mup(event);"></div>
 <text id="info" style="background-color:grey; position: fixed;left: 100px;top: 150px;" onclick=""></text>
 </body>

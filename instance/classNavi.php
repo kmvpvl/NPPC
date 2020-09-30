@@ -74,5 +74,62 @@ class naviClient {
 	
 	function createMessage($_messageType) {
 	}
+	
+	function _drawWorkcenter($_wcxml) {
+		$ret = (object) [
+			'html' => "",
+			'script' => "",
+		];
+		$ret->html .= '<svg id=' . $_wcxml['id'] . ' width="0" height="0" data-toggle="tooltip" class="workcenter" title="' . trim((string) $_wcxml) . '">\n';
+		$ret->html .= '<rect width="100%" height="100%" class="workcenter" />\n';
+		$ret->html .= '</svg>';
+		if ($_wcxml['location'] != "") {
+			$ret->script .= "loc = '" . $_wcxml['location'] . "'.split(';');\n";
+			$ret->script .= "wcx = map.LAT2X(loc[0].split(',')[0]);\n";
+			$ret->script .= "wcw = map.LAT2X(loc[1].split(',')[0]) - map.LAT2X(loc[0].split(',')[0]);\n";
+			$ret->script .= "wcy = map.LNG2Y(loc[0].split(',')[1]);\n";
+			$ret->script .= "wch = map.LNG2Y(loc[1].split(',')[1]) - map.LNG2Y(loc[0].split(',')[1]);\n";
+			$ret->script .= "document.getElementById('" . $_wcxml['id'] . "').style.left = wcx + 'px';\n";
+			$ret->script .= "document.getElementById('" . $_wcxml['id'] . "').style.top = wcy + 'px';\n";
+			$ret->script .= "document.getElementById('" . $_wcxml['id'] . "').setAttribute('width', wcw + 'px');\n";
+			$ret->script .= "document.getElementById('" . $_wcxml['id'] . "').setAttribute('height', wch + 'px');\n";
+			
+			foreach ($_wcxml as $wc) {
+				switch ( $wc->getName()	) {
+					case "workcenter":
+						$o = $this->_drawWorkcenter($wc);
+						$ret->html .= $o->html;
+						$ret->script .= $o->script;
+						break;
+				}
+			}
+		}
+		return $ret;
+	}
+	
+	function drawFactory() {
+		$ret = (object) [
+			'html' => "",
+			'script' => "",
+		];
+		foreach ($this->factory_xml as $wc) {
+			switch ( $wc->getName()	) {
+				case "workcenter":
+					$o = $this->_drawWorkcenter($wc);
+					$ret->html .= $o->html;
+					$ret->script .= $o->script;
+					break;
+				case "road":
+					break;
+				case "operation":
+					break;
+				case "user":
+					break;
+				default:
+					throw new Exception ("Unexpected tag " . $wc->getName() . " in factory");
+			}
+		} 
+		return $ret;
+	}
 }
 ?>

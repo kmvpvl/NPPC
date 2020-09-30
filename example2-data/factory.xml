@@ -1,6 +1,6 @@
 <factory name="Wheelpair factory" img="" map="53.3834919,50.1689624;53.3780572,50.1744053">
 	<operation ref="move"/>
-	<workcenter id="wc1.1" location="">
+	<workcenter id="wc1.1" location="53.38337998854569,50.16906707115385;53.38267354749035,50.16969509807692">
 		Supply Blanks
 		<operation ref="supplyblankshaft"/>
 	</workcenter>

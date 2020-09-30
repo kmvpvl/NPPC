@@ -12,13 +12,19 @@ a{
 }
 svg.workcenter {
     cursor:pointer;
-    position:absolute;    
+    position:relative;    
 }
 svg.workcenter:hover {
-    
 }
 rect.workcenter {
-    opacity: 0;
+    fill:rgb(127,0,0);
+    opacity: 1;
+}
+rect.workcenter:hover {
+    fill:rgb(127,127,127);
+    stroke-width:3;
+    stroke:rgb(0,0,0);
+    opacity:0.8;
 }
 .wc-damaged {
     fill:rgb(127,0,0);
@@ -41,12 +47,6 @@ rect.workcenter {
     100% {opacity: 0.2;}
 }
 
-rect.workcenter:hover {
-    fill:rgb(127,127,127);
-    stroke-width:3;
-    stroke:rgb(0,0,0);
-    opacity:0.8;
-}
 #instance-div {
     position: absolute;
     border: solid 1px red;
@@ -92,6 +92,7 @@ rect.workcenter:hover {
 #errorLoadingMessage {
     display: none;
     position: relative;
+    /*z-index: 0;*/ 
 }
 #factoryMap {
     position: relative;
