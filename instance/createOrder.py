@@ -5,12 +5,12 @@ import xml.etree.ElementTree as ET
 
 from classORMNavi import ORMNavi as ORM
 
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logging.info('\n=================Create Order Started====================')
 
 
 try :
-	orm = ORM()
+	orm = ORM("example2")
 	prs = []
 	prs.append(orm.loadProductXMLTree("1"))
 	order = orm.createOrder("1", "c2", prs)

@@ -2,7 +2,10 @@
 import sys
 import logging
 import xml.etree.ElementTree as ET
-
+try:
+    from configparser import ConfigParser
+except ImportError:
+    from ConfigParser import ConfigParser  # ver. < 3.0
 #
 #
 class ORMException (BaseException):
@@ -13,10 +16,25 @@ class ORMException (BaseException):
 class ORMNavi :
 	# Constructor of ORMNavi class
 	#
-	def __init__(self, mdmfilename = "mdm.xml", factoryfilename = "factory.xml", productsPath = "./", ordersPath = "./", routesPath = "./") :
-		self._productsPath = productsPath
-		self._ordersPath = ordersPath
-		self._routesPath = routesPath
+	def __init__(self,  factoryID) :
+		self._factoryID = factoryID
+		self._dataDir = "../" + self._factoryID + "-data/"
+		try :
+			cp = ConfigParser()
+			self._inidata = cp.read(self._dataDir + "settings.ini")
+			self._productsPath = self._dataDir + self._inidata["dir"]["products"]
+			logging.debug("Products path %s was parsed successfully", self._productsPath)
+			self._ordersPath = self._dataDir + self._inidata["dir"]["orders"]
+			logging.debug("Orders path %s was parsed successfully", self._ordersPath)
+			self._routesPath = self._dataDir + self._inidata["dir"]["routes"]
+			logging.debug("Routes path %s was parsed successfully", self._routesPath)
+		except :
+			logging.info("Settings.ini file %s not found or has wrong format. Using default values", self._dataDir + "settings.ini")
+			self._productsPath = self._dataDir + ""
+			self._ordersPath = self._dataDir + ""
+			self._routesPath = self._dataDir + ""
+		mdmfilename = self._dataDir + "mdm.xml" 
+		factoryfilename = self._dataDir + "factory.xml"
 		# mdm XML loading
 		try:
 			mdmDOM = ET.parse(mdmfilename)
@@ -56,7 +74,11 @@ class ORMNavi :
 	# outlinelabel - current root of part label
 	def __goRoundProdLevel(self, rep, outlinelabel, reo):
 		i = 1
+		sum_cost = 0
+		sum_duration = 0
 		for el in rep :
+			cost = 0
+			duration = 0
 			out = ""
 			if "id" in el.attrib : out = el.attrib["id"]
 			else : out = "%s" % (i)
@@ -77,6 +99,8 @@ class ORMNavi :
 					tmp.set("duration", r[0].attrib["duration"])
 					if "cost" in el.attrib : tmp.set("cost", el.attrib["cost"])
 					if "duration" in el.attrib : tmp.set("duration", el.attrib["duration"])
+					cost += float(tmp.attrib["cost"]);
+					duration += float(tmp.attrib["duration"]);
 					#looking for the same operation in factory. What center may complete this operation
 					facop = self.__factoryroot.findall(".//operation[@ref='" + el.attrib["ref"] + "']/..")
 					if not facop : raise ORMException("Couldn'n find workcenter for operation with id '%s' in factory" % (el.attrib["ref"]))
@@ -86,12 +110,29 @@ class ORMNavi :
 							if wc.tag <> "workcenter" : raise ORMException("Tag operation ref = '%s' in factory xml must be a child in tag workcenter" % (el.attrib["ref"]))
 							logging.debug("Workcenter id = '%s' can proceed this operation", wc.attrib["id"])
 							ET.SubElement(tmp, "workcenter", ref = wc.attrib["id"])
-				self.__goRoundProdLevel(r[0], "%s.%s" % (outlinelabel, out), tmp)
+				o = self.__goRoundProdLevel(r[0], "%s.%s" % (outlinelabel, out), tmp)
+				cost += o["cost"]
+				duration += o["duration"]
+				if el.tag == "material" :
+					if not "count" in el.attrib : tmp.set("count", "1")
+					else : tmp.set("count", el.attrib["count"])
+					if not "cost" in r[0].attrib : raise ORMException("Material id = '%s' have no cost" % (el.attrib["ref"]))
+					tmp.set("cost", r[0].attrib["cost"])
+					cost += float(r[0].attrib["cost"])
+					cost *= float(tmp.attrib["count"])
+					duration *= float(tmp.attrib["count"])
 			else : 
 				raise ORMException("Product element <%s> without ref, but expected" % (el.tag))
-			self.__goRoundProdLevel(el, "%s.%s" % (outlinelabel, out), tmp)
+			o = self.__goRoundProdLevel(el, "%s.%s" % (outlinelabel, out), tmp)
+			cost += o["cost"]
+			duration += o["duration"]
+			tmp.set("overall_cost", "%s" % cost)
+			tmp.set("overall_duration", "%s" % duration)
+			sum_cost += cost
+			sum_duration += duration
 			i += 1
-	
+		return {"cost": sum_cost, "duration": sum_duration}
+
 	# Function createOrder creates Order by Product and information from factory and MDM
 	# It creates file order-<orderNum>.xml in orders directory
 	# productsXMLTree must be an array with products with the same shipment address
@@ -105,7 +146,9 @@ class ORMNavi :
 		for productXMLTree in productsXMLTree :
 			outline = "%s.%s.%s" % (orderNum, i, productXMLTree.attrib["id"])
 			oprod = ET.SubElement(ocust, "product", id = outline, ref = productXMLTree.attrib["ref"])
-			self.__goRoundProdLevel(productXMLTree, outline, oprod)
+			o = self.__goRoundProdLevel(productXMLTree, outline, oprod)
+			oprod.set("overall_cost", "%s" % o["cost"])
+			oprod.set("overall_duration", "%s" % o["duration"])
 			i += 1
 		otree = ET.ElementTree(oroot)
 		otree.write(self._ordersPath + "order-" + orderNum + ".xml")		
@@ -173,14 +216,14 @@ class ORMNavi :
 		for customer in orderXMLTree :
 			if customer.tag <> "customer" : raise ORMException("Customer tag was expected as child of order tag" % (orderNum))
 			#searching specific routes to customer
-			r = self.__factoryroot.findall("route[@to='" + customer.attrib["ref"] + "']")
+			r = self.__factoryroot.findall(".//road[@to='" + customer.attrib["ref"] + "']")
 			if r :
-				logging.debug("Specific route to the customer '%s' found", customer.attrib["ref"])
+				logging.debug("Specific road to the customer '%s' found", customer.attrib["ref"])
 			else :
-				logging.debug("Specific route to the customer '%s' not found", customer.attrib["ref"])
+				logging.debug("Specific road to the customer '%s' not found", customer.attrib["ref"])
 				# searching common routes
-				r = self.__factoryroot.findall("route[@to='customer*']")
-				logging.debug("%s routes found", len(r))
+				r = self.__factoryroot.findall("road[@to='customer*']")
+				logging.debug("%s roads found", len(r))
 			for eroute in r :
 #we think that customers ship themselves 
 				logging.debug("%s products or materials in shipment found", len(customer))

@@ -1,42 +1,23 @@
 <dictionary>
-	<material id="wheel">
-		<operation ref="deliverytocwh">
-			<operation ref="suppliercontraction">
-				<operation ref="supplierselection">
-				</operation>
-			</operation>
+	<material id="wheel" cost="2300">
+		<operation ref="supplywheel">
 		</operation>
 	</material>
-	<material id="blankshaft">
-		<operation ref="orderblankshaft"></operation>
-	</material>
-	<material id="box">
-		<supplier ref="s1"></supplier>
-		<supplier ref="s2"></supplier>
+	<material id="blankshaft" cost="2100">
+		<operation ref="supplyblankshaft"></operation>
 	</material>
 	<product id="wheelpair"></product>
-	<material id="shaft">
-		<operation ref="shaftprocessing">
+	<material id="shaft" cost="2000">
+		<operation ref="blankprocessing">
 			<material ref="blankshaft"></material>
 		</operation>
 	</material>
-	<operation id="shaftprocessing" duration="480" cost="3"></operation>
-	<operation id="shaftwheelassemble" duration="45" cost="2"></operation>
-	<operation id="deliveryfromcwh" duration="45" cost="0.2"></operation>
-	<operation id="deliverytofwh" duration="45" cost="0.2"></operation>
-	<operation id="deliverytocwh" duration="4320" cost="20"></operation>
+	<operation id="blankprocessing" duration="480" cost="3"></operation>
+	<operation id="wheelpairassemble" duration="45" cost="2"></operation>
 	<operation id="qualitycheck" duration="240" cost="12"></operation>
-	<operation id="transportinws2" duration="10" cost="1.0"></operation>
-	<operation id="supplierselection" duration="43200" cost="4"></operation>
-	<operation id="suppliercontraction" duration="4320" cost="1"></operation>
-	<operation id="bookblankshaft" duration="4320" cost="0.2"/>
-	<operation id="orderblankshaft" duration="15" cost="0.2">
-		<operation ref="deliverytocwh">
-			<operation ref="bookblankshaft"/>
-		</operation>
+	<operation id="supplyblankshaft" duration="150" cost="3"/>
+	<operation id="supplywheel" duration="150" cost="3"/>
+	<operation id="move" duration="5" cost="0.1">
 	</operation>
-	<supplier id="s1" location="53.37981032903226,50.16992003770197"></supplier>
-	<supplier id="s2" location="53.37906700232258,50.16991026588869"></supplier>
-	<customer id="c1" location="53.382538197806454,50.169978668581685"></customer>
-	<customer id="c2" location="53.381928108903224,50.16995912495511"></customer>
+	<customer id="c2"/>
 </dictionary>

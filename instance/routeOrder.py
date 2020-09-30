@@ -11,7 +11,7 @@ logging.info('\n=================Create route Started====================')
 
 
 try :
-	orm = ORM()
+	orm = ORM("example2")
 	prs = []
 	prs.append(orm.loadProductXMLTree("1"))
 	order = orm.createOrder("1", "c2", prs)
