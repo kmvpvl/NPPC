@@ -10,8 +10,8 @@ echo $r->html;
 ?>
 <script>
 	$('[data-toggle="tooltip"]').tooltip();   
-	map = new nppcMap("<?=$navi->factoryMap?>", $("#factoryMap").innerWidth(), $("#factoryMap").innerHeight());
 	function resizeFactoryMap() {
+		map = new nppcMap("<?=$navi->factoryMap?>", $("#factoryMap").innerWidth(), $("#factoryMap").innerHeight());
 		<?= $r->script ?>
 	}
 </script>
