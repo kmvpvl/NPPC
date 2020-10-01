@@ -12,7 +12,7 @@ a{
 }
 svg.workcenter {
     cursor:pointer;
-    position:relative;    
+    position:absolute;    
 }
 svg.workcenter:hover {
 }
