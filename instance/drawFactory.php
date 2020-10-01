@@ -11,7 +11,7 @@ echo $r->html;
 <script>
 	$('[data-toggle="tooltip"]').tooltip();   
 	map = new nppcMap("<?=$navi->factoryMap?>", $("#factoryMap").innerWidth(), $("#factoryMap").innerHeight());
-	function resizefactoryMap() {
+	function resizeFactoryMap() {
 		<?= $r->script ?>
 	}
 </script>
