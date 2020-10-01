@@ -18,7 +18,13 @@ function mdown(event) {
 function mup(event) {
 	document.getElementById("info").innerHTML = "";
 }
+function cc(event) {
+	v = Number(document.getElementById("U").value);
+	v = (v+5) * 10;
+	document.getElementById("div1").style.backgroundColor = "hsl(145, 63%, " + v + "%)";
+}
 </script>
+<input id="U" type="number" min="1" max="12" class="digit" onchange="cc(event);"></input>
 <div id="div1" style="max-width: 100%;border: solid 1px red;" src="" onclick="mdown(event);" ondblclick="mup(event);"></div>
 <text id="info" style="background-color:grey; position: fixed;left: 100px;top: 150px;" onclick=""></text>
 </body>
