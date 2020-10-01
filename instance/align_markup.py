@@ -22,7 +22,7 @@ for s in ss :
 kx = (_or - _ol)/(max_r - _ol)
 kx = 1.8
 ky = (_ob - _ot)/(max_b - _ot)
-ky = 3.2
+ky = 2.2
 print ("kx = %s, ky = %s" % (kx,ky))
 for s in ss :
 	ltrb = s.split(";")
@@ -31,9 +31,9 @@ for s in ss :
 	r = float(ltrb[1].split(",")[0])
 	b = float(ltrb[1].split(",")[1])
 	l += (l - _ol) * kx;
-	r += (r - _or) * kx;
+	r += (r - _ol) * kx;
 	t += (t - _ot) * ky;
-	b += (b - _ob) * ky;
+	b += (b - _ot) * ky;
 	print (joinAll(l, t, r, b))
 	
 def test():
