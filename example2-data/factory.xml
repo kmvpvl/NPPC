@@ -1,26 +1,26 @@
 <factory name="Wheelpair factory" img="" map="53.3834919,50.1689624;53.3780572,50.1744053">
 	<operation ref="move"/>
-	<workcenter id="wc1.1" location="53.38317854792793,50.16929734769231;53.38120051297297,50.17130703384615">
+	<workcenter id="wc1.1" location="53.38329045938224,50.16929734769231;53.38201886548263,50.17130703384615">
 		Supply Blanks
 		<operation ref="supplyblankshaft"/>
 	</workcenter>
 	<road id="1" from="wc1.1" to="wc1.3" reverse="1"></road>
-	<workcenter id="wc1.3" location="53.38021149549549,50.16929734769231;53.37823346054051,50.17130703384615">
+	<workcenter id="wc1.3" location="53.38138306853282,50.16929734769231;53.38011147463319,50.17130703384615">
 		Blank processing
 		<operation ref="blankprocessing"></operation>
 	</workcenter>
 	<road id="3" from="wc1.3" to="wc2.3" reverse="1"></road>
-	<workcenter id="wc2.1" location="53.38317854792793,50.17231187692308;53.38120051297297,50.17432156307690">
+	<workcenter id="wc2.1" location="53.38329045938224,50.17231187692308;53.38201886548263,50.17432156307690">
 		Supply Wheels
 		<operation ref="supplywheel"/>
 	</workcenter>
 	<road id="4" from="wc2.1" to="wc2.3" reverse="1"></road>
-	<workcenter id="wc2.3" location="53.38021149549549,50.17231187692308;53.37823346054051,50.17432156307690">
+	<workcenter id="wc2.3" location="53.38138306853282,50.17231187692308;53.38011147463319,50.17432156307690">
 		Wheel pair assembly
 		<operation ref="wheelpairassemble"></operation>
 	</workcenter>
 	<road id="7" from="wc2.3" to="wc2.4" reverse="1"></road>
-	<workcenter id="wc2.4" location="53.37724444306306,50.17231187692308;53.37526640810803,50.17432156307690">
+	<workcenter id="wc2.4" location="53.37947567768339,50.17231187692308;53.37820408378374,50.17432156307690">
 		Quality check
 		<operation ref="qualitycheck"></operation>
 	</workcenter>

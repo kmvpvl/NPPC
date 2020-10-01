@@ -20,7 +20,7 @@ for s in ss :
 	if max_b < b : max_b = b
 	
 kx = (_or - _ol)/(max_r - _ol)
-kx = 1.8
+kx = 0.8
 ky = (_ob - _ot)/(max_b - _ot)
 ky = 2.2
 print ("kx = %s, ky = %s" % (kx,ky))
