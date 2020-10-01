@@ -9,7 +9,9 @@ try {
 echo $r->html;
 ?>
 <script>
-	map = new nppcMap("<?=$navi->factoryMap?>", $("#factoryMap").innerWidth(), $("#factoryMap").innerHeight());
-	<?= $r->script ?>
 	$('[data-toggle="tooltip"]').tooltip();   
+	map = new nppcMap("<?=$navi->factoryMap?>", $("#factoryMap").innerWidth(), $("#factoryMap").innerHeight());
+	function resizefactoryMap() {
+		<?= $r->script ?>
+	}
 </script>

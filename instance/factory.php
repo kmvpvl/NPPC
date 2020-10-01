@@ -6,11 +6,12 @@ include "checkUser.php";
 $(".navitem, .active").removeClass("active");
 $("#menuFactory").addClass("active");
 $(".navbar-brand").text("<?= $navi->factoryName ?>");
+drawFactoryMap();
 
 function factoryResize() {
 	$("#factoryMap").outerHeight($("#instance-div").outerHeight() * 0.5);
 	$("#content-div").css('height', $(window).height() - $("#content-div").offset().top + "px");
-	drawFactoryMap();
+	resizeFactoryMap();	
 }
 
 $(window).on ('resize', factoryResize);
@@ -32,6 +33,7 @@ function drawFactoryMap() {
 		switch (status) {
 			case "success":
 				$("#factoryMap").html(data);
+				resizeFactoryMap();	
 				break;
 			default:
                 ;
