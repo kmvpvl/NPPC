@@ -11,7 +11,7 @@ drawFactoryMap();
 function factoryResize() {
 	$("#factoryMap").outerHeight($("#instance-div").outerHeight() * 0.5);
 	$("#content-div").css('height', $(window).height() - $("#content-div").offset().top + "px");
-	resizeFactoryMap();	
+	if (typeof(resizeFactoryMap) == "function") resizeFactoryMap();	
 }
 
 $(window).on ('resize', factoryResize);
