@@ -10,33 +10,20 @@ body {
 a{
     cursor:pointer;
 }
-svg.workcenter {
-    cursor:pointer;
-    position:absolute;    
-}
-svg.workcenter:hover {
-}
 rect.workcenter {
-    fill:rgb(127,0,0);
+    fill:rgb(127,127,127);
     opacity: 1;
 }
+.duty-1 {
+    fill:hsl(145, 63%, 49%);
+    stroke:hsl(145, 63%, 49%);
+}
 rect.workcenter:hover {
-    fill:rgb(127,127,127);
-    stroke-width:3;
-    stroke:rgb(0,0,0);
     opacity:0.8;
 }
-.wc-damaged {
-    fill:rgb(127,0,0);
-    animation-name: anim-trouble;
-    animation-duration: 2s;
-    animation-iteration-count: infinite;
-}
-.wc-success {
-    fill:rgb(0,127,0);
-    animation-name: anim-trouble;
-    animation-duration: 2s;
-    animation-iteration-count: infinite;
+line.road {
+    stroke:rgb(127,127,127);
+    stroke-width:5;    
 }
 @keyframes anim-trouble {  
     0% {opacity:0;}

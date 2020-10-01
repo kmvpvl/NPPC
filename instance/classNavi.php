@@ -75,24 +75,54 @@ class naviClient {
 	function createMessage($_messageType) {
 	}
 	
+	function _drawRoad($_roadxml) {
+		$ret = (object) [
+			'html' => "",
+			'script' => ""
+		];
+	    if ($_roadxml["from"] != "") {
+    		$found_from = $this->factory_xml->xpath("//workcenter[@id='" . $_roadxml["from"] . "']");
+    		if (!$found_from) return $ret; // throw new Exception ("Road " . $_roadxml["id"] . "referenced to nonexistent workcenter '" . $_roadxml["from"] . "'!");
+	    }
+	    if ($_roadxml["to"] != "") {
+    		$found_to = $this->factory_xml->xpath("//workcenter[@id='" . $_roadxml["to"] . "']");
+    		if (!$found_to) return $ret; //throw new Exception ("Road " . $_roadxml["id"] . "referenced to nonexistent workcenter '" . $_roadxml["to"] . "'!");
+	    }
+ 	    $from_coords = explode(";", $found_from[0]["location"]);
+	    $to_coords = explode(";", $found_to[0]["location"]);
+	    $from_center = (object)['lat'=>(explode(",", $from_coords[1])[0] + explode(",", $from_coords[0])[0])/2, 'lng'=>(explode(",", $from_coords[1])[1] + explode(",", $from_coords[0])[1])/2];
+	    $to_center = (object)['lat'=>(explode(",", $to_coords[1])[0] + explode(",", $to_coords[0])[0])/2, 'lng'=>(explode(",", $to_coords[1])[1] + explode(",", $to_coords[0])[1])/2];
+	    
+		$ret->html .= "<line id='" . $_roadxml['id'] . "' x1='0' y1='0' x2='0' y2='0' class='road' />";
+		$ret->script .= "$('#" . $_roadxml['id'] . "').attr('x1', map.LAT2X(" . $from_center->lat . "));\n";
+		$ret->script .= "$('#" . $_roadxml['id'] . "').attr('x2', map.LAT2X(" . $to_center->lat . "));\n";
+		$ret->script .= "$('#" . $_roadxml['id'] . "').attr('y1', map.LNG2Y(" . $from_center->lng . "));\n";
+		$ret->script .= "$('#" . $_roadxml['id'] . "').attr('y2', map.LNG2Y(" . $to_center->lng . "));\n"; 
+		
+		return $ret;
+	}
+	
 	function _drawWorkcenter($_wcxml) {
 		$ret = (object) [
 			'html' => "",
 			'script' => "",
 		];
-		$ret->html .= '<svg id=' . $_wcxml['id'] . ' width="0" height="0" data-toggle="tooltip" class="workcenter" title="' . trim((string) $_wcxml) . '">\n';
-		$ret->html .= '<rect width="100%" height="100%" class="workcenter" />\n';
-		$ret->html .= '</svg>';
+		$ret->html .= '<rect id="' . $_wcxml['id'] . '" width="0" height="0" data-toggle="tooltip" class="workcenter" title="' . trim((string) $_wcxml) . '"></rect>';
+		$ret->html .= '<text id="' . $_wcxml['id'] . '_label" text-anchor="middle" x="0" y="0">' . trim((string) $_wcxml) . '</text>';
 		if ($_wcxml['location'] != "") {
 			$ret->script .= "loc = '" . $_wcxml['location'] . "'.split(';');\n";
 			$ret->script .= "wcx = map.LAT2X(loc[0].split(',')[0]);\n";
 			$ret->script .= "wcw = map.LAT2X(loc[1].split(',')[0]) - map.LAT2X(loc[0].split(',')[0]);\n";
 			$ret->script .= "wcy = map.LNG2Y(loc[0].split(',')[1]);\n";
 			$ret->script .= "wch = map.LNG2Y(loc[1].split(',')[1]) - map.LNG2Y(loc[0].split(',')[1]);\n";
-			$ret->script .= "document.getElementById('" . $_wcxml['id'] . "').style.left = wcx + 'px';\n";
-			$ret->script .= "document.getElementById('" . $_wcxml['id'] . "').style.top = wcy + 'px';\n";
-			$ret->script .= "document.getElementById('" . $_wcxml['id'] . "').setAttribute('width', wcw + 'px');\n";
-			$ret->script .= "document.getElementById('" . $_wcxml['id'] . "').setAttribute('height', wch + 'px');\n";
+			
+			$ret->script .= "$('#" . $_wcxml['id'] . "').attr('x', wcx + 'px');\n";
+			$ret->script .= "$('#" . $_wcxml['id'] . "').attr('y', wcy + 'px');\n";
+			$ret->script .= "$('#" . $_wcxml['id'] . "').attr('width', wcw + 'px');\n";
+			$ret->script .= "$('#" . $_wcxml['id'] . "').attr('height', wch + 'px');\n";
+
+			$ret->script .= "$('#" . $_wcxml['id'] . "_label').attr('x', wcx + wcw/2 + 'px');\n";
+			$ret->script .= "$('#" . $_wcxml['id'] . "_label').attr('y', wcy + wch/2 + 'px');\n";
 			
 			foreach ($_wcxml as $wc) {
 				switch ( $wc->getName()	) {
@@ -109,7 +139,7 @@ class naviClient {
 	
 	function drawFactory() {
 		$ret = (object) [
-			'html' => "",
+			'html' => '<svg  width="100%" height="100%">',
 			'script' => "",
 		];
 		foreach ($this->factory_xml as $wc) {
@@ -120,6 +150,9 @@ class naviClient {
 					$ret->script .= $o->script;
 					break;
 				case "road":
+					$o = $this->_drawRoad($wc);
+					$ret->html .= $o->html;
+					$ret->script .= $o->script;
 					break;
 				case "operation":
 					break;
@@ -129,6 +162,7 @@ class naviClient {
 					throw new Exception ("Unexpected tag " . $wc->getName() . " in factory");
 			}
 		} 
+		$ret->html .= '</svg>';
 		return $ret;
 	}
 }
