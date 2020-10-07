@@ -1,16 +1,16 @@
 <?php
-
-
+opcache_reset();
 //------------------
 // naviClient class 
 //
 // 
 class naviClient {
-    const MESSAGE_INFO = 'info';
-    const MESSAGE_WARNING = 'warning';
-    const MESSAGE_CRITICAL = 'critical';
+    const MESSAGE_INFO = 'INFO';
+    const MESSAGE_WARNING = 'WARNING';
+    const MESSAGE_CRITICAL = 'CRITICAL';
 
 	private $factory = "";
+	private $client_id = -1;
 	private $time_zone = 0;
 	private $data_dir = "";
 	private $order_dir = "";
@@ -26,26 +26,43 @@ class naviClient {
 		$settings = parse_ini_file($this->data_dir . "settings.ini", true);
 		if (array_key_exists("dir", $settings)) {
 			if (array_key_exists("products", $settings["dir"])) $this->product_dir = $this->data_dir . $settings["dir"]["products"];
-			if (array_key_exists("orders", $settings["dir"])) $this->product_dir = $this->data_dir . $settings["dir"]["orders"];
-			if (array_key_exists("routes", $settings["dir"])) $this->product_dir = $this->data_dir . $settings["dir"]["routes"];
-			if (array_key_exists("messages", $settings["dir"])) $this->message_dir = $this->data_dir . $settings["dir"]["routes"];
+			if (array_key_exists("orders", $settings["dir"])) $this->orders_dir = $this->data_dir . $settings["dir"]["orders"];
+			if (array_key_exists("routes", $settings["dir"])) $this->routes_dir = $this->data_dir . $settings["dir"]["routes"];
+			if (array_key_exists("messages", $settings["dir"])) $this->message_dir = $this->data_dir . $settings["dir"]["messages"];
 		}
+		
 		$this->factory_xml = simplexml_load_file($this->data_dir . 'factory.xml');
 		if (!$this->factory_xml) throw new Exception ("Wrong factory XML: " . $this->data_dir . 'factory.xml');
 		$found = $this->factory_xml->xpath("//user[@id='" . $_user . "']");
 		if (!$found) throw new Exception ("User " . $_user . ' not found');
 		$hash = md5($_user . $_password);
 		if ((string) $found[0]["md5"] != $hash) throw new Exception ("Password incorrect! " . $hash);
-/*		var_dump($settings);
-		$this->dblink = new mysqli("localhost", $dbsettings["user"], $dbsettings["pwd"], $dbsettings["database"]);
-		if ($this->dblink->connect_errno) throw new Exception("Unable connect to database: " . $this->dblink->connect_errno . " - " . $this->dblink->connect_error);
+//		var_dump($settings);
+        $host = "";
+        $database = "";
+        $user = "";
+        $password = "";
+		
+		if (array_key_exists("database", $settings)) {
+			if (array_key_exists("host", $settings["database"])) $host = $settings["database"]["host"];
+			if (array_key_exists("database", $settings["database"])) $database = $settings["database"]["database"];
+			if (array_key_exists("user", $settings["database"])) $user = $settings["database"]["user"];
+			if (array_key_exists("password", $settings["database"])) $password = $settings["database"]["password"];
+		} else throw new Exception ("database settings are absent"); 
+		
+		$this->dblink = new mysqli($host, $user, $password, $database);
+		if ($this->dblink->connect_errno) throw new Exception("Unable connect to database (" . $host . " - " . $database . "): " . $this->dblink->connect_errno . " - " . $this->dblink->connect_error);
 		$this->dblink->set_charset("utf-8");
 		$this->dblink->query("set names utf8");
 		if (!is_null($this->time_zone)) $this->dblink->query("SET @@session.time_zone='" . ((0 < $this->time_zone)? "+":"") . $this->time_zone . ":00';");
-*/
+		$x = $this->dblink->query("select getClientID('" . $this->factory . "') as client_id;");
+		
+		if (!$x) throw new Exception("Factory '" . $this->factory . "' not found in '" . $database. "': " . $this->dblink->errno . " - " . $this->dblink->error);
+		$this->client_id = $x->fetch_assoc()["client_id"];
+		$x->free_result();
 	}
 	function __destruct() {
-//		$this->dblink->close();
+		$this->dblink->close();
 	}
 	function getRoutes($_order) {
 		if (!$z = simplexml_load_file($this->routes_dir . 'route-' . $_order . '.xml')) throw new Exception ("XML route-" . $_order . " is wrong!");
@@ -54,7 +71,7 @@ class naviClient {
 		return $ret;
 	}
 	function getRoute($_order, $_id) {
-		if (!$z = simplexml_load_file($this->routes_dir . 'route-' . 'route-' . $_order . '.xml')) throw new Exception ("XML route-" . $_order . " is wrong!");
+		if (!$z = simplexml_load_file($this->routes_dir . 'route-' . $_order . '.xml')) throw new Exception ("XML route-" . $_order . " is wrong! -- " . $this->routes_dir . 'route-' . $_order . '.xml');
 		$found = $z->xpath("//route[@id='" . $_order . "." . $_id . "']");
 		if (!$found)  throw new Exception ("Route " . $_order . "." . $_id . " not found!");
 		return $found[0];
@@ -72,7 +89,51 @@ class naviClient {
 		}
 	}
 	
+	function getMessages($_tags, $_to, $_read) {
+	    
+	}
+	
 	function createMessage($_messageType) {
+	}
+	
+	function _assignOrderRouteRecur($zz, $_order_id, $_route_id) {
+	    if (count($zz->children()) == 0 && $zz->getName()=="operation" ) {
+    		$x = $this->dblink->query("call assignWorkcenterToRoutePart(" . $this->client_id . ", '" . $_order_id . "', '" . $zz["ref"] . "', '" . $zz["workcenter"] . "', 'INCOME')");
+    		if (!$x) throw new Exception("Unexpected error while setting mode" . "': " . $this->dblink->errno . " - " . $this->dblink->error . "call assignWorkcenterToRoutePart(" . $this->client_id . ", '" . $_order_id . "', '" . $zz["ref"] . "', '" . $zz["workcenter"] . "', 'INCOME')"); 
+    		$x->free_result();
+	    } else {
+	        foreach ($zz as $zzz) {
+	            $this->_assignOrderRouteRecur($zzz, $_order_id, $_route_id);
+	        }
+	    }
+	    
+	}
+	
+	function assignOrderRoute($_order, $_route_id) {
+	    $this->dblink->autocommit(FALSE);
+	    //echo $_order;
+	    
+	    $z = $this->getRoute($_order, $_route_id);
+	    
+        $x = $this->dblink->query("select addOrder(" . $this->client_id . ", '" . $_order . "', 'ASSIGNED') as order_id;");
+		if (!$x) {
+    	    $this->dblink->autocommit(TRUE);
+		    throw new Exception("Unexpected error while adding order" . "': " . $this->dblink->errno . " - " . $this->dblink->error . "select addOrder(" . $this->client_id . ", '" . $_order . "', 'ASSIGNED') as order_id;");
+		}
+		$order_id = $x->fetch_assoc()["order_id"];
+		//echo "order_id " . $order_id . "|||";
+	    foreach ($z as $zz) {
+	        $this->_assignOrderRouteRecur($zz, $order_id, $_route_id);
+	    }
+	    
+		$this->dblink->query("call assignRouteToOrder(" . $this->client_id . ", '" . $_order . "', " . $_route_id . ");");
+		
+		if (!$this->dblink->commit()) {
+    	    $this->dblink->autocommit(TRUE);
+		    throw new Exception("Unexpected error while commit transaction" . "': " . $this->dblink->errno . " - " . $this->dblink->error);
+		} 
+	    $this->dblink->autocommit(TRUE);
+	    $x->free_result();
 	}
 	
 	function _drawRoad($_roadxml) {
@@ -164,6 +225,38 @@ class naviClient {
 		} 
 		$ret->html .= '</svg>';
 		return $ret;
+	}
+	function getWorkcenterAssigns($_wc){
+	    $x = $this->dblink->query("call getBuckets(1);");
+		if (!$x) throw new Exception("Could not get buckets" . "': " . $this->dblink->errno . " - " . $this->dblink->error . "call getBuckets(1);"); 	    
+	    $ret = [];
+	    $bucks = "";
+	    while ($y = $x->fetch_assoc()) {
+	        if (strlen($bucks)) $bucks .= ",";
+	        $bucks .= $y["bucket"];
+	        $ret[$y["bucket"]] = [];
+	    }
+	    $x->free_result();
+	    $this->dblink->next_result();
+	    //echo "call getAssignsByWorkcenter(" . $this->client_id . ", '" . $_wc . "', '" . $bucks . "');";
+	    
+        $a = $this->dblink->query("call getAssignsByWorkcenter(" . $this->client_id . ", '" . $_wc . "', '" . $bucks . "');");
+
+        
+        if (!$a) throw new Exception("Could not get assigns by workcenter" . "': " . $this->dblink->errno . " - " . $this->dblink->error . "call getAssignsByWorkcenter(" . $this->client_id . ", '" . $_wc . "', '" . $bucks . "');"); 
+	    while ($z = $a->fetch_assoc()) {
+	        $ret[$z["bucket"]][] = $z;
+	        //var_dump($z);
+	    }
+	    $a->free_result();
+		return $ret;
+	}
+	
+	function getWorkcenterInfo($_wc){
+		$found = $this->factory_xml->xpath("//workcenter[@id='" . $_wc . "']");
+		//var_dump($found);
+		if (!$found)  throw new Exception ("workcenter " . $_wc . " not found!");
+		return $found[0];
 	}
 }
 ?>

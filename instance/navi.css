@@ -1,4 +1,4 @@
-﻿html {
+html {
   font-size: 0.8rem;
 }
 body {
@@ -86,4 +86,8 @@ line.road {
     border: solid 1px red;
     margin: 0;
     padding: 0;
+}
+.workcenter {
+    position: absolute;
+    
 }

@@ -14,4 +14,8 @@ echo $r->html;
 		map = new nppcMap("<?=$navi->factoryMap?>", $("#factoryMap").innerWidth(), $("#factoryMap").innerHeight());
 		<?= $r->script ?>
 	}
+	$('rect.workcenter').on('click', function(event) {
+    	$('[data-toggle="tooltip"]').hide();   
+        workcenter(event.target.id); 
+	});
 </script>

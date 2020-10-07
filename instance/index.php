@@ -101,5 +101,76 @@ function tryLogin() {
 	})
 }
 
+$("a[instance]").on ('click', function (event) {
+	showLoading();
+	var p = $.post(event.target.attributes["instance"].value,
+	{
+		username: $("#username").val(),
+		password: $("#password").val(),
+		factory:  $("#factory").val(),
+		language: $("#language").val(),
+		timezone: $("#timezone").val()
+	},
+	function(data, status){
+		hideLoading();
+		switch (status) {
+			case "success":
+				$("#instance-div").html(data);
+				break;
+			default:
+				clearInstance();
+		hideLoading();
+				showLoginForm();
+		}
+	});
+	p.fail(function(data, status) {
+		switch (data.status) {
+			case 401:
+				clearInstance();
+				showLoginForm();
+				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
+				break;
+			default:				
+				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
+		}
+	})
+})
+
+function workcenter(_id) {
+	showLoading();
+	var p = $.post("workcenter.php",
+	{
+		username: $("#username").val(),
+		password: $("#password").val(),
+		factory:  $("#factory").val(),
+		language: $("#language").val(),
+		timezone: $("#timezone").val(),
+		workcenter: _id
+	},
+	function(data, status){
+		hideLoading();
+		switch (status) {
+			case "success":
+				$("#instance-div").html(data);
+				break;
+			default:
+				clearInstance();
+				showLoginForm();
+		}
+	});
+	p.fail(function(data, status) {
+		hideLoading();
+		switch (data.status) {
+			case 401:
+				clearInstance();
+				showLoginForm();
+				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
+				break;
+			default:				
+				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
+		}
+	})
+}
+
 </script>
 <?php include "footer.php"?>

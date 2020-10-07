@@ -4,7 +4,8 @@
 	<road id="road3" from="wc1_3" to="wc2_3" reverse="1"></road>
 	<road id="road4" from="wc2_1" to="wc2_3" reverse="1"></road>
 	<road id="road7" from="wc2_3" to="wc2_4" reverse="1"></road>
-	<workcenter id="wc1_1" location="53.38329045938224,50.16929734769231;53.38201886548263,50.17130703384615">
+    <road id="road8" from="wc2_4" to="c2" reverse="1"></road>
+<workcenter id="wc1_1" location="53.38329045938224,50.16929734769231;53.38201886548263,50.17130703384615">
 		Supply Blanks
 		<operation ref="supplyblankshaft"/>
 	</workcenter>

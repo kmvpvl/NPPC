@@ -15,7 +15,7 @@
 			<a class="nav-link dropdown-toggle" href="#" id="menuOrders" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Orders</a>
 			<div class="dropdown-menu" aria-labelledby="navbarDropdown">
 				<a class="dropdown-item" href="orders.php">View orders</a>
-				<a class="dropdown-item" href="#">Import orders</a>
+				<a class="dropdown-item" instance="import_orders.php">Import orders</a>
 			</div>
 		</li>
 		<li class="nav-item dropdown">

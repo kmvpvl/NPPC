@@ -1,56 +1,20 @@
 <?php
 include "checkUser.php";
-
+$brand = trim((string)$navi->getWorkcenterInfo($_POST["workcenter"]));
 ?>
 <script>
 $(".navitem, .active").removeClass("active");
-$("#menuFactory").addClass("active");
-$(".navbar-brand").text("<?= $navi->factoryName ?>");
-drawFactoryMap();
+$("#menuWorkcenter").addClass("active");
+$(".navbar-brand").text("<?= $brand ?>");
+drawWorkcenter();
 
-function factoryResize() {
-	//$("#factoryMap").outerHeight($("#instance-div").outerHeight());
-	$("#content-div").css('height', $(window).height() - $("#content-div").offset().top + "px");
-	if (typeof(resizeFactoryMap) == "function") resizeFactoryMap();	
+function workcenterResize() {
 }
 
-$(window).on ('resize', factoryResize);
-factoryResize();
+$(window).on ('resize', workcenterResize);
+workcenterResize();
 
-function drawFactoryMap() {
-    $("#factoryMap").html = '';
-	showLoading();
-	var p = $.post("drawFactory.php",
-	{
-		username: $("#username").val(),
-		factory:  $("#factory").val(),
-		password: $("#password").val(),
-		language: $("#language").val(),
-		timezone: $("#timezone").val()
-	},
-	function(data, status){
-		hideLoading();
-		switch (status) {
-			case "success":
-				$("#factoryMap").html(data);
-				resizeFactoryMap();	
-				break;
-			default:
-                ;
-		}
-	});
-	p.fail(function(data, status) {
-		hideLoading();
-		switch (data.status) {
-			case 401:
-				clearInstance();
-				showLoginForm();
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-				break;
-			default:				
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-		}
-	})
+function drawWorkcenter() {
 }
 
 </script>
@@ -60,9 +24,35 @@ function drawFactoryMap() {
   		<button class="btn btn-success" type="submit">Go</button> 
 	</div>
 </div>
-
-<div id="factoryMap" class="ml-1 mr-1"></div>
-<div id="messageCenter" class="messageCenter popdown">
+<?php
+$bucks = $navi->getWorkcenterAssigns($_POST["workcenter"]);
+echo $brand;
+?>
+<div class="row mt-0">
+    <?php 
+    foreach ($bucks as $b => $c) { 
+    ?>
+	<div class="col-sm-4 cell-header"><?= $b ?></div>
+    <?php 
+    }
+    ?>
+</div>
+<div class="row mt-0">
+    <?php 
+    $i = 0;
+    while (TRUE) {
+        $last = TRUE;
+        foreach ($bucks as $c){
+            if ($i < count($c)-1) $last = FALSE;
+    ?>
+	<div class="col-sm-4 cell-data"><?= $c[$i]["order_part"]?></div>
+   <?php 
+        }
+        if ($last) break;
+        $i++;
+    }
+    ?>
+</div>
 <ul class="nav nav-tabs">
   <li class="nav-item">
     <a class="nav-link active primary" href="#">All</a>
@@ -117,5 +107,4 @@ Quality check: Order #2 ready to upload
   </div>
 		</div>
 	</div>
-</div>
 </div>
