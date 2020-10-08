@@ -70,6 +70,14 @@ class naviClient {
 		foreach ($z as $res) $ret[] = ((array) $res->attributes())['@attributes'];
 		return $ret;
 	}
+	
+	function getOrder($_order) {
+		if (!$z = simplexml_load_file($this->orders_dir . 'order-' . $_order . '.xml')) throw new Exception ("XML order-" . $_order . " is wrong!");
+		$ret = array();
+		foreach ($z as $res) $ret[] = ((array) $res->attributes())['@attributes'];
+		return $ret;
+	}
+	
 	function getRoute($_order, $_id) {
 		if (!$z = simplexml_load_file($this->routes_dir . 'route-' . $_order . '.xml')) throw new Exception ("XML route-" . $_order . " is wrong! -- " . $this->routes_dir . 'route-' . $_order . '.xml');
 		$found = $z->xpath("//route[@id='" . $_order . "." . $_id . "']");
@@ -98,9 +106,10 @@ class naviClient {
 	
 	function _assignOrderRouteRecur($zz, $_order_id, $_route_id) {
 	    if (count($zz->children()) == 0 && $zz->getName()=="operation" ) {
-    		$x = $this->dblink->query("call assignWorkcenterToRoutePart(" . $this->client_id . ", '" . $_order_id . "', '" . $zz["ref"] . "', '" . $zz["workcenter"] . "', 'INCOME')");
-    		if (!$x) throw new Exception("Unexpected error while setting mode" . "': " . $this->dblink->errno . " - " . $this->dblink->error . "call assignWorkcenterToRoutePart(" . $this->client_id . ", '" . $_order_id . "', '" . $zz["ref"] . "', '" . $zz["workcenter"] . "', 'INCOME')"); 
-    		$x->free_result();
+	        //echo("call assignWorkcenterToRoutePart(" . $this->client_id . ", '" . $_order_id . "', '" . $zz["ref"] . "', '" . $zz["refref"] . "', '" . $zz["workcenter"] . "', 'INCOME')");
+    		$x = $this->dblink->query("call assignWorkcenterToRoutePart(" . $this->client_id . ", '" . $_order_id . "', '" . $zz["ref"] . "', '" . $zz["refref"] . "', '" . $zz["workcenter"] . "', 'INCOME')");
+    		if (!$x) throw new Exception("Unexpected error while setting mode" . "': " . $this->dblink->errno . " - " . $this->dblink->error . "call assignWorkcenterToRoutePart(" . $this->client_id . ", '" . $_order_id . "', '" . $zz["ref"] . "', '" . $zz["refref"] . "', '" . $zz["workcenter"] . "', 'INCOME')"); 
+    		//$x->free_result();
 	    } else {
 	        foreach ($zz as $zzz) {
 	            $this->_assignOrderRouteRecur($zzz, $_order_id, $_route_id);
@@ -163,12 +172,33 @@ class naviClient {
 		return $ret;
 	}
 	
-	function _drawWorkcenter($_wcxml) {
+	function _drawWorkcenter($_wcxml, $_wloads) {
 		$ret = (object) [
 			'html' => "",
 			'script' => "",
 		];
-		$ret->html .= '<rect id="' . $_wcxml['id'] . '" width="0" height="0" data-toggle="tooltip" class="workcenter" title="' . trim((string) $_wcxml) . '"></rect>';
+		//calculating workload colour of rect
+		$found = $_wcxml->xpath("operation");
+		if (!found) throw new Exception ("Worcenter can't determine workload 'cause it has no the operations");
+		//var_dump($found);
+		$cc = 0;
+		$i = 0;
+		$ttip = "";
+		foreach ($found as $f) {
+    		$c = floatval($_wloads[(string)$_wcxml['id'] . "_" . $f["ref"]]);
+    		$c_max = floatval($f['capacity']);
+    		$ttip .= $f["ref"] . ": " . $c . " orders in queue. Capacity: " . $c_max . "\n";
+    		$cc += $c / $c_max ;
+    		$i++;
+		}
+		$cc /= $i;
+		if ($cc >= 1) $cc = 11;
+		elseif ($cc > 0) $cc = round($cc * 12);
+		else $cc = -1;
+		//echo($_wcxml['id'] . " " . (($cc < 0)? "":" duty-" . $cc));
+		
+		//var_dump($_wcxml);
+		$ret->html .= '<rect id="' . $_wcxml['id'] . '" width="0" height="0" data-toggle="tooltip" class="workcenter' . (($cc < 0)? "":" duty-" . $cc) . '" title="' . trim((string) $ttip) . '"></rect>';
 		$ret->html .= '<text id="' . $_wcxml['id'] . '_label" text-anchor="middle" x="0" y="0">' . trim((string) $_wcxml) . '</text>';
 		if ($_wcxml['location'] != "") {
 			$ret->script .= "loc = '" . $_wcxml['location'] . "'.split(';');\n";
@@ -199,6 +229,12 @@ class naviClient {
 	}
 	
 	function drawFactory() {
+	    // loading curren workload of workcenters
+	    $x = $this->dblink->query("call getAssignsCount(" . $this->client_id . ", 'INCOME,PROCESSING');");
+		if (!$x) throw new Exception("Could not get count of assigns in workcenters" . "': " . $this->dblink->errno . " - " . $this->dblink->error . "call getAssignsCount(" . $this->client_id . ", 'INCOME,PROCESSING');");
+		$workloads = array();
+		while ($res = $x->fetch_assoc()) $workloads[$res["name"] . "_" . $res["operation"]] = $res;
+		//var_dump($workloads);
 		$ret = (object) [
 			'html' => '<svg  width="100%" height="100%">',
 			'script' => "",
@@ -206,7 +242,7 @@ class naviClient {
 		foreach ($this->factory_xml as $wc) {
 			switch ( $wc->getName()	) {
 				case "workcenter":
-					$o = $this->_drawWorkcenter($wc);
+					$o = $this->_drawWorkcenter($wc, $workloads);
 					$ret->html .= $o->html;
 					$ret->script .= $o->script;
 					break;

@@ -10,60 +10,63 @@ body {
 a{
     cursor:pointer;
 }
-rect.workcenter {
-    fill:rgb(127,127,127);
-    opacity: 1;
-}
-.duty-0 {
+rect.duty-0 {
     fill:hsl(145, 63%, 49%);
     stroke:hsl(145, 63%, 49%);
 }
-.duty-1 {
+rect.duty-1 {
     fill:hsl(145, 63%, 59%);
     stroke:hsl(145, 63%, 59%);
 }
-.duty-2 {
+rect.duty-2 {
     fill:hsl(145, 63%, 69%);
     stroke:hsl(145, 63%, 69%);
 }
-.duty-3 {
+rect.duty-3 {
     fill:hsl(145, 63%, 79%);
     stroke:hsl(145, 63%, 79%);
 }
-.duty-4 {
+rect.duty-4 {
     fill:hsl(48, 89%, 80%);
     stroke:hsl(48, 89%, 80%);
 }
-.duty-5 {
+rect.duty-5 {
     fill:hsl(37, 90%, 71%);
     stroke:hsl(37, 90%, 71%);
 }
-.duty-6 {
+rect.duty-6 {
     fill:hsl(28, 80%, 61%);
     stroke:hsl(28, 80%, 61%);
 }
-.duty-7 {
+rect.duty-7 {
     fill:hsl(24, 100%, 41%);
     stroke:hsl(24, 100%, 41%);
 }
-.duty-8 {
+rect.duty-8 {
     fill:hsl(24, 100%, 36%);
     stroke:hsl(24, 100%, 36%);
 }
-.duty-9 {
+rect.duty-9 {
     fill:hsl(24, 100%, 31%);
     stroke:hsl(24, 100%, 31%);
 }
-.duty-10 {
+rect.duty-10 {
     fill:hsl(24, 100%, 26%);
     stroke:hsl(24, 100%, 26%);
 }
-.duty-11 {
+rect.duty-11 {
     fill:hsl(24, 100%, 21%);
     stroke:hsl(24, 100%, 21%);
 }
-rect.workcenter:hover {
-    opacity:0.8;
+
+.workcenter {
+    fill:rgb(127,127,127);
+    opacity: 1;
+    position: absolute;
+    stroke-width:3;    
+}
+.workcenter:hover {
+    stroke:rgb(0,0,0);
 }
 line.road {
     stroke:rgb(127,127,127);
@@ -130,8 +133,4 @@ line.road {
     border: solid 1px red;
     margin: 0;
     padding: 0;
-}
-.workcenter {
-    position: absolute;
-    
 }
