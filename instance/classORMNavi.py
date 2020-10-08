@@ -199,7 +199,7 @@ class ORMNavi :
 			# doesn't fill workcenter if worcenter attribute was filled from path dictionary. Fills workcenter if one is only
 			if not "workcenter" in routeroot.attrib: routeroot.set("workcenter", orderProot.attrib["ref"]) 
 			return
-		subroute = ET.SubElement(routeroot, orderProot.tag, ref = orderProot.attrib["id"])
+		subroute = ET.SubElement(routeroot, orderProot.tag, ref = orderProot.attrib["id"], refref=orderProot.attrib["ref"])
 		if subroute.tag == "operation" and orderProot.attrib["id"] in pathdict.keys():
 			# fills workcenter according with dictionary
 			subroute.set("workcenter", pathdict[orderProot.attrib["id"]]) 
