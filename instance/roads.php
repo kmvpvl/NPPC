@@ -1,15 +1,16 @@
 <?php
 include "checkUser.php";
-$brand = trim((string)$navi->getWorkcenterInfo($_POST["workcenter"]));
+$road = $navi->getRoadInfo($_POST["road"]);
+$brand = trim((string)$road);
 ?>
 <script>
 $(".nav-link.active").removeClass("active");
 $("#menuWorkcenter").addClass("active");
 $(".navbar-brand").text("<?= $brand ?>");
-drawWorkcenter();
+drawRoads();
 drawMessages();
 
-function workcenterResize() {
+function roadsResize() {
 }
 
 function messageCenterResize() {
@@ -18,16 +19,16 @@ function messageCenterResize() {
 	if (typeof(resizeMessageCenter) == "function") resizeMessageCenter();	
 }
 
-function resizeWorkcenterContentAll() {
-    workcenterResize();
+function resizeRoadsContentAll() {
+    roadsResize();
     messageCenterResize();
 }
 
-$(window).on ('resize', resizeWorkcenterContentAll);
+$(window).on ('resize', resizeRoadsContentAll);
 
 //resizeWorkcenterContentAll();
 
-function drawWorkcenter() {
+function drawRoads() {
 }
 
 function drawMessages() {
@@ -77,7 +78,7 @@ $("[assign]").on('click', function (event){
 });
 $("#btn-move-assign").on("click", function(){
 	showLoading();
-	var p = $.post("apiMoveAssignToNextBucket.php",
+	var p = $.post("apiMoveAssignToNextWorkcenter.php",
 	{
 		username: $("#username").val(),
 		password: $("#password").val(),
@@ -91,7 +92,7 @@ $("#btn-move-assign").on("click", function(){
 		switch (status) {
 			case "success":
 			    //debugger;
-			    workcenter("<?=$_POST["workcenter"]?>");
+			    road("<?=$_POST["road"]?>");
 				break;
 			default:
 				clearInstance();
@@ -120,32 +121,38 @@ $("#btn-move-assign").on("click", function(){
 	</div>
 </div>
 <?php
-$bucks = $navi->getWorkcenterAssigns($_POST["workcenter"]);
+$bucks = [(string)$road["from"], (string)$road["to"]];
 //echo $brand;
+?>
+<?php
+    //var_dump($bucks);
+    $x = $navi->getRoadAssigns((string)$road["from"], (string)$road["to"]);
+    //var_dump($x);
 ?>
 <div class="row mt-0">
     <?php 
-    foreach ($bucks as $b => $c) { 
+    foreach ($bucks as $b) { 
     ?>
-	<div class="col-sm-4 cell-header"><?= $b ?></div>
-    <?php 
+	<div class="col-sm-6 cell-header"><?= $b ?></div>
+<?php 
     }
-    ?>
+?>
 </div>
 <div class="row mt-0">
     <?php 
     $i = 0;
     while (TRUE) {
         $last = TRUE;
-        foreach ($bucks as $c){
+        foreach ($bucks as $b){
+            $c = $x[$b];
             if ($i < count($c)-1) $last = FALSE;
             if ($i < count($c)) {
     ?>
-	<div assign="<?=$c[$i]["id"]?>" class="col-sm-4 cell-data"><?= $c[$i]["number"]?></div>
+	<div assign="<?=$c[$i]["id"]?>" class="col-sm-6 cell-data"><?= $c[$i]["number"]?></div>
     <?php 
             } else {
     ?>
-	<div class="col-sm-4 cell-data">&nbsp;</div>
+	<div class="col-sm-6 cell-data">&nbsp;</div>
     <?php 
             }
         }
@@ -155,5 +162,4 @@ $bucks = $navi->getWorkcenterAssigns($_POST["workcenter"]);
     ?>
 </div>
 <div id="messageCenter" class="messageCenter popdown">
-
 </div>
