@@ -14,7 +14,7 @@ try :
 	orm = ORM("example2")
 	prs = []
 	prs.append(orm.loadProductXMLTree("1"))
-	order = orm.createOrder("ord14", "c2", prs)
+	order = orm.createOrder("2386", "c2", prs)
 	routes = orm.routeOrder(order)
 	
 except ORMException :

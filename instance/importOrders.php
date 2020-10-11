@@ -5,7 +5,7 @@ include "checkUser.php";
 <script>
 $("#import-orders").on ("click", function(){
 	showLoading();
-	var p = $.post("import_order.php",
+	var p = $.post("apiImportOrder.php",
 	{
 		username: $("#username").val(),
 		password: $("#password").val(),

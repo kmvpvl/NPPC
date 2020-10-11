@@ -1,13 +1,13 @@
 <factory name="Wheelpair factory" img="" map="53.3834919,50.1689624;53.3780572,50.1744053">
-	<road id="road8" from="wc2_4" to="wc2_3" reverse="1"></road>
-	<road id="road1" from="wc1_1" to="wc1_3" reverse="1"></road>
-	<road id="road3" from="wc1_3" to="wc2_3" reverse="1"></road>
-	<road id="road4" from="wc2_1" to="wc2_3" reverse="1"></road>
-	<road id="road7" from="wc2_3" to="wc2_4" reverse="1"></road>
-    <road id="road8" from="wc2_4" to="c2" reverse="1"></road>
+	<road id="road8" from="wc2_4" to="wc2_3" reverse="1" capacity="10"></road>
+	<road id="road1" from="wc1_1" to="wc1_3" reverse="1" capacity="10"></road>
+	<road id="road3" from="wc1_3" to="wc2_3" reverse="1" capacity="10"></road>
+	<road id="road4" from="wc2_1" to="wc2_3" reverse="1" capacity="10"></road>
+	<road id="road7" from="wc2_3" to="wc2_4" reverse="1" capacity="10"></road>
+    <road id="road9" from="wc2_4" to="c2" reverse="1" capacity="10"></road>
 <workcenter id="wc1_1" location="53.38329045938224,50.16929734769231;53.38201886548263,50.17130703384615">
 		Supply Blanks
-		<operation ref="supplyblankshaft" capacity="100"/>
+		<operation ref="supplyblankshaft" capacity="4"/>
 	</workcenter>
 	<workcenter id="wc1_3" location="53.38138306853282,50.16929734769231;53.38011147463319,50.17130703384615">
 		Blank processing
@@ -15,7 +15,7 @@
 	</workcenter>
 	<workcenter id="wc2_1" location="53.38329045938224,50.17231187692308;53.38201886548263,50.17432156307690">
 		Supply Wheels
-		<operation ref="supplywheel" capacity="100"/>
+		<operation ref="supplywheel" capacity="15"/>
 	</workcenter>
 	<workcenter id="wc2_3" location="53.38138306853282,50.17231187692308;53.38011147463319,50.17432156307690">
 		Wheel pair assembly

@@ -1,7 +1,7 @@
 <nav class="navbar navbar-expand-md navbar-dark bg-dark ml-0">
 	<a class="navbar-brand" href="#">My factory
 	</a>
-	<button type="button" class="btn btn-success">Refresh</button>
+	<!--button type="button" class="btn btn-success">Refresh</button-->
 	<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
 		<span class="navbar-toggler-icon"></span>
 	</button>
@@ -15,7 +15,7 @@
 			<a class="nav-link dropdown-toggle" href="#" id="menuOrders" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Orders</a>
 			<div class="dropdown-menu" aria-labelledby="navbarDropdown">
 				<a class="dropdown-item" href="orders.php">View orders</a>
-				<a class="dropdown-item" instance="import_orders.php">Import orders</a>
+				<a class="dropdown-item" instance="importOrders.php">Import orders</a>
 			</div>
 		</li>
 		<li class="nav-item dropdown">

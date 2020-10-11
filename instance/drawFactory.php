@@ -18,4 +18,8 @@ echo $r->html;
     	$('[data-toggle="tooltip"]').hide();   
         workcenter(event.target.id); 
 	});
+	$('line.road').on('click', function(event) {
+    	$('[data-toggle="tooltip"]').hide();   
+        road(event.target.id); 
+	});
 </script>
