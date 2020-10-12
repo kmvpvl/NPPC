@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Oct 11, 2020 at 07:22 PM
+-- Generation Time: Oct 12, 2020 at 07:27 PM
 -- Server version: 10.0.28-MariaDB
 -- PHP Version: 7.3.12
 
@@ -20,6 +20,8 @@ SET time_zone = "+00:00";
 --
 -- Database: `nppc_ex2`
 --
+CREATE DATABASE IF NOT EXISTS `nppc_ex2` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
+USE `nppc_ex2`;
 
 DELIMITER $$
 --
@@ -32,7 +34,7 @@ update routes set route=_route where client_id = _client_id and number like _ord
 
 DROP PROCEDURE IF EXISTS `assignWorkcenterToRoutePart`$$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `assignWorkcenterToRoutePart` (IN `_client_id` BIGINT UNSIGNED, IN `_order_id` BIGINT UNSIGNED, IN `_order_part` VARCHAR(4096), IN `_operation` VARCHAR(250), IN `_wc` VARCHAR(50), IN `_bucket` VARCHAR(10))  NO SQL
-insert into assigns  (client_id, order_id, order_part, operation, workcenter_id, bucket) VALUES(_client_id, _order_id, _order_part, _operation, getWorkcenterID(_client_id, _wc), _bucket)$$
+insert into assigns  (client_id, order_id, order_part, operation, workcenter_id, bucket, fullset) VALUES(_client_id, _order_id, _order_part, _operation, getWorkcenterID(_client_id, _wc), _bucket, 1)$$
 
 DROP PROCEDURE IF EXISTS `deleteOrder`$$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `deleteOrder` (IN `_client_id` BIGINT UNSIGNED, IN `_order` VARCHAR(50))  NO SQL
@@ -42,6 +44,12 @@ delete from assigns where client_id=_client_id and order_id = @orid;
 delete from orders where client_id=_client_id and number like _order;
 
 end$$
+
+DROP PROCEDURE IF EXISTS `getAssignInfo`$$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `getAssignInfo` (IN `_assign_id` INT)  NO SQL
+SELECT assigns.order_part, assigns.next_order_part, orders.number, orders.current_route  FROM `assigns` 
+left join orders on orders.id = assigns.order_id
+WHERE assigns.id = _assign_id$$
 
 DROP PROCEDURE IF EXISTS `getAssignsByRoads`$$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `getAssignsByRoads` (IN `_client_id` BIGINT UNSIGNED, IN `_wc_from` VARCHAR(50), IN `_wc_to` VARCHAR(50))  NO SQL
@@ -55,7 +63,7 @@ DROP PROCEDURE IF EXISTS `getAssignsByWorkcenter`$$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `getAssignsByWorkcenter` (IN `_client_id` BIGINT UNSIGNED, IN `_wc` VARCHAR(50), IN `_buckets` VARCHAR(250))  NO SQL
 BEGIN
 set @wc_id = getWorkcenterID(_client_id, _wc);
-select a.*, orders.number, orders.state from (select id, order_id, bucket, order_part, event_time from assigns where client_id = _client_id and workcenter_id = @wc_id and find_in_set(bucket, _buckets) > 0) as a left join orders on orders.id = a.order_id;
+select a.*, orders.number, orders.state from (select id, order_id, bucket, order_part, event_time, fullset from assigns where client_id = _client_id and workcenter_id = @wc_id and find_in_set(bucket, _buckets) > 0) as a left join orders on orders.id = a.order_id;
 end$$
 
 DROP PROCEDURE IF EXISTS `getAssignsCount`$$
@@ -118,15 +126,28 @@ SELECT orders.number as order_num, orders.current_route as route_num, @new_bucke
 end$$
 
 DROP PROCEDURE IF EXISTS `moveAssignToNextWorkcenter`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `moveAssignToNextWorkcenter` (IN `_assign_id` BIGINT UNSIGNED)  NO SQL
+CREATE DEFINER=`root`@`localhost` PROCEDURE `moveAssignToNextWorkcenter` (IN `_assign_id` BIGINT UNSIGNED, IN `_set_count` INT)  NO SQL
 BEGIN
 select client_id, next_workcenter_id, next_order_part, next_operation, order_id
 into @client_id, @next_workcenter_id, @next_order_part, @next_operation, @order_id
 from assigns
 where id=_assign_id;
 START TRANSACTION;
-insert into assigns (client_id, workcenter_id, order_id, order_part, operation, bucket) values(@client_id, @next_workcenter_id, @order_id, @next_order_part, @next_operation, 'INCOME');
-update assigns set bucket = null, next_id = LAST_INSERT_ID() WHERE id = _assign_id;
+set @id_next = null;
+set @id_next = (select id from assigns where client_id = @client_id and workcenter_id = @next_workcenter_id and order_id = @order_id);
+if @id_next is null then
+    insert into assigns (client_id, workcenter_id, order_id, order_part, operation, bucket) values(@client_id, @next_workcenter_id, @order_id, @next_order_part, @next_operation, 'INCOME');
+    set @id_next = LAST_INSERT_ID();
+    set @set_count = 1;
+else
+    set @set_count = (SELECT count(*)  FROM `assigns` WHERE next_id = @id_next) + 1;
+end if;
+
+if @set_count = _set_count THEN
+	update assigns set fullset=1 where id=@id_next;
+end if;
+
+update assigns set bucket = null, next_id = @id_next WHERE id = _assign_id;
 COMMIT;
 end$$
 
@@ -198,6 +219,7 @@ CREATE TABLE IF NOT EXISTS `assigns` (
   `bucket` varchar(10) DEFAULT NULL COMMENT 'Name of bucket: income, procdssing, outcome, gone',
   `order_part` varchar(4096) NOT NULL COMMENT 'Part of the order which proceed the workcenter',
   `operation` varchar(250) NOT NULL,
+  `fullset` tinyint(4) DEFAULT NULL,
   `prodmat` varchar(50) DEFAULT NULL,
   `next_workcenter_id` bigint(20) UNSIGNED DEFAULT NULL,
   `next_order_part` varchar(4096) DEFAULT NULL,
@@ -210,28 +232,25 @@ CREATE TABLE IF NOT EXISTS `assigns` (
   KEY `workcenter_id` (`workcenter_id`),
   KEY `bucket` (`bucket`),
   KEY `operation` (`operation`)
-) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8;
 
 --
 -- Dumping data for table `assigns`
 --
 
-INSERT INTO `assigns` (`id`, `client_id`, `order_id`, `workcenter_id`, `bucket`, `order_part`, `operation`, `prodmat`, `next_workcenter_id`, `next_order_part`, `next_operation`, `event_time`, `next_id`) VALUES
-(1, 1, 1, 1, NULL, '1.1.wheelpair.1.1.shaft.1.1', '', NULL, 4, '1.1.wheelpair.1.1.shaft.1', 'blankprocessing', '2020-10-11 18:55:48', 13),
-(2, 1, 1, 5, 'INCOME', '1.1.wheelpair.1.1.wheel.1', 'supplywheel', NULL, NULL, NULL, NULL, '2020-10-11 18:36:53', NULL),
-(3, 1, 2, 1, 'INCOME', 'ord12.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', NULL, NULL, NULL, NULL, '2020-10-11 18:36:53', NULL),
-(4, 1, 2, 5, NULL, 'ord12.1.wheelpair.1.1.wheel', '', NULL, 3, 'ord12.1.wheelpair.1.1', 'wheelpairassemble', '2020-10-11 18:57:25', 14),
-(5, 1, 3, 1, 'OUTCOME', 'ord13.1.wheelpair.1.1.shaft.1.1', '', NULL, 4, 'ord13.1.wheelpair.1.1.shaft.1', 'blankprocessing', '2020-10-11 18:37:05', NULL),
-(6, 1, 3, 5, 'INCOME', 'ord13.1.wheelpair.1.1.wheel.1', 'supplywheel', NULL, NULL, NULL, NULL, '2020-10-11 18:36:54', NULL),
-(7, 1, 4, 1, 'OUTCOME', 'ord14.1.wheelpair.1.1.shaft.1.1', '', NULL, 4, 'ord14.1.wheelpair.1.1.shaft.1', 'blankprocessing', '2020-10-11 19:11:56', NULL),
-(8, 1, 4, 5, 'INCOME', 'ord14.1.wheelpair.1.1.wheel.1', 'supplywheel', NULL, NULL, NULL, NULL, '2020-10-11 18:36:54', NULL),
-(9, 1, 5, 1, NULL, 'ord15.1.wheelpair.1.1.shaft.1.1', '', NULL, 4, 'ord15.1.wheelpair.1.1.shaft.1', 'blankprocessing', '2020-10-11 19:11:40', 15),
-(10, 1, 5, 5, 'OUTCOME', 'ord15.1.wheelpair.1.1.wheel', '', NULL, 3, 'ord15.1.wheelpair.1.1', 'wheelpairassemble', '2020-10-11 18:57:38', NULL),
-(11, 1, 6, 1, 'OUTCOME', '2386.1.wheelpair.1.1.shaft.1.1', '', NULL, 4, '2386.1.wheelpair.1.1.shaft.1', 'blankprocessing', '2020-10-11 19:11:01', NULL),
-(12, 1, 6, 5, 'INCOME', '2386.1.wheelpair.1.1.wheel.1', 'supplywheel', NULL, NULL, NULL, NULL, '2020-10-11 18:36:54', NULL),
-(13, 1, 1, 4, 'INCOME', '1.1.wheelpair.1.1.shaft.1', 'blankprocessing', NULL, NULL, NULL, NULL, '2020-10-11 18:55:47', NULL),
-(14, 1, 2, 3, 'INCOME', 'ord12.1.wheelpair.1.1', 'wheelpairassemble', NULL, NULL, NULL, NULL, '2020-10-11 18:57:25', NULL),
-(15, 1, 5, 4, 'INCOME', 'ord15.1.wheelpair.1.1.shaft.1', 'blankprocessing', NULL, NULL, NULL, NULL, '2020-10-11 19:11:40', NULL);
+INSERT INTO `assigns` (`id`, `client_id`, `order_id`, `workcenter_id`, `bucket`, `order_part`, `operation`, `fullset`, `prodmat`, `next_workcenter_id`, `next_order_part`, `next_operation`, `event_time`, `next_id`) VALUES
+(1, 1, 1, 1, 'INCOME', '1.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', 1, NULL, NULL, NULL, NULL, '2020-10-12 19:22:32', NULL),
+(2, 1, 1, 5, 'INCOME', '1.1.wheelpair.1.1.wheel.1', 'supplywheel', 1, NULL, NULL, NULL, NULL, '2020-10-12 19:22:32', NULL),
+(3, 1, 2, 1, 'INCOME', 'ord12.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', 1, NULL, NULL, NULL, NULL, '2020-10-12 19:22:32', NULL),
+(4, 1, 2, 5, 'INCOME', 'ord12.1.wheelpair.1.1.wheel.1', 'supplywheel', 1, NULL, NULL, NULL, NULL, '2020-10-12 19:22:32', NULL),
+(5, 1, 3, 1, 'INCOME', 'ord13.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', 1, NULL, NULL, NULL, NULL, '2020-10-12 19:22:32', NULL),
+(6, 1, 3, 5, 'INCOME', 'ord13.1.wheelpair.1.1.wheel.1', 'supplywheel', 1, NULL, NULL, NULL, NULL, '2020-10-12 19:22:32', NULL),
+(7, 1, 4, 1, 'INCOME', 'ord14.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', 1, NULL, NULL, NULL, NULL, '2020-10-12 19:22:32', NULL),
+(8, 1, 4, 5, 'INCOME', 'ord14.1.wheelpair.1.1.wheel.1', 'supplywheel', 1, NULL, NULL, NULL, NULL, '2020-10-12 19:22:32', NULL),
+(9, 1, 5, 1, 'INCOME', 'ord15.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', 1, NULL, NULL, NULL, NULL, '2020-10-12 19:22:32', NULL),
+(10, 1, 5, 5, 'INCOME', 'ord15.1.wheelpair.1.1.wheel.1', 'supplywheel', 1, NULL, NULL, NULL, NULL, '2020-10-12 19:22:32', NULL),
+(11, 1, 6, 1, 'INCOME', '2386.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', 1, NULL, NULL, NULL, NULL, '2020-10-12 19:22:32', NULL),
+(12, 1, 6, 5, 'INCOME', '2386.1.wheelpair.1.1.wheel.1', 'supplywheel', 1, NULL, NULL, NULL, NULL, '2020-10-12 19:22:32', NULL);
 
 -- --------------------------------------------------------
 
@@ -277,29 +296,7 @@ CREATE TABLE IF NOT EXISTS `messages` (
   KEY `message_to` (`message_to`),
   KEY `client_id` (`client_id`),
   KEY `thread_id` (`thread_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8 COMMENT='Messages of users';
-
---
--- Dumping data for table `messages`
---
-
-INSERT INTO `messages` (`id`, `message_time`, `client_id`, `message_from`, `message_to`, `message_type`, `body`, `thread_id`) VALUES
-(5, '2020-10-02 09:07:54', 1, 1, NULL, 'danger', 'Text', NULL),
-(6, '2020-10-11 12:15:15', 1, 1, NULL, 'primary', 'Order \'ord12\' processed as \'ord12.1.wheelpair.1.1.wheel.1\' and ready to next workcenter \'wc2_3\'', NULL),
-(7, '2020-10-11 12:21:36', 1, 1, NULL, 'primary', 'Order \'ord14\' processed as \'ord14.1.wheelpair.1.1.shaft.1.1.1\' and ready to next workcenter \'wc1_3\'', NULL),
-(8, '2020-10-11 12:22:39', 1, 1, NULL, 'primary', 'Order \'1\' processed as \'1.1.wheelpair.1.1.shaft.1.1.1\' and ready to next workcenter \'wc1_3\'', NULL),
-(9, '2020-10-11 12:29:19', 1, 1, NULL, 'primary', 'Order \'ord12\' processed as \'ord12.1.wheelpair.1.1.shaft.1.1.1\' and ready to next workcenter \'wc1_3\'', NULL),
-(10, '2020-10-11 12:31:12', 1, 1, NULL, 'primary', 'Order \'2386\' processed as \'2386.1.wheelpair.1.1.wheel.1\' and ready to next workcenter \'wc2_3\'', NULL),
-(11, '2020-10-11 16:46:35', 1, 1, NULL, 'primary', 'Order \'1\' processed as \'1.1.wheelpair.1.1.shaft.1.1.1\' and ready to next workcenter \'wc1_3\'', NULL),
-(12, '2020-10-11 17:05:26', 1, 1, NULL, 'primary', 'Order \'ord12\' processed as \'ord12.1.wheelpair.1.1.wheel.1\' and ready to next workcenter \'wc2_3\'', NULL),
-(13, '2020-10-11 18:17:54', 1, 1, NULL, 'primary', 'Order \'ord15\' processed as \'ord15.1.wheelpair.1.1.shaft.1.1.1\' and ready to next workcenter \'wc1_3\'', NULL),
-(14, '2020-10-11 18:37:06', 1, 1, NULL, 'primary', 'Order \'ord13\' processed as \'ord13.1.wheelpair.1.1.shaft.1.1.1\' and ready to next workcenter \'wc1_3\'', NULL),
-(15, '2020-10-11 18:53:42', 1, 1, NULL, 'primary', 'Order \'1\' processed as \'1.1.wheelpair.1.1.shaft.1.1.1\' and ready to next workcenter \'wc1_3\'', NULL),
-(16, '2020-10-11 18:57:16', 1, 1, NULL, 'primary', 'Order \'ord12\' processed as \'ord12.1.wheelpair.1.1.wheel.1\' and ready to next workcenter \'wc2_3\'', NULL),
-(17, '2020-10-11 18:57:38', 1, 1, NULL, 'primary', 'Order \'ord15\' processed as \'ord15.1.wheelpair.1.1.wheel.1\' and ready to next workcenter \'wc2_3\'', NULL),
-(18, '2020-10-11 19:11:01', 1, 1, NULL, 'primary', 'Order \'2386\' processed as \'2386.1.wheelpair.1.1.shaft.1.1.1\' and ready to next workcenter \'wc1_3\'', NULL),
-(19, '2020-10-11 19:11:17', 1, 1, NULL, 'primary', 'Order \'ord15\' processed as \'ord15.1.wheelpair.1.1.shaft.1.1.1\' and ready to next workcenter \'wc1_3\'', NULL),
-(20, '2020-10-11 19:11:56', 1, 1, NULL, 'primary', 'Order \'ord14\' processed as \'ord14.1.wheelpair.1.1.shaft.1.1.1\' and ready to next workcenter \'wc1_3\'', NULL);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Messages of users';
 
 -- --------------------------------------------------------
 
@@ -316,7 +313,7 @@ CREATE TABLE IF NOT EXISTS `messages_read` (
   PRIMARY KEY (`id`),
   KEY `message_id` (`message_id`),
   KEY `user_id` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COMMENT='Info about read events';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Info about read events';
 
 -- --------------------------------------------------------
 

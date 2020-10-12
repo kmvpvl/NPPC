@@ -1,4 +1,6 @@
-<factory name="Wheelpair factory" img="" map="53.3834919,50.1689624;53.3780572,50.1744053">
+<factory xmlns="https://nppc.org" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://nppc.org factory.xsd"
+
+name="Wheelpair factory" img="" map="53.3834919,50.1689624;53.3780572,50.1744053">
 	<road id="road8" from="wc2_4" to="wc2_3" reverse="1" capacity="10"></road>
 	<road id="road1" from="wc1_1" to="wc1_3" reverse="1" capacity="10"></road>
 	<road id="road3" from="wc1_3" to="wc2_3" reverse="1" capacity="10"></road>

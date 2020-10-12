@@ -1,0 +1,24 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="https://nppc.org" elementFromDefault="qualified">
+<xs:element name="factory">
+	<xs:complexType mixed="true">
+		<xs:sequence>
+			<xs:element name="road" minOccurs="1" maxOccurs="unbounded">
+				<xs:complexType>
+					<xs:attribute name="id" type="xs:string"/>
+					<xs:attribute name="from" type="xs:string"/>
+					<xs:attribute name="to" type="xs:string"/>
+					<xs:attribute name="reverse" type="xs:boolean"/>
+					<xs:attribute name="capacity" type="xs:decimal"/>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="workcenter" minOccurs="1" maxOccurs="unbounded">		
+			</xs:element>
+			<xs:element name="user" minOccurs="1" maxOccurs="unbounded">		
+			</xs:element>
+		</xs:sequence>
+		<xs:attribute name="name" type="xs:string"/>
+		<xs:attribute name="img" type="xs:string"/>
+		<xs:attribute name="map" type="xs:string"/>
+	</xs:complexType>
+</xs:element>
+</xs:schema>
