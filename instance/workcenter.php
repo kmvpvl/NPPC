@@ -121,6 +121,7 @@ $("#btn-move-assign").on("click", function(){
 </div>
 <?php
 $bucks = $navi->getWorkcenterAssigns($_POST["workcenter"]);
+//var_dump($bucks);
 //echo $brand;
 ?>
 <div class="row mt-0">
@@ -141,7 +142,7 @@ $bucks = $navi->getWorkcenterAssigns($_POST["workcenter"]);
             if ($i < count($c)-1) $last = FALSE;
             if ($i < count($c)) {
     ?>
-	<div assign="<?=$c[$i]["id"]?>" class="col-sm-4 cell-data"><?= $c[$i]["number"]?></div>
+	<div assign="<?=$c[$i]["id"]?>" class="col-sm-4 cell-data"><?= $c[$i]["number"] . (($c[$i]["fullset"] != "1") ? "(not full)" : "")?></div>
     <?php 
             } else {
     ?>
