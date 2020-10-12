@@ -222,8 +222,8 @@ class naviClient {
 		    throw new Exception("Got empty next bucket. ASSIGN_ID=" . $_assign_id);
 		}
 		// if order_part has processed, must update by route tree into new part
-		if ('OUTCOME' == $nextbucket) {
 		    //we have to update order_part and look for next workcenter according with current route
+		if ('OUTCOME' == $nextbucket) {
 		    $z = $this->getRoute($x["order_num"], $x["route_num"]);
 		    $found = $z->xpath("//operation[@ref='" . $x["order_part"] . "']/..");
 		    //var_dump($found);
@@ -262,7 +262,20 @@ class naviClient {
 	}
 	
 	function moveAssignToNextWorkcenter($_assign_id) {
-		$x = $this->dblink->query("call moveAssignToNextWorkcenter(" . $_assign_id . ");");
+	    $x = $this->dblink->query("call getAssignInfo(" . $_assign_id . ");");
+		if (!$x) throw new Exception("Could not get assign info" . "': " . $this->dblink->errno . " - " . $this->dblink->error . "call getAssignInfo(" . $_assign_id . ");");
+		$res = $x->fetch_assoc();
+        //var_dump($res);
+        $ordernum = (string)$res["number"];
+        $route_id = (string)$res["current_route"];
+        $nextorderpart = (string)$res["next_order_part"];
+        $x->free_result();
+        $this->dblink->next_result();
+        $r = $this->getRoute($ordernum, $route_id);
+        $found = $r->xpath("//operation[@ref='" . $nextorderpart . "']");
+        //var_dump($found);
+        //echo $found[0]->count();
+		$x = $this->dblink->query("call moveAssignToNextWorkcenter(" . $_assign_id . ", " . $found[0]->count() . ");");
 		if ($this->dblink->errno) {
 		    throw new Exception("Unexpected error while move Assign to next workcenter" . "': " . $this->dblink->errno . " - " . $this->dblink->error . "call moveAssignToNextWorkcenter(" . $_assign_id . ");");
 		}
