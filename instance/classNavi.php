@@ -139,9 +139,9 @@ class naviClient {
 	}
 	
 	// 
-	function getMessages($_tags = "", $_to = "", $_read = 0, $_types = "") {
-		$x = $this->dblink->query("call getMessages(" . $this->client_id . ", '" . $_tags . "', '" . $_to . "', " . $_read . ", '" . $_types . "')");
-		if (!$x) throw new Exception("Unexpected error while getting messages" . "': " . $this->dblink->errno . " - " . $this->dblink->error . "call getMessages(" . $this->client_id . ", '" . $_tags . "', '" . $_to . "', " . $_read . ", '" . $_types . "')"); 
+	function getMessages($_tags = "", $_to = 0, $_read = 0, $_types = "") {
+		$x = $this->dblink->query("call getMessages(" . $this->client_id . ", '" . $_tags . "', " . $_to . ", " . $_read . ", '" . $_types . "')");
+		if (!$x) throw new Exception("Unexpected error while getting messages" . ": " . $this->dblink->errno . " - " . $this->dblink->error . " call getMessages(" . $this->client_id . ", '" . $_tags . "', '" . $_to . "', " . $_read . ", '" . $_types . "')"); 
 		$ret = array();
 		while ($res = $x->fetch_assoc()) $ret[] = $res;
 		$x->free_result();	
