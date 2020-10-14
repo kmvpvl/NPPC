@@ -37,7 +37,7 @@ $i = 0;
 foreach ($r as $msg) {
 ?>
 		<div class="col-sm-4">
-<div class="toast fade show" data-autohide="false" id="toast_<?= $msg["id"] ?>">
+<div class="toast fade show" role="alert" aria-live="assertive" aria-atomic="true" data-autohide="false" id="toast_<?= $msg["id"] ?>">
 <div class="toast-header">
 <strong class="mr-auto text-<?= $msg["message_type"] ?>"><?= $msg["user_name"] ?></strong>
 <small class="text-muted"><?= $msg["message_time"] ?></small>

@@ -66,15 +66,25 @@ function drawMessages() {
 	})
 }
 
-$("[assign]").on('click', function (event){
+$("[assign][full='1']").on('click', function (event){
     $(".active[assign]").removeClass("active");
     var c = $("[assign = " + event.target.attributes["assign"].value + "]");
     c.addClass("active");
+    
     $("#btn-move-assign").css('left',  c.position().left + c.outerWidth() - $("#btn-move-assign").outerWidth() + "px");
     $("#btn-move-assign").css('top',  c.position().top  + "px");
     $("#btn-move-assign").show();
     
+    $("#btn-order-info").css('left',  c.position().left + "px");
+    $("#btn-order-info").css('top',  c.position().top  + "px");
+    $("#btn-order-info").show();
+
 });
+
+$("#btn-order-info").on("click", function(){
+    order($(".active[assign]").attr("order_number"));
+});
+
 $("#btn-move-assign").on("click", function(){
 	showLoading();
 	var p = $.post("apiMoveAssignToNextBucket.php",
@@ -113,6 +123,7 @@ $("#btn-move-assign").on("click", function(){
 })
 </script>
 <button id="btn-move-assign">></button>
+<button id="btn-order-info">^</button>
 <div class="input-group mb-3">
 	<input type="text" class="form-control" placeholder="Search orders...">
 	<div class="input-group-append">
@@ -142,7 +153,7 @@ $bucks = $navi->getWorkcenterAssigns($_POST["workcenter"]);
             if ($i < count($c)-1) $last = FALSE;
             if ($i < count($c)) {
     ?>
-	<div assign="<?=$c[$i]["id"]?>" class="col-sm-4 cell-data"><?= $c[$i]["number"] . (($c[$i]["fullset"] != "1") ? "(not full)" : "")?></div>
+	<div assign="<?=$c[$i]["id"]?>" full="<?=(($c[$i]["fullset"] != "1") ? "0" : "1")?>" class="col-sm-4 cell-data" order_number="<?= $c[$i]["number"]?>"><?= $c[$i]["number"] . (($c[$i]["fullset"] != "1") ? "(not full)" : "")?></div>
     <?php 
             } else {
     ?>
