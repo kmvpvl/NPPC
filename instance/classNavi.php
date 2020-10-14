@@ -244,9 +244,13 @@ class naviClient {
 		    //var_dump($nextworkcenter);
 		    //var_dump($nextorderpart);
 		    //var_dump($readyorderpart);
-		    //echo "call updateAssignOrderPart(" . $_assign_id . ", '" . $readyorderpart . "', '" . $nextworkcenter . "', '" . $nextorderpart . "')";
+		    //echo "call updateAssignOrderPart(" . $_assign_id . ", '" . $readyorderpart . "', '" . $nextworkcenter . "', '" . $nextorderpart . "', '" . $nextoperation . "')')";
 
 	        $this->dblink->query("call updateAssignOrderPart(" . $_assign_id . ", '" . $readyorderpart . "', '" . $nextworkcenter . "', '" . $nextorderpart . "', '" . $nextoperation . "')");
+	        if ($this->dblink->errno) {
+		        throw new Exception("Unexpected error while update Assign to OUTCOME bucket" . "': " . $this->dblink->errno . " - " . $this->dblink->error . "call updateAssignOrderPart(" . $_assign_id . ", '" . $readyorderpart . "', '" . $nextworkcenter . "', '" . $nextorderpart . "', '" . $nextoperation . "')");
+            }
+	        
 	        $msg = $this->dblink->escape_string("Order '" . $ordernum . "' processed as '" . $x["order_part"] . "' and ready to next workcenter '" . $nextworkcenter . "'");
 		    //!!!we have to get new label for newborn part
 		}

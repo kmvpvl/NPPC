@@ -7,7 +7,7 @@ try{
     $navi->assignOrderRoute("ord14", 1);
     $navi->assignOrderRoute("ord15", 1);
     $navi->assignOrderRoute("2386", 1);*/
-    for ($i = 112; $i< 130;$i++){
+    for ($i = 112; $i< 190;$i++){
         $navi->assignOrderRoute("o-".$i, 1);
     }
 } catch (Exception $e) {
