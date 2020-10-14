@@ -106,9 +106,7 @@ class naviClient {
 	// getOrder returns content order-*.xml as php object
 	function getOrder($_order) {
 		if (!$z = simplexml_load_file($this->orders_dir . 'order-' . $_order . '.xml')) throw new Exception ("XML order-" . $_order . " is wrong!");
-		$ret = array();
-		foreach ($z as $res) $ret[] = ((array) $res->attributes())['@attributes'];
-		return $ret;
+		return $z;
 	}
 
 	// getRoute loads route-*.xml by the order's number
@@ -491,5 +489,19 @@ class naviClient {
 		if (!$found)  throw new Exception ("Road " . $_road . " not found!");
 		return $found[0];
 	}
+	
+	function getOrderInfo($_order_num) {
+        $x = $this->dblink->query("call getOrderInfo(" . $this->client_id . ", '" . $_order_num . "');");
+        if (!$x) throw new Exception("Could not get order info" . "': " . $this->dblink->errno . " - " . $this->dblink->error . "call getOrderInfo(" . $this->client_id . ", '" . $_order_num . "');"); 
+        $z = $x->fetch_assoc();
+        if (!$z) throw new Exception("Order " . $_order_num . " not found in database: "); 
+        $o = $this->getOrder($_order_num);
+        $r = $this->getRoute($_order_num, $z["current_route"]);
+        $ret = [];
+        $ret["db"] = $z;
+        $ret["route"] = $r;
+        $ret["order"] = $o;
+        return $ret;
+    }
 }
 ?>

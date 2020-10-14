@@ -172,6 +172,42 @@ function workcenter(_id) {
 	})
 }
 
+function order(_id) {
+	showLoading();
+	var p = $.post("order.php",
+	{
+		username: $("#username").val(),
+		password: $("#password").val(),
+		factory:  $("#factory").val(),
+		language: $("#language").val(),
+		timezone: $("#timezone").val(),
+		order: _id
+	},
+	function(data, status){
+		hideLoading();
+		switch (status) {
+			case "success":
+				$("#instance-div").html(data);
+				break;
+			default:
+				clearInstance();
+				showLoginForm();
+		}
+	});
+	p.fail(function(data, status) {
+		hideLoading();
+		switch (data.status) {
+			case 401:
+				clearInstance();
+				showLoginForm();
+				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
+				break;
+			default:				
+				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
+		}
+	})
+}
+
 function road(_id) {
 	showLoading();
 	var p = $.post("roads.php",
