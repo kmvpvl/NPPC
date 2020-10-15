@@ -251,7 +251,7 @@ class naviClient {
 		        throw new Exception("Unexpected error while update Assign to OUTCOME bucket" . "': " . $this->dblink->errno . " - " . $this->dblink->error . "call updateAssignOrderPart(" . $_assign_id . ", '" . $readyorderpart . "', '" . $nextworkcenter . "', '" . $nextorderpart . "', '" . $nextoperation . "')");
             }
 	        
-	        $msg = $this->dblink->escape_string("Order '" . $ordernum . "' processed as '" . $x["order_part"] . "' and ready to next workcenter '" . $nextworkcenter . "'");
+	        $msg = $this->dblink->escape_string("Order '" . $ordernum . "' processed '" . $x["operation"] . "' and ready to next workcenter '" . $nextworkcenter . "'");
 		    //!!!we have to get new label for newborn part
 		}
 		if (!$this->dblink->commit()) {
@@ -498,13 +498,26 @@ class naviClient {
         $x = $this->dblink->query("call getOrderInfo(" . $this->client_id . ", '" . $_order_num . "');");
         if (!$x) throw new Exception("Could not get order info" . "': " . $this->dblink->errno . " - " . $this->dblink->error . "call getOrderInfo(" . $this->client_id . ", '" . $_order_num . "');"); 
         $z = $x->fetch_assoc();
+        
         if (!$z) throw new Exception("Order " . $_order_num . " not found in database: "); 
         $o = $this->getOrder($_order_num);
         $r = $this->getRoute($_order_num, $z["current_route"]);
+        $x->free_result();
+        $this->dblink->next_result();
+        $x = $this->dblink->query("call getOrderHistory(" . $z["id"] . ")");
+        
+        if (!$x) throw new Exception("Could not get order history info" . "': " . $this->dblink->errno . " - " . $this->dblink->error . "call getOrderHistory(" . $z["id"] . ")"); 
+        $a = [];
+        while ($y = $x->fetch_assoc()) {
+            $a[] = $y;
+            //var_dump($a);
+        }
+        //var_dump($z["id"]);
         $ret = [];
         $ret["db"] = $z;
         $ret["route"] = $r;
         $ret["order"] = $o;
+        $ret["assigns"] = $a;
         return $ret;
     }
 }

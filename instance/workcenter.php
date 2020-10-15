@@ -14,7 +14,7 @@ function workcenterResize() {
 
 function messageCenterResize() {
     //debugger;
-	//$("#factoryMap").outerHeight($("#instance-div").outerHeight());
+	//$("#workcenter-div").outerHeight($("#instance-div").outerHeight());
 	if (typeof(resizeMessageCenter) == "function") resizeMessageCenter();	
 }
 
@@ -66,14 +66,15 @@ function drawMessages() {
 	})
 }
 
-$("[assign][full='1']").on('click', function (event){
+$("[assign]").on('click', function (event){
     $(".active[assign]").removeClass("active");
     var c = $("[assign = " + event.target.attributes["assign"].value + "]");
     c.addClass("active");
     
     $("#btn-move-assign").css('left',  c.position().left + c.outerWidth() - $("#btn-move-assign").outerWidth() + "px");
     $("#btn-move-assign").css('top',  c.position().top  + "px");
-    $("#btn-move-assign").show();
+    //debugger;
+    if (c.attr("full") == '1')  $("#btn-move-assign").show();
     
     $("#btn-order-info").css('left',  c.position().left + "px");
     $("#btn-order-info").css('top',  c.position().top  + "px");
@@ -124,17 +125,12 @@ $("#btn-move-assign").on("click", function(){
 </script>
 <button id="btn-move-assign">></button>
 <button id="btn-order-info">^</button>
-<div class="input-group mb-3">
-	<input type="text" class="form-control" placeholder="Search orders...">
-	<div class="input-group-append">
-  		<button class="btn btn-success" type="submit">Go</button> 
-	</div>
-</div>
 <?php
 $bucks = $navi->getWorkcenterAssigns($_POST["workcenter"]);
 //var_dump($bucks);
 //echo $brand;
 ?>
+<div id="workcenter-div">
 <div class="row mt-0">
     <?php 
     foreach ($bucks as $b => $c) { 
@@ -144,11 +140,14 @@ $bucks = $navi->getWorkcenterAssigns($_POST["workcenter"]);
     }
     ?>
 </div>
-<div class="row mt-0">
+<div class="content-div">
     <?php 
     $i = 0;
     while (TRUE) {
-        $last = TRUE;
+?>
+<div class="row mt-0">
+<?php
+    $last = TRUE;
         foreach ($bucks as $c){
             if ($i < count($c)-1) $last = FALSE;
             if ($i < count($c)) {
@@ -163,8 +162,18 @@ $bucks = $navi->getWorkcenterAssigns($_POST["workcenter"]);
         }
         if ($last) break;
         $i++;
+?>
+</div>
+<?php
     }
     ?>
+</div>
+</div>
+<div class="input-group mb-3">
+	<input type="text" class="form-control" placeholder="Search orders...">
+	<div class="input-group-append">
+  		<button class="btn btn-success" type="submit">Go</button> 
+	</div>
 </div>
 <div id="messageCenter" class="messageCenter popdown">
 

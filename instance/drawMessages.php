@@ -30,7 +30,7 @@ function resizeMessageCenter() {
     <a class="nav-link" href="#">New</a>
   </li>
 </ul>
-<div id="content-div" class="ml-1 mr-1">
+<div id="content-div" class="content-div ml-1 mr-1">
 	<div class="row mt-0">
 <?php
 $i = 0;
