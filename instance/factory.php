@@ -100,6 +100,7 @@ function drawMessages() {
 	})
 }
 </script>
+<div id="factoryMap" class="ml-1 mr-1"></div>
 <div class="input-group mb-3">
 	<input type="text" class="form-control" placeholder="First letters of order's number...">
 	<div class="input-group-append">
@@ -107,7 +108,6 @@ function drawMessages() {
 	</div>
 </div>
 
-<div id="factoryMap" class="ml-1 mr-1"></div>
 <div id="messageCenter" class="messageCenter popdown">
 
 </div>

@@ -103,7 +103,7 @@ line.road:hover {
     position: relative;
     display: none;
 }
-#content-div {
+.content-div {
     border: solid 1px red;
     padding: 0;
     margin: 0;
