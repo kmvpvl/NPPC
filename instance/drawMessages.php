@@ -12,6 +12,42 @@ function resizeMessageCenter() {
     $("#content-div").css('height', $(window).height() - $("#content-div").offset().top - 15 + "px");
 }
 
+$(".toast").toast();
+$(".toast").on('hidden.bs.toast', function (event) {
+	showLoading();
+	var p = $.post("apiMakeMessageRead.php",
+	{
+		username: $("#username").val(),
+		factory:  $("#factory").val(),
+		password: $("#password").val(),
+		language: $("#language").val(),
+		timezone: $("#timezone").val(),
+		message_id: event.target.attributes["message_id"].value
+	},
+	function(data, status){
+		hideLoading();
+		//debugger;
+		switch (status) {
+			case "success":
+				break;
+			default:
+                ;
+		}
+	});
+	p.fail(function(data, status) {
+		hideLoading();
+		switch (data.status) {
+			case 401:
+				clearInstance();
+				showLoginForm();
+				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
+				break;
+			default:				
+				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
+		}
+	})
+});
+
 </script>
 <ul class="nav nav-tabs">
   <li class="nav-item">
@@ -31,13 +67,23 @@ function resizeMessageCenter() {
   </li>
 </ul>
 <div id="content-div" class="content-div ml-1 mr-1">
-	<div class="row mt-0">
 <?php
 $i = 0;
 foreach ($r as $msg) {
+    $pos = "";
+    switch ($i % 3) {
+        case 0:
+            $pos = "b-toaster-top-left";
+            break;
+        case 1:
+            $pos = "b-toaster-top-center";
+            break;
+        case 2:
+            $pos = "b-toaster-top-right";
+            break;
+    }
 ?>
-		<div class="col-sm-4">
-<div class="toast fade show" role="alert" aria-live="assertive" aria-atomic="true" data-autohide="false" id="toast_<?= $msg["id"] ?>">
+<div class="toast fade show" role="alert" aria-live="assertive" aria-atomic="true" data-autohide="false" message_id="<?= $msg["id"] ?>">
 <div class="toast-header">
 <strong class="mr-auto text-<?= $msg["message_type"] ?>"><?= $msg["user_name"] ?></strong>
 <small class="text-muted"><?= $msg["message_time"] ?></small>
@@ -47,16 +93,8 @@ foreach ($r as $msg) {
 <?= $msg["user_name"] ?>: <?= $msg["body"] ?>
 </div>
 </div>
-		</div>
 <?php
     $i++;
-    if ($i % 3 == 0) {
-?>
-	</div>
-	<div class="row mt-0">
-<?php
-    }
 }
 ?>
-	</div>
 </div>

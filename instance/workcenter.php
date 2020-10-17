@@ -74,7 +74,8 @@ $("[assign]").on('click', function (event){
     $("#btn-move-assign").css('left',  c.position().left + c.outerWidth() - $("#btn-move-assign").outerWidth() + "px");
     $("#btn-move-assign").css('top',  c.position().top  + "px");
     //debugger;
-    if (c.attr("full") == '1')  $("#btn-move-assign").show();
+    if (c.attr("full") == '1' && c.attr("bucket") != 'OUTCOME')  $("#btn-move-assign").show();
+    else $("#btn-move-assign").hide();
     
     $("#btn-order-info").css('left',  c.position().left + "px");
     $("#btn-order-info").css('top',  c.position().top  + "px");
@@ -131,7 +132,7 @@ $bucks = $navi->getWorkcenterAssigns($_POST["workcenter"]);
 //echo $brand;
 ?>
 <div id="workcenter-div">
-<div class="row mt-0">
+<div class="row ml-0 mr-0">
     <?php 
     foreach ($bucks as $b => $c) { 
     ?>
@@ -145,14 +146,14 @@ $bucks = $navi->getWorkcenterAssigns($_POST["workcenter"]);
     $i = 0;
     while (TRUE) {
 ?>
-<div class="row mt-0">
+<div class="row  ml-0 mr-0">
 <?php
     $last = TRUE;
-        foreach ($bucks as $c){
+        foreach ($bucks as $b => $c){
             if ($i < count($c)-1) $last = FALSE;
             if ($i < count($c)) {
     ?>
-	<div assign="<?=$c[$i]["id"]?>" full="<?=(($c[$i]["fullset"] != "1") ? "0" : "1")?>" class="col-sm-4 cell-data" order_number="<?= $c[$i]["number"]?>"><?= $c[$i]["number"] . (($c[$i]["fullset"] != "1") ? "(not full)" : "")?></div>
+	<div bucket="<?=$b?>" assign="<?=$c[$i]["id"]?>" full="<?=(($c[$i]["fullset"] != "1") ? "0" : "1")?>" class="col-sm-4 cell-data" order_number="<?= $c[$i]["number"]?>"><?= $c[$i]["number"] . (($c[$i]["fullset"] != "1") ? "(not full)" : "")?></div>
     <?php 
             } else {
     ?>

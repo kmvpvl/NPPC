@@ -1,24 +1,53 @@
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="https://nppc.org" elementFromDefault="qualified">
-<xs:element name="factory">
-	<xs:complexType mixed="true">
-		<xs:sequence>
-			<xs:element name="road" minOccurs="1" maxOccurs="unbounded">
-				<xs:complexType>
-					<xs:attribute name="id" type="xs:string"/>
-					<xs:attribute name="from" type="xs:string"/>
-					<xs:attribute name="to" type="xs:string"/>
-					<xs:attribute name="reverse" type="xs:boolean"/>
-					<xs:attribute name="capacity" type="xs:decimal"/>
-				</xs:complexType>
-			</xs:element>
-			<xs:element name="workcenter" minOccurs="1" maxOccurs="unbounded">		
-			</xs:element>
-			<xs:element name="user" minOccurs="1" maxOccurs="unbounded">		
-			</xs:element>
-		</xs:sequence>
-		<xs:attribute name="name" type="xs:string"/>
-		<xs:attribute name="img" type="xs:string"/>
-		<xs:attribute name="map" type="xs:string"/>
-	</xs:complexType>
-</xs:element>
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" targetNamespace="https://nppc.org" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="factory">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="road" maxOccurs="unbounded" minOccurs="0">
+          <xs:complexType>
+            <xs:simpleContent>
+              <xs:extension base="xs:string">
+                <xs:attribute type="xs:string" name="id" use="optional"/>
+                <xs:attribute type="xs:string" name="from" use="optional"/>
+                <xs:attribute type="xs:string" name="to" use="optional"/>
+                <xs:attribute type="xs:byte" name="reverse" use="optional"/>
+                <xs:attribute type="xs:decimal" name="capacity" use="optional"/>
+              </xs:extension>
+            </xs:simpleContent>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="workcenter" maxOccurs="unbounded" minOccurs="0">
+          <xs:complexType mixed="true">
+            <xs:sequence>
+              <xs:element name="operation">
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:string">
+                      <xs:attribute type="xs:string" name="ref" use="optional"/>
+                      <xs:attribute type="xs:decimal" name="capacity" use="optional"/>
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+            <xs:attribute type="xs:string" name="id" use="optional"/>
+            <xs:attribute type="xs:string" name="location" use="optional"/>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="user">
+          <xs:complexType>
+            <xs:simpleContent>
+              <xs:extension base="xs:string">
+                <xs:attribute type="xs:string" name="id"/>
+                <xs:attribute type="xs:string" name="md5"/>
+                <xs:attribute type="xs:string" name="roles"/>
+              </xs:extension>
+            </xs:simpleContent>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute type="xs:string" name="name"/>
+      <xs:attribute type="xs:string" name="img"/>
+      <xs:attribute type="xs:string" name="map"/>
+    </xs:complexType>
+  </xs:element>
 </xs:schema>

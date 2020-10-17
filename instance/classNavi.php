@@ -520,5 +520,11 @@ class naviClient {
         $ret["assigns"] = $a;
         return $ret;
     }
+    function makeMessageRead($_messageID) {
+        $this->dblink->query("call makeMessageRead(" . $_messageID . ", " . $this->user_id . ")");
+        if ($this->dblink->errno) {
+	        throw new Exception("Unexpected error while make message read" . "': " . $this->dblink->errno . " - " . $this->dblink->error . "call makeMessageRead(" . $_messageID . ", " . $this->user_id . ")");
+        }
+    }
 }
 ?>
