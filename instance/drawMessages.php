@@ -9,7 +9,7 @@ try {
 ?>
 <script>
 function resizeMessageCenter() {
-    $("#content-div").css('height', $(window).height() - $("#content-div").offset().top - 15 + "px");
+    //$("#content-div").css('height', $(window).height() - $("#content-div").offset().top - 15 + "px");
 }
 
 $(".toast").toast();
