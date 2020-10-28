@@ -526,5 +526,17 @@ class naviClient {
 	        throw new Exception("Unexpected error while make message read" . "': " . $this->dblink->errno . " - " . $this->dblink->error . "call makeMessageRead(" . $_messageID . ", " . $this->user_id . ")");
         }
     }
+    
+    function getOrdersForImport() {
+        $fd = scandir($this->orders_dir . "import/");
+        $fd = array_filter($fd, function ($v, $k) {
+            return fnmatch("order-*.xml", $v);
+            
+        }, ARRAY_FILTER_USE_BOTH);
+        foreach ($fd as $k => $fn) {
+            $fd[$k] = substr($fn, 6, strlen($fn) - 8 - strrpos($fn, ".xml"));
+        }
+        return $fd;
+    }
 }
 ?>

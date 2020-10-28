@@ -21,12 +21,12 @@ class ORMNavi :
 		self._dataDir = "../" + self._factoryID + "-data/"
 		try :
 			cp = ConfigParser()
-			self._inidata = cp.read(self._dataDir + "settings.ini")
-			self._productsPath = self._dataDir + self._inidata["dir"]["products"]
+			cp.read(self._dataDir + "settings.ini")
+			self._productsPath = self._dataDir + cp.get("dir", "products")
 			logging.debug("Products path %s was parsed successfully", self._productsPath)
-			self._ordersPath = self._dataDir + self._inidata["dir"]["orders"]
+			self._ordersPath = self._dataDir + cp.get("dir", "orders")
 			logging.debug("Orders path %s was parsed successfully", self._ordersPath)
-			self._routesPath = self._dataDir + self._inidata["dir"]["routes"]
+			self._routesPath = self._dataDir + cp.get("dir", "routes")
 			logging.debug("Routes path %s was parsed successfully", self._routesPath)
 		except :
 			logging.info("Settings.ini file %s not found or has wrong format. Using default values", self._dataDir + "settings.ini")
@@ -143,6 +143,8 @@ class ORMNavi :
 		if (not self.__mdmroot.findall("customer[@id='" + customerRef + "']")) : raise ORMException("Couldn't find customer id '%s' if MDM" % (customerRef))
 		ocust = ET.SubElement(oroot, "customer", ref=customerRef)
 		i = 1
+		ov_cost = 0
+		ov_duration = 0
 		for productXMLTree in productsXMLTree :
 			outline = "%s.%s.%s" % (orderNum, i, productXMLTree.attrib["id"])
 			oprod = ET.SubElement(ocust, "product", id = outline, ref = productXMLTree.attrib["ref"])

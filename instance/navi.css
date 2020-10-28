@@ -136,6 +136,11 @@ div[assign] {
     background-color: grey;
 }
 
+.active[order] {
+    color: white;
+    background-color: grey;
+}
+
 #loginform {
     display: none;
     position: relative;

@@ -3,9 +3,11 @@ include "checkUser.php";
 
 ?>
 <script>
+//debugger;
+$(".nav-link.active").removeClass("active");
 $(".nav-item.active").removeClass("active");
 $("#menuFactory").addClass("active");
-$(".navbar-brand").text("<?= $navi->factoryName ?>");
+$(".navbar-brand").text("<?= $navi->factoryName ?>: Overview");
 drawFactoryMap();
 drawMessages();
 

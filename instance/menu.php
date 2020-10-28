@@ -11,12 +11,8 @@
 		<li class="nav-item active">
 			<a class="nav-link" instance="factory.php" id="menuFactory">Factory</a>
 		</li>
-		<li class="nav-item dropdown" >
-			<a class="nav-link dropdown-toggle" href="#" id="menuOrders" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Orders</a>
-			<div class="dropdown-menu" aria-labelledby="navbarDropdown">
-				<a class="dropdown-item" href="orders.php">View orders</a>
-				<a class="dropdown-item" instance="importOrders.php">Import orders</a>
-			</div>
+		<li class="nav-item" >
+			<a class="nav-link" instance="orders.php" id="menuOrders">Orders</a>
 		</li>
 		<li class="nav-item dropdown">
 			<a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Master Data</a>

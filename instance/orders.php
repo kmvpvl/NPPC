@@ -1,50 +1,99 @@
-<?php include "header.php"?>
-<?php include "menu.php"?>
+<?php
+include "checkUser.php";
+?>
 <script>
-$(document).ready(function() {
-	$(window).resize();
-	$(".navitem, .active").removeClass("active");
-	$("#menuOrders").addClass("active");
-	$(".navbar-brand").text("ORDERS");
-})
+$(".nav-link.active").removeClass("active");
+$(".nav-item.active").removeClass("active");
+$("#menuOrders").addClass("active");
+$(".navbar-brand").text("<?= $navi->factoryName ?>: Orders");
+drawOrders();
 
-$(window).resize(function() {
-	$('#content-div').css('height', $(window).height()-$('#content-div').offset().top);
+function ordersResize() {
+    //debugger;
+    $(".content-div").outerHeight($("#instance-div").outerHeight() - $(".content-div").position().top);
+}
+
+
+function resizeOrdersContentAll() {
+    ordersResize();
+}
+
+$(window).on ('resize', resizeOrdersContentAll);
+
+resizeOrdersContentAll();
+
+function drawOrders() {
+}
+
+
+$("#btn-move-assign").on("click", function(){
+	showLoading();
+	var p = $.post("apiMoveAssignToNextBucket.php",
+	{
+		username: $("#username").val(),
+		password: $("#password").val(),
+		factory:  $("#factory").val(),
+		language: $("#language").val(),
+		timezone: $("#timezone").val(),
+		assign_id: $(".active[assign]").attr("assign")
+	},
+	function(data, status){
+		hideLoading();
+		switch (status) {
+			case "success":
+			    //debugger;
+			    workcenter("");
+				break;
+			default:
+				clearInstance();
+				showLoginForm();
+		}
+	});
+	p.fail(function(data, status) {
+		hideLoading();
+		switch (data.status) {
+			case 400:
+				clearInstance();
+				showLoginForm();
+				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
+				break;
+			default:				
+				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
+		}
+	})
+})
+$("[order][type='INCOME']").on ('click', function (event) {
+    var c = event.target;
+    if (c.classList.contains("active")) {
+        c.classList.remove("active");
+        $("#income-selected-count").text(Number($("#income-selected-count").text()) - 1);
+    } else {
+        c.classList.add("active");
+        $("#income-selected-count").text(Number($("#income-selected-count").text()) + 1);
+    }
 })
 </script>
-	<div class="row mt-0">
-		<div class="col-sm-3 cell-header">Order</div>
-		<div class="col-sm-2 cell-header">Deadline</div>
-		<div class="col-sm-2 cell-header">Expected</div>
-		<div class="col-sm-1 cell-header">Lag</div>
-		<div class="col-sm-1 cell-header">Status</div>
-		<div class="col-sm-3 cell-header">Customer</div>
-	</div>
-<div id="content-div">
-<?php for ($i = 0; $i < 12; $i++) {?>
-	<div class="row">
-		<div class="col-sm-3 cell-data"><a href="orderTracking.php" class="badge badge-secondary">
-		1, Wheel pair
-		</a>
-		</div>
-		<div class="col-sm-2 cell-data">12/15/20</div>
-		<div class="col-sm-2 cell-data">11/30/20</div>
-		<div class="col-sm-1 cell-data">-</div>
-		<div class="col-sm-1 cell-data">
-		<div class="btn-group">
-		  <button type="button" class="badge badge-warning dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-<i class="fa fa-pause"></i>
-		  </button>
-		  <div class="dropdown-menu">
-		    <a class="dropdown-item" href=""><i class="fa fa-play"></i>Continue</a>
-		    <a class="dropdown-item" href=""><i class="fa fa-stop"></i>Abandon</a>
-		    <a class="dropdown-item" href=""><i class="fa fa-pause"></i>Pause</a>
-		    <a class="dropdown-item" href=""><i class="fa fa-pause"></i>Merge</a>
-		  </div>
-		</div>
-		</div>
-		<div class="col-sm-3 cell-data-left">Chamomile LTD</div>
-	</div>
-<?php } ?>
+<?php
+$fs = $navi->getOrdersForImport();
+//var_dump($fs);
+?>
+<div class="row ml-0 mr-0">
+	<div class="col-sm-6 cell-header"><span>+</span><input type="text" placeholder="Search..."><span>-</span></div>
+	<div class="col-sm-6 cell-header"><span>+</span><input type="text" placeholder="Search..."><span>-</span></div>
 </div>
-<?php include "footer.php"?>
+<div class="row ml-0 mr-0">
+	<div class="col-sm-6 cell-header">INCOME <span id="income-selected-count">0</span> of <?=count($fs)?></div>
+	<div class="col-sm-6 cell-header">PROCESSING<span></span></div>
+</div>
+<div class="content-div">
+<?php
+foreach ($fs as $fn) {
+?>
+<div class="row ml-0 mr-0">
+	<div class="col-sm-6 cell-data" type="INCOME" order="<?= $fn?>"><?= $fn?></div>
+	<div class="col-sm-6 cell-data">&nbsp;</div>
+</div>
+<?php
+};
+?>
+</div>

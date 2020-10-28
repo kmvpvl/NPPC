@@ -5,7 +5,7 @@ $brand = trim((string)$navi->getWorkcenterInfo($_POST["workcenter"]));
 <script>
 $(".nav-link.active").removeClass("active");
 $("#menuWorkcenter").addClass("active");
-$(".navbar-brand").text("<?= $brand ?>");
+$(".navbar-brand").text("<?= $navi->factoryName . ": " . $brand ?>");
 drawWorkcenter();
 drawMessages();
 
