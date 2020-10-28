@@ -528,15 +528,32 @@ class naviClient {
     }
     
     function getOrdersForImport() {
-        $fd = scandir($this->orders_dir . "import/");
+        $ret = [];
+        $ret["to_import"] = [];
+        $ret["imported"] = [];
+        //reading orders from folder
+        $fd = scandir($this->orders_dir);
         $fd = array_filter($fd, function ($v, $k) {
             return fnmatch("order-*.xml", $v);
             
         }, ARRAY_FILTER_USE_BOTH);
         foreach ($fd as $k => $fn) {
-            $fd[$k] = substr($fn, 6, strlen($fn) - 8 - strrpos($fn, ".xml"));
+            $order_num = substr($fn, 6, strlen($fn) - 8 - strrpos($fn, ".xml"));
+            $ret["to_import"][$order_num] = $order_num;
         }
-        return $fd;
+
+        // reading orders from database
+        $x = $this->dblink->query("call getOrders(" . $this->client_id . ")");
+        
+        if (!$x) throw new Exception("Could not get order's list" . "': " . $this->dblink->errno . " - " . $this->dblink->error . "call getOrders(" . $this->client_id . ")"); 
+        while ($y = $x->fetch_assoc()) {
+            $ret["imported"][] = $y;
+            // checking order being able to import
+            if (array_key_exists($y["number"], $ret["to_import"])) unset($ret["to_import"][$y["number"]]);
+            //var_dump($a);
+        }
+        
+        return $ret;
     }
 }
 ?>

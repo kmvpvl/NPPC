@@ -82,12 +82,12 @@ $fs = $navi->getOrdersForImport();
 	<div class="col-sm-6 cell-header"><span>+</span><input type="text" placeholder="Search..."><span>-</span></div>
 </div>
 <div class="row ml-0 mr-0">
-	<div class="col-sm-6 cell-header">INCOME <span id="income-selected-count">0</span> of <?=count($fs)?></div>
+	<div class="col-sm-6 cell-header">INCOME <span id="income-selected-count">0</span> of <?=count($fs["to_import"])?></div>
 	<div class="col-sm-6 cell-header">PROCESSING<span></span></div>
 </div>
 <div class="content-div">
 <?php
-foreach ($fs as $fn) {
+foreach ($fs["to_import"] as $fn) {
 ?>
 <div class="row ml-0 mr-0">
 	<div class="col-sm-6 cell-data" type="INCOME" order="<?= $fn?>"><?= $fn?></div>
