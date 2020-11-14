@@ -16,11 +16,8 @@ drawRoads();
 drawMessages();
 
 function roadsResize() {
-
-function messageCenterResize() {
-    //debugger;
-	//$("#factoryMap").outerHeight($("#instance-div").outerHeight());
 }
+function messageCenterResize() {
 	if (typeof(resizeMessageCenter) == "function") resizeMessageCenter();	
 }
 
@@ -74,7 +71,7 @@ function drawMessages() {
 
 $("[assign]").on('click', function (event){
     $(".active[assign]").removeClass("active");
-    var c = $("[assign = " + event.target.attributes["assign"].value + "]");
+    var c = $("[assign = " + event.currentTarget.attributes["assign"].value + "]");
     c.addClass("active");
     $("#btn-move-assign").css('left',  c.position().left + c.outerWidth() - $("#btn-move-assign").outerWidth() + "px");
     $("#btn-move-assign").css('top',  c.position().top  + "px");
@@ -124,9 +121,17 @@ $("#btn-move-assign").on("click", function(){
 $("#btn-order-info").on("click", function(){
     order($(".active[assign]").attr("order_number"));
 });
+<?php
+if (isset($_POST["highlight"])) {
+?>
+$("number:contains('<?=$_POST["highlight"]?>')").css('animation', "order-highlight 2s 100");
+<?php
+}
+?>
+
 </script>
-<button id="btn-move-assign">></button>
-<button id="btn-order-info">^</button>
+<button id="btn-move-assign">[move]</button>
+<button id="btn-order-info">[info]</button>
 <div class="input-group mb-3">
 	<input type="text" class="form-control" placeholder="Search orders...">
 	<div class="input-group-append">
@@ -156,8 +161,11 @@ $("#btn-order-info").on("click", function(){
             $c = $x[$b];
             if ($i < count($c)-1) $last = FALSE;
             if ($i < count($c)) {
+            $xml_order = order_db_string($c[$i]);
     ?>
-	<div wc="<?=$b?>" assign="<?=$c[$i]["id"]?>" class="col-sm-6 cell-data" order_number="<?= $c[$i]["number"]?>"><?= $c[$i]["number"]?></div>
+	<div wc="<?=$b?>" assign="<?=$c[$i]["id"]?>" class="col-sm-6 cell-data" order_number="<?= $c[$i]["number"]?>">
+	<?=$xml_order?>
+	</div>
     <?php 
             } else {
     ?>

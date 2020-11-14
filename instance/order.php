@@ -2,6 +2,8 @@
 include "checkUser.php";
 $brand = "Order #" . $_POST["order"];
 $order_info = $navi->getOrderInfo($_POST["order"]);
+//var_dump($order_info["assigns"]);
+$navi->updateEstimatedTime($order_info);
 ?>
 <script>
 $(".nav-link.active").removeClass("active");
@@ -37,7 +39,8 @@ function drawMessages() {
 		factory:  $("#factory").val(),
 		password: $("#password").val(),
 		language: $("#language").val(),
-		timezone: $("#timezone").val()
+		timezone: $("#timezone").val(),
+		order_id: <?=$order_info["db"]["id"]?>
 	},
 	function(data, status){
 		hideLoading();
@@ -68,24 +71,28 @@ function drawMessages() {
 </script>
 <div class="row mt-0">
 	<div class="col-sm-3 cell-header">Customer</div>
-	<div class="col-sm-5 cell-header">Products&Countt</div>
-	<div class="col-sm-2 cell-header">Deadline</div>
-	<div class="col-sm-2 cell-header">Estimated</div>
+	<div class="col-sm-5 cell-header">Products&Count</div>
+	<div class="col-sm-4 cell-header">Time</div>
 </div>
 <div class="row mt-0">
 	<div class="col-sm-3 cell-data"><?=(string)$order_info["order"]->customer["ref"]?></div>
 	<div class="col-sm-5 cell-data"><?=(string)$order_info["order"]->customer->product["ref"]?></div>
-	<div class="col-sm-2 cell-data"><?=(string)$order_info["order"]->customer->product["overall_duration"]?></div>
-	<div class="col-sm-2 cell-data"><?=(string)$order_info["order"]->customer->product["overall_duration"]?></div>
+	<div class="col-sm-4 cell-data"><?="deadline: " .$order_info["db"]["deadline"] . "<br>" . "baseline: " .$order_info["db"]["baseline"] . "<br>" ."estimated: " .$order_info["db"]["estimated"] . "<br>" .order_db_string($order_info["db"])?></div>
 </div>
+
 <?php
+//var_dump();
 foreach ($order_info["assigns"] as $a) {
-    echo ($a["event_time"] . " - <span wc='" . $a["workcenter_name"] . "'>" . $a["workcenter_name"] . "</span>: " . (($a["operation"] == "") ? "finished" : $a["operation"] . " " . $a["bucket"]) . "<br>");
+    echo ($a["event_time"] . " - <span wc='" . $a["workcenter_name"] . "'>" . $a["workcenter_name"] . "</span>: " . (($a["bucket"] == "") ? "finished" : $a["operation"] . " " . $a["bucket"]) . (($a["bucket"] == "OUTCOME") ? "<span road=" . $a["road_name"] . "> road </span>" : "" . " ") .  "<br>");
 }
 ?>
 <script>
 $('span[wc]').on('click', function(event){
-    workcenter(event.target.attributes.wc.value);
+    workcenter(event.target.attributes.wc.value, '<?= $_POST["order"]?>');
+    
+});
+$('span[road]').on('click', function(event){
+    road(event.target.attributes.road.value, '<?= $_POST["order"]?>');
     
 });
 </script>

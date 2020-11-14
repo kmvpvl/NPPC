@@ -132,12 +132,10 @@ div[assign] {
 }
 
 .active[assign] {
-    color: white;
     background-color: grey;
 }
 
 .active[order] {
-    color: white;
     background-color: grey;
 }
 
@@ -162,26 +160,149 @@ div[assign] {
     display: none;
     border: 1px solid black;
     cursor: pointer;
-    width: 20px;
-    height: 20px;
-    background-color: yellow;
     opacity: 1;
     z-index: 2;
 }
 #btn-move-assign:hover {
-    border: 3px solid navy;
+    background-color: yellow;
+}
+#btn-order-info::after {
 }
 #btn-order-info {
     position: absolute;
     display: none;
     border: 1px solid black;
     cursor: pointer;
-    width: 20px;
-    height: 20px;
-    background-color: green;
     opacity: 1;
     z-index: 2;
 }
+
+#btn-update-baseline {
+    position: absolute;
+    display: none;
+    border: 1px solid black;
+    cursor: pointer;
+    opacity: 1;
+    z-index: 2;
+}
+
 #btn-order-info:hover {
-    border: 3px solid navy;
+    background-color: green;
+}
+#btn-import-order {
+    position: absolute;
+    content: "+";
+    display: none;
+    border: 1px solid black;
+    cursor: pointer;
+    opacity: 1;
+    z-index: 2;
+}
+#btn-import-order:hover {
+    background-color: green;
+}
+#btn-route-order {
+    content: "~";
+    position: absolute;
+    display: none;
+    border: 1px solid black;
+    cursor: pointer;
+    opacity: 1;
+    z-index: 2;
+}
+#btn-route-order:hover {
+    background-color: green;
+}
+order > number {
+    font-weight: bold;
+}
+order > estimated:before {
+    content: "est.:";
+}
+order > baseline:before {
+    content: "bsln.:";
+}
+
+order > baseline{
+    display: none;
+}
+
+order > deadline{
+    display: none;
+}
+
+order > estimated {
+    display: none;
+}
+
+order > deadline:before {
+    content: "";
+}
+
+order > advancedeadbase {
+    color: white;
+    background-color: green;
+}
+order > advancedeadbase:before {
+    content: "";
+}
+
+order > advanceestimated {
+    color: white;
+    background-color: green;
+}
+
+order > lagestimated:before {
+    content: "est.before";
+}
+
+order > lagestimated {
+    color: white;
+    background-color: darkred;
+}
+
+order > advanceestimated:before {
+    content: "est.in";
+}
+
+order > lagdeadbase {
+    color: white;
+    background-color: darkred;
+}
+
+order > lagbaseest {
+    color: white;
+    background-color: darkred;
+}
+order > advancebaseest {
+    color: white;
+    background-color: green;
+}
+
+order > advancebaseest:before {
+    content: "";
+}
+order > lagbaseest:before {
+    content: "";
+}
+
+.cell-data[order][state='ASSIGNED'] {
+}
+.cell-data[order][state='ASSIGNED']::before {
+}
+
+.cell-data[order][state='ASSIGNED']::after {
+}
+
+#block-btn-imported-orders {
+    display: none;
+}
+
+@keyframes order-highlight {
+    from {
+        background-color: white;
+    }
+    to {
+        background-color: gray;
+    }
 }

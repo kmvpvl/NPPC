@@ -127,7 +127,7 @@ class ORMNavi :
 			cost += o["cost"]
 			duration += o["duration"]
 			tmp.set("overall_cost", "%s" % cost)
-			tmp.set("overall_duration", "%s" % duration)
+			#tmp.set("overall_duration", "%s" % duration)
 			sum_cost += cost
 			sum_duration += duration
 			i += 1
@@ -137,9 +137,9 @@ class ORMNavi :
 	# It creates file order-<orderNum>.xml in orders directory
 	# productsXMLTree must be an array with products with the same shipment address
 	# Be careful! Function uses recursion function goRoundProdLevel
-	def createOrder(self, orderNum, customerRef, productsXMLTree):
+	def createOrder(self, orderNum, customerRef, dl, productsXMLTree):
 		logging.info("Starting CreateOrder function: orderNum = %s, customerRef = %s, productXMLTree = %s", orderNum, customerRef, productsXMLTree)
-		oroot = ET.Element("order", id=orderNum)
+		oroot = ET.Element("order", id=orderNum, deadline=dl)
 		if (not self.__mdmroot.findall("customer[@id='" + customerRef + "']")) : raise ORMException("Couldn't find customer id '%s' if MDM" % (customerRef))
 		ocust = ET.SubElement(oroot, "customer", ref=customerRef)
 		i = 1
@@ -150,7 +150,7 @@ class ORMNavi :
 			oprod = ET.SubElement(ocust, "product", id = outline, ref = productXMLTree.attrib["ref"])
 			o = self.__goRoundProdLevel(productXMLTree, outline, oprod)
 			oprod.set("overall_cost", "%s" % o["cost"])
-			oprod.set("overall_duration", "%s" % o["duration"])
+			#oprod.set("overall_duration", "%s" % o["duration"])
 			i += 1
 		otree = ET.ElementTree(oroot)
 		otree.write(self._ordersPath + "order-" + orderNum + ".xml")		
@@ -202,6 +202,10 @@ class ORMNavi :
 			if not "workcenter" in routeroot.attrib: routeroot.set("workcenter", orderProot.attrib["ref"]) 
 			return
 		subroute = ET.SubElement(routeroot, orderProot.tag, ref = orderProot.attrib["id"], refref=orderProot.attrib["ref"])
+		if subroute.tag == "operation" :
+			logging.debug("Operation duration '%s' ", orderProot.attrib["duration"])
+			subroute.set("consumption", orderProot.attrib["duration"]) 
+
 		if subroute.tag == "operation" and orderProot.attrib["id"] in pathdict.keys():
 			# fills workcenter according with dictionary
 			subroute.set("workcenter", pathdict[orderProot.attrib["id"]]) 

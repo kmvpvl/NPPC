@@ -1,6 +1,7 @@
 <?php
 include "checkUser.php";
 $brand = trim((string)$navi->getWorkcenterInfo($_POST["workcenter"]));
+//var_dump($_POST["highlight"]);
 ?>
 <script>
 $(".nav-link.active").removeClass("active");
@@ -68,7 +69,7 @@ function drawMessages() {
 
 $("[assign]").on('click', function (event){
     $(".active[assign]").removeClass("active");
-    var c = $("[assign = " + event.target.attributes["assign"].value + "]");
+    var c = $("[assign = " + event.currentTarget.attributes["assign"].value + "]");
     c.addClass("active");
     
     $("#btn-move-assign").css('left',  c.position().left + c.outerWidth() - $("#btn-move-assign").outerWidth() + "px");
@@ -86,6 +87,24 @@ $("[assign]").on('click', function (event){
 $("#btn-order-info").on("click", function(){
     order($(".active[assign]").attr("order_number"));
 });
+
+$("#edt-search").on("change", function() {
+    if("" != $("#edt-search").val()) {
+        
+        //debugger;
+        $("[assign] > order").each(function () {
+            $(this).hide();
+        });
+        cc = $("order > number:contains('" + $("#edt-search").val() + "')");
+        cc.each(function (value) {
+            $(this).parent().show();
+        });
+    } else {
+        $("[assign] > order").each(function () {
+            $(this).show();
+        });
+    };
+})
 
 $("#btn-move-assign").on("click", function(){
 	showLoading();
@@ -123,9 +142,16 @@ $("#btn-move-assign").on("click", function(){
 		}
 	})
 })
+<?php
+if (isset($_POST["highlight"])) {
+?>
+$("number:contains('<?=$_POST["highlight"]?>')").css('animation', "order-highlight 2s 100");
+<?php
+}
+?>
 </script>
-<button id="btn-move-assign">></button>
-<button id="btn-order-info">^</button>
+<button id="btn-move-assign">[move]</button>
+<button id="btn-order-info">[info]</button>
 <?php
 $bucks = $navi->getWorkcenterAssigns($_POST["workcenter"]);
 //var_dump($bucks);
@@ -152,8 +178,11 @@ $bucks = $navi->getWorkcenterAssigns($_POST["workcenter"]);
         foreach ($bucks as $b => $c){
             if ($i < count($c)-1) $last = FALSE;
             if ($i < count($c)) {
+            $xml_order = order_db_string($c[$i]);
     ?>
-	<div bucket="<?=$b?>" assign="<?=$c[$i]["id"]?>" full="<?=(($c[$i]["fullset"] != "1") ? "0" : "1")?>" class="col-sm-4 cell-data" order_number="<?= $c[$i]["number"]?>"><?= $c[$i]["number"] . (($c[$i]["fullset"] != "1") ? "(not full)" : "")?></div>
+	<div bucket="<?=$b?>" assign="<?=$c[$i]["id"]?>" full="<?=(($c[$i]["fullset"] != "1") ? "0" : "1")?>" class="col-sm-4 cell-data" order_number="<?= $c[$i]["number"]?>"><?= ($c[$i]["fullset"] != "1") ? "(not full)" : ""?>
+	<?=$xml_order?>
+	</div>
     <?php 
             } else {
     ?>
@@ -171,10 +200,7 @@ $bucks = $navi->getWorkcenterAssigns($_POST["workcenter"]);
 </div>
 </div>
 <div class="input-group mb-3">
-	<input type="text" class="form-control" placeholder="Search orders...">
-	<div class="input-group-append">
-  		<button class="btn btn-success" type="submit">Go</button> 
-	</div>
+	<input id="edt-search" type="text" class="form-control" placeholder="Search orders...">
 </div>
 <div id="messageCenter" class="messageCenter popdown">
 

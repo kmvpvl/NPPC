@@ -1,16 +1,13 @@
 <?php
 include "checkUser.php";
 try{
-    /*$navi->assignOrderRoute("1", 1);
-    $navi->assignOrderRoute("ord12", 1);
-    $navi->assignOrderRoute("ord13", 1);
-    $navi->assignOrderRoute("ord14", 1);
-    $navi->assignOrderRoute("ord15", 1);
-    $navi->assignOrderRoute("2386", 1);*/
-    for ($i = 112; $i< 190;$i++){
-        $navi->assignOrderRoute("o-".$i, 1);
+    var_dump($_POST);
+    foreach ($_POST["order_number"] as $order_number) {
+        $oid = $navi->assignOrderRoute($order_number, $_POST["route"]);
+        if (isset($_POST["message"])) $navi->createMessage($_POST["message"], $oid);
     }
 } catch (Exception $e) {
+	http_response_code(400);
     echo 'Caught exception: ',  $e->getMessage(), "\n";
 }
 ?>
