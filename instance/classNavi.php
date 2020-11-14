@@ -2,6 +2,7 @@
 opcache_reset();
 error_reporting(-1);
 ini_set('display_errors', 'On');
+include "classOrder.php";
 //------------------
 // naviClient class 
 //
@@ -147,8 +148,8 @@ class naviClient {
     }
 	
 	//
-	function createMessage($_body, $_to = 0, $_messageType = "primary", $_reply = 0) {
-	    $this->dblink->query("select addMessage(" . $this->client_id . ", " . $this->user_id . ", " . $_to . ", '" . $_messageType . "', '" . $_body . "', " . $_reply . ")");
+	function createMessage($_body, $_order_id = 0, $_to = 0, $_messageType = "primary", $_reply = 0) {
+	    $this->dblink->query("select addMessage(" . $this->client_id . ", " . $_order_id . ", " . $this->user_id . ", " . $_to . ", '" . $_messageType . "', '" . $_body . "', " . $_reply . ")");
 	    if ($this->dblink->errno) throw new Exception("Could not create message: " . $this->dblink->errno . " - " . $this->dblink->error);
 	}
 
@@ -157,10 +158,16 @@ class naviClient {
 	// $_order_id is uniq ID from database
 	// $_route_id is ID in route-*.xml
 	function _assignOrderRouteRecur($zz, $_order_id, $_route_id) {
+	    //var_dump($zz);
 	    if (count($zz->children()) == 0 && $zz->getName()=="operation" ) {
-	        //echo("call assignWorkcenterToRoutePart(" . $this->client_id . ", '" . $_order_id . "', '" . $zz["ref"] . "', '" . $zz["refref"] . "', '" . $zz["workcenter"] . "', 'INCOME')");
-    		$x = $this->dblink->query("call assignWorkcenterToRoutePart(" . $this->client_id . ", '" . $_order_id . "', '" . $zz["ref"] . "', '" . $zz["refref"] . "', '" . $zz["workcenter"] . "', 'INCOME')");
-    		if (!$x) throw new Exception("Unexpected error while setting mode" . "': " . $this->dblink->errno . " - " . $this->dblink->error . "call assignWorkcenterToRoutePart(" . $this->client_id . ", '" . $_order_id . "', '" . $zz["ref"] . "', '" . $zz["refref"] . "', '" . $zz["workcenter"] . "', 'INCOME')"); 
+    	    //var_dump($zz);
+
+    		$x = $this->dblink->query("call assignWorkcenterToRoutePart(" . $this->client_id . ", '" . $_order_id . "', '" . $zz["ref"] . "', '" . $zz["refref"] . "', '" . $zz["workcenter"] . "', 'INCOME', " . $zz["consumption"] . ")");
+    		if (!$x) {
+    		    $this->dblink->rollback();
+        	    $this->dblink->autocommit(TRUE);
+    		    throw new Exception("Unexpected error while setting mode" . "': " . $this->dblink->errno . " - " . $this->dblink->error . "call assignWorkcenterToRoutePart(" . $this->client_id . ", '" . $_order_id . "', '" . $zz["ref"] . "', '" . $zz["refref"] . "', '" . $zz["workcenter"] . "', 'INCOME', " . $zz["consumption"] . ")"); 
+    		}
     		//$x->free_result();
 	    } else {
 	        foreach ($zz as $zzz) {
@@ -177,20 +184,37 @@ class naviClient {
 	    $this->dblink->autocommit(FALSE);
 	    //echo $_order;
 	    
+	    $o = $this->getOrder($_order);
 	    $z = $this->getRoute($_order, $_route_id);
 	    
-        $x = $this->dblink->query("select addOrder(" . $this->client_id . ", '" . $_order . "', 'ASSIGNED', " . $_route_id . ") as order_id;");
+        $x = $this->dblink->query("select addOrder(" . $this->client_id . ", '" . $_order . "', 'ASSIGNED', " . $_route_id . ", '" . $o["deadline"] . "') as order_id;");
 		if (!$x) {
+		    $this->dblink->rollback();
     	    $this->dblink->autocommit(TRUE);
 		    throw new Exception("Unexpected error while adding order" . "': " . $this->dblink->errno . " - " . $this->dblink->error . "select addOrder(" . $this->client_id . ", '" . $_order . "', 'ASSIGNED', " . $_route_id . ") as order_id;");
 		}
 		$order_id = $x->fetch_assoc()["order_id"];
-		//echo "order_id " . $order_id . "|||";
 	    foreach ($z as $zz) {
 	        $this->_assignOrderRouteRecur($zz, $order_id, $_route_id);
 	    }
 	    
-		$this->dblink->query("call assignRouteToOrder(" . $this->client_id . ", '" . $_order . "', " . $_route_id . ");");
+/*		$this->dblink->query("call assignRouteToOrder(" . $this->client_id . ", '" . $_order . "', " . $_route_id . ");");
+		if ($this->dblink->errno) {
+		    $this->dblink->rollback();
+    	    $this->dblink->autocommit(TRUE);
+		    throw new Exception("Unexpected error while assign order" . "': " . $this->dblink->errno . " - " . $this->dblink->error . "call assignRouteToOrder(" . $this->client_id . ", '" . $_order . "', " . $_route_id . ");");
+		}
+*/		
+		$c = $this->calcOrderEstimatedTime($_order);
+		$fet = new DateTime();
+		$fet->setTimezone(new DateTimeZone(sprintf("%+'.03d:00", $this->time_zone)));
+		$fet->modify("+" . $c . " minutes");
+		$this->dblink->query("call updateBaseline(" . $order_id . ", '" . $fet->format('Y-m-d H:i:s') . "');");
+		if ($this->dblink->errno) {
+		    $this->dblink->rollback();
+    	    $this->dblink->autocommit(TRUE);
+		    throw new Exception("Unexpected error while assign order" . "': " . $this->dblink->errno . " - " . $this->dblink->error . "call updateBaseline(" . $order_id . ", '" . $fet->format('Y-m-d H:i:s') . "');");
+		}
 		
 		if (!$this->dblink->commit()) {
     	    $this->dblink->autocommit(TRUE);
@@ -198,6 +222,7 @@ class naviClient {
 		} 
 	    $this->dblink->autocommit(TRUE);
 	    $x->free_result();
+	    return $order_id;
 	}
 	
 	// moveAssignToNextBucket slides order part forward
@@ -214,6 +239,7 @@ class naviClient {
 		$this->dblink->next_result();
 		$nextbucket = $x["next_bucket"];
 		$ordernum = $x["order_num"];
+		$order_id = $x["order_id"];
 		if ('' == $nextbucket) {
 		    $this->dblink->rollback();
     	    $this->dblink->autocommit(TRUE);
@@ -246,7 +272,7 @@ class naviClient {
 		    //var_dump($readyorderpart);
 		    //echo "call updateAssignOrderPart(" . $_assign_id . ", '" . $readyorderpart . "', '" . $nextworkcenter . "', '" . $nextorderpart . "', '" . $nextoperation . "')')";
 
-	        $this->dblink->query("call updateAssignOrderPart(" . $_assign_id . ", '" . $readyorderpart . "', '" . $nextworkcenter . "', '" . $nextorderpart . "', '" . $nextoperation . "')");
+	        $this->dblink->query("call updateAssignOrderPart(" . $_assign_id . ", '" . $readyorderpart . "', '" . $nextworkcenter . "', '" . $nextorderpart . "', '" . $nextoperation . "', " . $found[0]["consumption"] . ")");
 	        if ($this->dblink->errno) {
 		        throw new Exception("Unexpected error while update Assign to OUTCOME bucket" . "': " . $this->dblink->errno . " - " . $this->dblink->error . "call updateAssignOrderPart(" . $_assign_id . ", '" . $readyorderpart . "', '" . $nextworkcenter . "', '" . $nextorderpart . "', '" . $nextoperation . "')");
             }
@@ -260,7 +286,7 @@ class naviClient {
 		} 
 	    $this->dblink->autocommit(TRUE);
 	    
-	    if (isset($msg)) $this->createMessage($msg);
+	    if (isset($msg)) $this->createMessage($msg, $order_id);
 	}
 	
 	function moveAssignToNextWorkcenter($_assign_id) {
@@ -518,6 +544,8 @@ class naviClient {
         $ret["route"] = $r;
         $ret["order"] = $o;
         $ret["assigns"] = $a;
+        $x->free_result();
+        $this->dblink->next_result();
         return $ret;
     }
     function makeMessageRead($_messageID) {
@@ -539,8 +567,13 @@ class naviClient {
         }, ARRAY_FILTER_USE_BOTH);
         foreach ($fd as $k => $fn) {
             $order_num = substr($fn, 6, strlen($fn) - 8 - strrpos($fn, ".xml"));
-            $ret["to_import"][$order_num] = $order_num;
+            $x = $this->getOrder($order_num);
+            $v = (string)$x["deadline"];
+            $ret["to_import"][$order_num] = $v;
         }
+        asort($ret["to_import"]);
+        
+        //var_dump($ret["to_import"]);
 
         // reading orders from database
         $x = $this->dblink->query("call getOrders(" . $this->client_id . ")");
@@ -552,8 +585,82 @@ class naviClient {
             if (array_key_exists($y["number"], $ret["to_import"])) unset($ret["to_import"][$y["number"]]);
             //var_dump($a);
         }
+        $x->free_result();
+        $this->dblink->next_result();
         
         return $ret;
     }
+    function _checkEstimatedTime($route_root, &$full_order_info) {
+        //searching in assigns
+        
+        switch ($route_root->getName()){
+             case "operation": 
+                // looking for order part at workcenter
+                $found = FALSE;
+                foreach ($full_order_info["assigns"] as $wcp) {
+                    if ($wcp["order_part"] == $route_root["ref"]) {
+                        $found = TRUE;
+                        //var_dump($route_root->getName());
+                        //var_dump((string)$route_root["ref"]);
+                        //var_dump(floatval($route_root["consumption"]));
+                        //var_dump((string)$wcp["id"]);
+                        //var_dump((string)$wcp["workcenter_id"]);
+                        //getting worcenter workload
+                	    $this->dblink->next_result();
+                        $x = $this->dblink->query("select getAssignConsumptionInWorkcenter(" . $wcp["id"] . ") as consumption");
+                        
+                        if (!$x) throw new Exception("Could not get time consumption" . "': " . $this->dblink->errno . " - " . $this->dblink->error . " select getAssignConsumptionInWorkcenter(" . $wcp["id"] . ") as consumption"); 
+                        $y = $x->fetch_assoc(); 
+                        $x->free_result();
+            
+                        return floatval($y["consumption"]);
+                        break;
+                    }
+                }
+                break;
+            
+            default:
+                break;
+        }
+        $max_c = 0.0;
+        foreach ($route_root as $c) {
+            $csp = $this->_checkEstimatedTime($c, $full_order_info);
+            if ($csp > $max_c) $max_c = $csp;
+        }
+        $c = 0;
+        if (!is_null($route_root["workcenter"])) {
+            //var_dump($full_order_info["db"]["id"]);
+    	    $this->dblink->next_result();
+            $x = $this->dblink->query("select getOrderConsumptionInWorkcenter(" . $full_order_info["db"]["id"] . ", '" . $route_root["workcenter"] . "') as consumption");
+            if (!$x) throw new Exception("Could not get time consumption" . "': " . $this->dblink->errno . " - " . $this->dblink->error . " select getOrderConsumptionInWorkcenter(" . $full_order_info["db"]["id"] . ", '" . $route_root["workcenter"] . "') as consumption;"); 
+            $y = $x->fetch_assoc(); 
+            $c = $y["consumption"];
+            $x->free_result();
+        }
+                        
+        //var_dump($c);
+        
+        return $max_c + $c + floatval($route_root["consumption"]);
+    }
+    
+    function calcOrderEstimatedTime($order_num) {
+        //var_dump($order_num);
+        $fullorderinfo = $this->getOrderInfo($order_num);
+        //var_dump($fullorderinfo["assigns"]);
+        return $this->_checkEstimatedTime($fullorderinfo["route"], $fullorderinfo);
+    }
+    
+    function updateEstimatedTime($fullorderinfo) {
+        $c = $this->_checkEstimatedTime($fullorderinfo["route"], $fullorderinfo);
+        
+		$fet = new DateTime();
+		$fet->setTimezone(new DateTimeZone(sprintf("%+'.03d:00", $this->time_zone)));
+		$fet->modify("+" . $c . " minutes");
+		$this->dblink->query("call updateEstimatedTime(" . $fullorderinfo["db"]["id"] . ", '" . $fet->format('Y-m-d H:i:s') . "');");
+		if ($this->dblink->errno) {
+		    throw new Exception("Unexpected error while update estimated time order" . "': " . $this->dblink->errno . " - " . $this->dblink->error . "call updateEstimatedTime(" . $fullorderinfo["db"]["id"] . ", '" . $fet->format('Y-m-d H:i:s') . "');");
+		}
+        $this->dblink->next_result();
+	}
 }
 ?>

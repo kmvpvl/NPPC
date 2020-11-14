@@ -1,5 +1,6 @@
 <?php
 include "checkUser.php";
+//var_dump($_POST);
 try {
 	$r = $navi->getMessages();
 } catch (Exception $e) {

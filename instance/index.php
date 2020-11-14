@@ -136,7 +136,7 @@ $("a[instance]").on ('click', function (event) {
 	})
 })
 
-function workcenter(_id) {
+function workcenter(_id, _ordhighlight = undefined) {
 	showLoading();
 	var p = $.post("workcenter.php",
 	{
@@ -145,6 +145,7 @@ function workcenter(_id) {
 		factory:  $("#factory").val(),
 		language: $("#language").val(),
 		timezone: $("#timezone").val(),
+		highlight: _ordhighlight,
 		workcenter: _id
 	},
 	function(data, status){
@@ -208,7 +209,7 @@ function order(_id) {
 	})
 }
 
-function road(_id) {
+function road(_id, _ordhighlight = undefined) {
 	showLoading();
 	var p = $.post("roads.php",
 	{
@@ -217,6 +218,7 @@ function road(_id) {
 		factory:  $("#factory").val(),
 		language: $("#language").val(),
 		timezone: $("#timezone").val(),
+		highlight: _ordhighlight,
 		road: _id
 	},
 	function(data, status){
@@ -244,4 +246,23 @@ function road(_id) {
 	})
 }
 </script>
+<div class="modal fade" id="dlgModal" tabindex="-1" role="dialog" aria-labelledby="dlgModalLongTitle" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="dlgModalLongTitle">Modal title</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        ...
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        <button type="button" dlg-button="btn-dlgModal-ok" class="btn btn-primary"></button>
+      </div>
+    </div>
+  </div>
+</div>
 <?php include "footer.php"?>
