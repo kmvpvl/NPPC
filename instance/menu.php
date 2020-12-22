@@ -1,4 +1,4 @@
-<nav class="navbar navbar-expand-md navbar-dark bg-dark ml-0">
+<nav class="navbar navbar-expand-sm navbar-dark bg-dark ml-0">
 	<a class="navbar-brand" href="#">My factory
 	</a>
 	<!--button type="button" class="btn btn-success">Refresh</button-->

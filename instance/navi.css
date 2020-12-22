@@ -3,8 +3,11 @@ html {
 }
 body {
   margin:0;
-  padding:0;
+  padding:0px;
   overflow:hidden;
+}
+* {
+    box-sizing: border-box;
 }
 
 a{
@@ -89,11 +92,12 @@ line.road:hover {
     100% {opacity: 0.2;}
 }
 
-#instance-div {
-    position: absolute;
-    border: solid 1px red;
-    padding: 0;
-    margin: 0;
+instance {
+    display: block;
+    position: relative;
+    border: solid 2px green;
+    padding: 5px;
+    margin: 0px;
     padding-left: 2;
     padding-right: 2;
     width: 100%;
@@ -104,6 +108,7 @@ line.road:hover {
     display: none;
 }
 .content-div {
+    position: relative;
     border: solid 1px red;
     padding: 0;
     margin: 0;
@@ -240,6 +245,7 @@ order > deadline:before {
 }
 
 order > advancedeadbase {
+    display: none;
     color: white;
     background-color: green;
 }
@@ -250,10 +256,11 @@ order > advancedeadbase:before {
 order > advanceestimated {
     color: white;
     background-color: green;
+    margin-left: 2px;
 }
 
 order > lagestimated:before {
-    content: "est.before";
+    content: "before";
 }
 
 order > lagestimated {
@@ -262,19 +269,31 @@ order > lagestimated {
 }
 
 order > advanceestimated:before {
-    content: "est.in";
+    content: "in";
 }
 
 order > lagdeadbase {
+    display: none;
     color: white;
     background-color: darkred;
 }
 
 order > lagbaseest {
+    display: none;
     color: white;
     background-color: darkred;
 }
 order > advancebaseest {
+    display: none;
+    color: white;
+    background-color: green;
+}
+
+order > lagdeadest {
+    color: white;
+    background-color: darkred;
+}
+order > advancedeadest {
     color: white;
     background-color: green;
 }
@@ -283,6 +302,13 @@ order > advancebaseest:before {
     content: "";
 }
 order > lagbaseest:before {
+    content: "";
+}
+
+order > advancedeadest:before {
+    content: "";
+}
+order > lagdeadest:before {
     content: "";
 }
 
@@ -305,4 +331,45 @@ order > lagbaseest:before {
     to {
         background-color: gray;
     }
+}
+
+messages.expanded {
+    position: relative;
+    opacity: 1;
+    float: left;
+    background-color: silver;
+    color: black;
+    padding: 5px;
+    border: solid 2px grey;
+    width: 100%;
+    display: flex;
+    flex-direction: column; 
+}
+messages.collapsed {
+    cursor: pointer;
+    position: relative;
+    opacity: 0.8;
+    float: right;
+    color: white;
+    padding: 5px;
+    border: solid 0px blue;
+}
+#messages-header {
+    display: none;
+}
+messages > messages-container {
+    display: inline-block;
+    overflow-y: auto;
+}
+messages > messages-container > message {
+    padding: 3px;
+    border: solid 1px black;
+    float: left;
+    margin: 2px;
+}
+messages > messages-container > message > user {
+    font-weight: bold;
+}
+messages > messages-container > message.primary {
+    color: navy;
 }

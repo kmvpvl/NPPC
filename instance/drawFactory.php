@@ -9,17 +9,14 @@ try {
 echo $r->html;
 ?>
 <script>
-	//$('[data-toggle="tooltip"]').tooltip();   
 	function resizeFactoryMap() {
 		map = new nppcMap("<?=$navi->factoryMap?>", $("#factoryMap").innerWidth(), $("#factoryMap").innerHeight());
 		<?= $r->script ?>
 	}
 	$('rect.workcenter').on('click', function(event) {
-    	$('[data-toggle="tooltip"]').hide();   
         workcenter(event.target.id); 
 	});
 	$('line.road').on('click', function(event) {
-    	$('[data-toggle="tooltip"]').hide();   
         road(event.target.id); 
 	});
 </script>

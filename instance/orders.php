@@ -10,7 +10,7 @@ drawOrders();
 
 function ordersResize() {
     //debugger;
-    $(".content-div").outerHeight($("#instance-div").outerHeight() - $(".content-div").position().top);
+    $(".content-div").outerHeight($("instance").innerHeight() - $(".content-div").position().top);
 }
 
 

@@ -26,6 +26,10 @@ function order_db_string($_order_data) {
     if (isset($ds["lag"])) $lagbaseeststr = $ds["lag"];
     if (isset($ds["advance"])) $advancebaseeststr = $ds["advance"];
 
+    $ds = diffstr($orderestimated, $orderdeadline);
+    if (isset($ds["lag"])) $lagdeadeststr = $ds["lag"];
+    if (isset($ds["advance"])) $advancedeadeststr = $ds["advance"];
+
     $ds = diffstr($td, $orderestimated);
     //var_dump($ds);
     if (isset($ds["lag"])) $lagestimated = $ds["lag"];
@@ -36,15 +40,21 @@ function order_db_string($_order_data) {
     $ret .= !is_null($_order_data["deadline"])? "<deadline>" . $_order_data["deadline"] . "</deadline>" : ""; 
     $ret .= !is_null($_order_data["baseline"])? "<baseline>" . $_order_data["baseline"] . "</baseline>" : "";
     $ret .= !is_null($_order_data["estimated"])? "<estimated>" . $_order_data["estimated"] . "</estimated> " : "";
-    $ret .= isset($lagdeadbasestr)?"<lagdeadbase>" . $lagdeadbasestr . "</lagdeadbase>" : "";
-    $ret .= isset($advancedeadbasestr)?"<advancedeadbase>" . $advancedeadbasestr . "</advancedeadbase>" : "";
-    $ret .= isset($lagbaseeststr)?"|<lagbaseest>" . $lagbaseeststr . "</lagbaseest>" : "";
-    $ret .= isset($advancebaseeststr)?"|<advancebaseest>" . $advancebaseeststr . "</advancebaseest>" : "";
-    $ret .= isset($lagestimated)?"|<lagestimated>" . $lagestimated . "</lagestimated>" : "";
-    $ret .= isset($advanceestimated)?"|<advanceestimated>" . $advanceestimated . "</advanceestimated>" : "";
+    $ret .= isset($lagdeadbasestr)?"<lagdeadbase> " . $lagdeadbasestr . "</lagdeadbase>" : "";
+    $ret .= isset($advancedeadbasestr)?"<advancedeadbase> " . $advancedeadbasestr . "</advancedeadbase>" : "";
+    $ret .= isset($lagbaseeststr)?"<lagbaseest> " . $lagbaseeststr . "</lagbaseest>" : "";
+    $ret .= isset($advancebaseeststr)?"<advancebaseest> " . $advancebaseeststr . "</advancebaseest>" : "";
+    $ret .= isset($lagdeadeststr)?"<lagdeadest> " . $lagdeadeststr . "</lagdeadest>" : "";
+    $ret .= isset($advancedeadeststr)?"<advancedeadest> " . $advancedeadeststr . "</advancedeadest>" : "";
+    $ret .= isset($lagestimated)?"<lagestimated> " . $lagestimated . "</lagestimated>" : "";
+    $ret .= isset($advanceestimated)?"<advanceestimated> " . $advanceestimated . "</advanceestimated>" : "";
     $ret .= "</order>";
     return $ret;
 }
+class naviProduct {
+    
+}
+
 class naviOrder {
     private $structure;
     private $currentRoute;

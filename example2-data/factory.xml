@@ -29,4 +29,5 @@ name="Wheelpair factory" img="" map="53.3834919,50.1689624;53.3780572,50.1744053
 		<operation ref="qualitycheck" capacity="8"></operation>
 	</workcenter>
 	<user id="David Rhuxel" md5="0b1c817f2c6510ec6f61c3c5262e2333" roles=""></user>
+	<user id="michel Pruphpinc" md5="0b1c817f2c6510ec6f61c3c5262e2333" roles=""></user>
 </factory>

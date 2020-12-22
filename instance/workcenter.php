@@ -8,64 +8,19 @@ $(".nav-link.active").removeClass("active");
 $("#menuWorkcenter").addClass("active");
 $(".navbar-brand").text("<?= $navi->factoryName . ": " . $brand ?>");
 drawWorkcenter();
-drawMessages();
-
 function workcenterResize() {
+	$("#workcenter-div").outerHeight("100%");
+    $(".content-div").css('height', $("#workcenter-div").outerHeight() - $(".content-div").offset().top + "px");
 }
 
-function messageCenterResize() {
-    //debugger;
-	//$("#workcenter-div").outerHeight($("#instance-div").outerHeight());
-	if (typeof(resizeMessageCenter) == "function") resizeMessageCenter();	
-}
 
-function resizeWorkcenterContentAll() {
-    workcenterResize();
-    messageCenterResize();
-}
+$(window).on ('resize', workcenterResize());
+workcenterResize();
 
-$(window).on ('resize', resizeWorkcenterContentAll);
-
-//resizeWorkcenterContentAll();
 
 function drawWorkcenter() {
 }
 
-function drawMessages() {
-    $("#messageCenter").html = '';
-	showLoading();
-	var p = $.post("drawMessages.php",
-	{
-		username: $("#username").val(),
-		factory:  $("#factory").val(),
-		password: $("#password").val(),
-		language: $("#language").val(),
-		timezone: $("#timezone").val()
-	},
-	function(data, status){
-		hideLoading();
-		switch (status) {
-			case "success":
-				$("#messageCenter").html(data);
-				resizeMessageCenter();	
-				break;
-			default:
-                ;
-		}
-	});
-	p.fail(function(data, status) {
-		hideLoading();
-		switch (data.status) {
-			case 401:
-				clearInstance();
-				showLoginForm();
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-				break;
-			default:				
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-		}
-	})
-}
 
 $("[assign]").on('click', function (event){
     $(".active[assign]").removeClass("active");
@@ -73,8 +28,8 @@ $("[assign]").on('click', function (event){
     c.addClass("active");
     
     $("#btn-move-assign").css('left',  c.position().left + c.outerWidth() - $("#btn-move-assign").outerWidth() + "px");
-    $("#btn-move-assign").css('top',  c.position().top  + "px");
     //debugger;
+    $("#btn-move-assign").css('top',  $("#content-div").scrollTop() + c.position().top  + "px");
     if (c.attr("full") == '1' && c.attr("bucket") != 'OUTCOME')  $("#btn-move-assign").show();
     else $("#btn-move-assign").hide();
     
@@ -150,14 +105,15 @@ $("number:contains('<?=$_POST["highlight"]?>')").css('animation', "order-highlig
 }
 ?>
 </script>
-<button id="btn-move-assign">[move]</button>
-<button id="btn-order-info">[info]</button>
 <?php
 $bucks = $navi->getWorkcenterAssigns($_POST["workcenter"]);
 //var_dump($bucks);
 //echo $brand;
 ?>
 <div id="workcenter-div">
+<div class="input-group mb-3">
+	<input id="edt-search" type="text" class="form-control" placeholder="Search orders...">
+</div>
 <div class="row ml-0 mr-0">
     <?php 
     foreach ($bucks as $b => $c) { 
@@ -168,6 +124,8 @@ $bucks = $navi->getWorkcenterAssigns($_POST["workcenter"]);
     ?>
 </div>
 <div class="content-div">
+<button id="btn-move-assign">[move]</button>
+<button id="btn-order-info">[info]</button>
     <?php 
     $i = 0;
     while (TRUE) {
@@ -199,9 +157,4 @@ $bucks = $navi->getWorkcenterAssigns($_POST["workcenter"]);
     ?>
 </div>
 </div>
-<div class="input-group mb-3">
-	<input id="edt-search" type="text" class="form-control" placeholder="Search orders...">
-</div>
-<div id="messageCenter" class="messageCenter popdown">
-
 </div>

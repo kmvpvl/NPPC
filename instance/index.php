@@ -1,8 +1,48 @@
 <?php include "header.php"?>
 <script src="naviNPPC.js"></script>
 <?php include "menu.php"?>
-<div id="instance-div">
+<instance>
+</instance>
+<messages>
+<messages-shortcut>
+<span class="badge badge-primary">New</span>
+</messages-shortcut>    
+<messages-toolbar>
+<strong class="mr-auto>">Messages</strong>
+<input type="checkbox" checked="1">success</input>
+<input type="checkbox" checked="1">warnings</input>
+<input id="btn-new-message" type="button" value="[new]"></input>
+<button type="button" class="ml-2 mb-1 close" messages="collapse">&times;</button>
+<message-template>
+<div class="input-group mb-0">
+    <div class="input-group-prepend">
+        <span class="input-group-text">@</span>
+    </div>
+    <input id="message_order" type="text" class="form-control" placeholder="Order" aria-label="Order">
+    <div class="input-group-text">
+        <input type="checkbox" aria-label="Checkbox for following text input">
+    </div>
+    <input id="message_to" type="text" class="form-control" placeholder="Username" aria-label="Username">
+    <select class="custom-select" id="message_type">
+        <option value="primary">info</option>
+        <option value="warning">warning</option>
+        <option value="danger">danger</option>
+    </select>
+    <div class="input-group-append">
+        <button id="btn-send-message" class="btn btn-outline-secondary" type="button">Send</button>
+    </div>
 </div>
+<div class="input-group">
+  <div class="input-group-prepend">
+    <span class="input-group-text">Text</span>
+  </div>
+  <textarea id="message_text" class="form-control" aria-label="With textarea"></textarea>
+</div>
+</message-template>    
+</messages-toolbar>
+<messages-container>
+</messages-container>
+</messages>
 <form id="loginform">
 	<div class="container">
 		<label for="username">User name</label>
@@ -32,21 +72,209 @@
 </div>
 <div id="loadingSpinner" class="spinner-border"></div>
 <script>
+function collapseMessages() {
+    $('messages messages-container').hide();
+    $('messages messages-toolbar').hide();
+    $('message-template').hide();
+    $('messages messages-shortcut').show();
+    $('messages').removeClass('expanded');
+    $('messages').addClass('collapsed');
+	$('messages').css('top', -$('messages').outerWidth() + "px");
+}
 $(document).ready (function (){
+	collapseMessages();
 	$(window).resize();
 	tryLogin();
 })
+
+$("#btn-new-message").on('click', function (){
+    $('message-template').show();
+})
+$('#message_order').on ('change', function () {
+    
+})
+$('#message_to').on ('input', function () {
+	var p = $.post("apiGetUserByLetters.php",
+	{
+		username: $("#username").val(),
+		factory:  $("#factory").val(),
+		password: $("#password").val(),
+		language: $("#language").val(),
+		timezone: $("#timezone").val(),
+		letters: $('#message_to').val()
+	},
+	function(data, status){
+		hideLoading();
+		//debugger;
+		switch (status) {
+			case "success":
+			    var users = jQuery.parseJSON(data);
+			    if (users.length == 1) {
+			        $('#message_to').val(users[0]);
+			    }
+				break;
+			default:
+                ;
+		}
+	});
+	p.fail(function(data, status) {
+		hideLoading();
+		switch (data.status) {
+			case 401:
+				clearInstance();
+				showLoginForm();
+				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
+				break;
+			default:				
+				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
+		}
+	})
+})
+$("#btn-send-message").on('click', function () {
+	showLoading();
+	//debugger;
+	var p = $.post("apiSendMessage.php",
+	{
+		username: $("#username").val(),
+		factory:  $("#factory").val(),
+		password: $("#password").val(),
+		language: $("#language").val(),
+		timezone: $("#timezone").val(),
+		message_type: $('#message_type').val(),
+		message_text: $('#message_text').val(),
+		message_order: (('' == $('#message_order').val())?undefined : $('#message_order').val()),
+		message_to: (('' == $('#message_to').val())?undefined : $('#message_to').val()),
+		message_reply: $('#message_reply').val()
+	},
+	function(data, status){
+		hideLoading();
+		//debugger;
+		switch (status) {
+			case "success":
+                $('message-template').hide();
+                updateMessages();
+				break;
+			default:
+                ;
+		}
+	});
+	p.fail(function(data, status) {
+		hideLoading();
+		switch (data.status) {
+			case 401:
+				clearInstance();
+				showLoginForm();
+				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
+				break;
+			default:				
+				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
+		}
+	})
+})
+
+function makeMessageRead(_message_id) {
+	showLoading();
+	var p = $.post("apiMakeMessageRead.php",
+	{
+		username: $("#username").val(),
+		factory:  $("#factory").val(),
+		password: $("#password").val(),
+		language: $("#language").val(),
+		timezone: $("#timezone").val(),
+		message_id: _message_id
+	},
+	function(data, status){
+		hideLoading();
+		//debugger;
+		switch (status) {
+			case "success":
+				break;
+			default:
+                ;
+		}
+	});
+	p.fail(function(data, status) {
+		hideLoading();
+		switch (data.status) {
+			case 401:
+				clearInstance();
+				showLoginForm();
+				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
+				break;
+			default:				
+				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
+		}
+	})
+}
+
+
+function updateMessages() {
+    $("messages messages-container").html = '';
+	showLoading();
+	var p = $.post("drawMessages.php",
+	{
+		username: $("#username").val(),
+		factory:  $("#factory").val(),
+		password: $("#password").val(),
+		language: $("#language").val(),
+		timezone: $("#timezone").val()
+	},
+	function(data, status){
+		hideLoading();
+		switch (status) {
+			case "success":
+				$("messages messages-container").html(data);
+                $('messages messages-container message').prepend('<button type="button" class="ml-2 mb-1 close" message="collapse">&times;</button>');
+                $('message button[message="collapse"]').on ('click', function (event) {
+                    message_id = event.currentTarget.parentElement.attributes['message_id'].nodeValue;
+                    makeMessageRead(message_id);
+                    $('message[message_id="' + message_id + '"]').hide();
+                })
+				break;
+			default:
+                ;
+		}
+	});
+	p.fail(function(data, status) {
+		hideLoading();
+		switch (data.status) {
+			case 401:
+				clearInstance();
+				showLoginForm();
+				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
+				break;
+			default:				
+				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
+		}
+	})
+}
+$('messages').on ('click', function (){
+    if ($('messages').hasClass('expanded')) return;
+    $('messages').removeClass('collapsed');
+    $('messages').addClass('expanded');
+    $('messages messages-container').show();
+    $('messages messages-toolbar').show();
+    $('messages messages-shortcut').hide();
+	$('messages').css('top', -$('instance').innerHeight()*0.67 + "px");
+	$('messages').css('height', $('instance').innerHeight()*0.67 + "px");
+    $('messages messages-toolbar button[messages="collapse"]').on('click', function (event) {
+        collapseMessages();
+        event.stopPropagation();
+    })
+    updateMessages();
+})
+
 $(window).resize(function() {
-	$('#instance-div').css('height', $(window).height()-$('#instance-div').offset().top);
+	$('instance').css('height', $(window).height()-$('instance').offset().top + "px");
 	$("#loadingSpinner").offset({
-		top: ($('#instance-div').outerHeight() - $("#loadingSpinner").outerHeight()) / 2, 
-		left: ($('#instance-div').outerWidth() - $("#loadingSpinner").outerWidth()) / 2
+		top: ($('instance').outerHeight() - $("#loadingSpinner").outerHeight()) / 2, 
+		left: ($('instance').outerWidth() - $("#loadingSpinner").outerWidth()) / 2
 	});
 })
 
 
 function clearInstance() {
-	$("#instance-div").html = "";
+	$("instance").html = "";
 }
 function showLoginForm() {
 	$("#loginform").show();
@@ -80,7 +308,7 @@ function tryLogin() {
 		hideLoading();
 		switch (status) {
 			case "success":
-				$("#instance-div").html(data);
+				$("instance").html(data);
 				break;
 			default:
 				clearInstance();
@@ -115,7 +343,7 @@ $("a[instance]").on ('click', function (event) {
 		hideLoading();
 		switch (status) {
 			case "success":
-				$("#instance-div").html(data);
+				$("instance").html(data);
 				break;
 			default:
 				clearInstance();
@@ -152,7 +380,7 @@ function workcenter(_id, _ordhighlight = undefined) {
 		hideLoading();
 		switch (status) {
 			case "success":
-				$("#instance-div").html(data);
+				$("instance").html(data);
 				break;
 			default:
 				clearInstance();
@@ -188,7 +416,7 @@ function order(_id) {
 		hideLoading();
 		switch (status) {
 			case "success":
-				$("#instance-div").html(data);
+				$("instance").html(data);
 				break;
 			default:
 				clearInstance();
@@ -225,7 +453,7 @@ function road(_id, _ordhighlight = undefined) {
 		hideLoading();
 		switch (status) {
 			case "success":
-				$("#instance-div").html(data);
+				$("instance").html(data);
 				break;
 			default:
 				clearInstance();
@@ -265,4 +493,5 @@ function road(_id, _ordhighlight = undefined) {
     </div>
   </div>
 </div>
+
 <?php include "footer.php"?>

@@ -30,7 +30,7 @@ class naviClient {
 	private $factory_xml;
 	
 	
-	function __construct(string $_user, string $_password, string $_factory, $_time_zone = null) {
+	function __construct(string $_user, string $_password, string $_factory, ?int $_time_zone = null) {
 		$this->factory = $_factory;
 		$this->user = $_user;
 		$this->time_zone = $_time_zone;
@@ -78,18 +78,19 @@ class naviClient {
 		$this->client_id = $x->fetch_assoc()["client_id"];
 		$x->free_result();
 		
-//	    $this->dblink->next_result();
-		$x = $this->dblink->query("select getUserID(" . $this->client_id . ", '" . $this->user . "') as user_id;");
-//		echo "select getUserID(" . $this->client_id . ", '" . $this->user . "') as user_id;";
-//		var_dump($x->fetch_assoc());
-		if (!$x) throw new Exception("User '" . $this->user . "' not found in '" . $database. "': " . $this->dblink->errno . " - " . $this->dblink->error);
-		$this->user_id = $x->fetch_assoc()["user_id"];
-//		echo "User '" . $this->user . "' : user_id=" .$this->user_id;
-		$x->free_result();
+		$this->user_id = $this->getUserIDByName($this->user);
 	}
 	
 	function __destruct() {
 		$this->dblink->close();
+	}
+	
+	function getUserIDByName(string $_name) {
+		$x = $this->dblink->query("select getUserID(" . $this->client_id . ", '" . $this->user . "') as user_id;");
+		if (!$x) throw new Exception("User '" . $this->user . "' not found in '" . $database. "': " . $this->dblink->errno . " - " . $this->dblink->error);
+		$user_id = $x->fetch_assoc()["user_id"];
+		$x->free_result();
+		return $user_id;
 	}
 	
 	// getRoutes loads route-*.xml by the order's number
@@ -139,6 +140,8 @@ class naviClient {
 	
 	// 
 	function getMessages($_tags = "", $_to = 0, $_read = 0, $_types = "") {
+	    if ($_to == 0) $_to = $this->user_id;
+	    var_dump($_to);
 		$x = $this->dblink->query("call getMessages(" . $this->client_id . ", '" . $_tags . "', " . $_to . ", " . $_read . ", '" . $_types . "')");
 		if (!$x) throw new Exception("Unexpected error while getting messages" . ": " . $this->dblink->errno . " - " . $this->dblink->error . " call getMessages(" . $this->client_id . ", '" . $_tags . "', '" . $_to . "', " . $_read . ", '" . $_types . "')"); 
 		$ret = array();
@@ -148,8 +151,8 @@ class naviClient {
     }
 	
 	//
-	function createMessage($_body, $_order_id = 0, $_to = 0, $_messageType = "primary", $_reply = 0) {
-	    $this->dblink->query("select addMessage(" . $this->client_id . ", " . $_order_id . ", " . $this->user_id . ", " . $_to . ", '" . $_messageType . "', '" . $_body . "', " . $_reply . ")");
+	function createMessage(string $_body, ?int $_order_id = 0, ?int $_to = 0, string $_messageType = "primary", int $_reply = 0) {
+	    $this->dblink->query("select addMessage(" . $this->client_id . ", " . (is_null($_order_id)?0 : $_order_id) . ", " . $this->user_id . ", " . $_to . ", '" . $_messageType . "', '" . $_body . "', " . $_reply . ")");
 	    if ($this->dblink->errno) throw new Exception("Could not create message: " . $this->dblink->errno . " - " . $this->dblink->error);
 	}
 
@@ -661,6 +664,16 @@ class naviClient {
 		    throw new Exception("Unexpected error while update estimated time order" . "': " . $this->dblink->errno . " - " . $this->dblink->error . "call updateEstimatedTime(" . $fullorderinfo["db"]["id"] . ", '" . $fet->format('Y-m-d H:i:s') . "');");
 		}
         $this->dblink->next_result();
+	}
+	
+	function getUserByLetters(string $letters) {
+		$found = $this->factory_xml->xpath("//user[starts-with(@id, '" . $letters . "')]");
+//		$found = $this->factory_xml->xpath("//user[contains(lower-case(@id), '" . strtolower($letters) . "')]");
+        $ret = [];
+        foreach($found as $f) {
+            $ret[] = (string)$f["id"];
+        }
+		return $ret;
 	}
 }
 ?>

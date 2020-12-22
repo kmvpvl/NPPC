@@ -11,5 +11,4 @@ try {
     $res = '"FAIL", "description" : "' . $e->getMessage() . '"';  
 }
 echo $res . '}';
-$shome = null;
 ?>
