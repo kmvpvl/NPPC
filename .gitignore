@@ -1,3 +1,6 @@
 settings.ini
 instance/logs
 instance/tlogs
+.vscode/launch.json
+*.json
+.vscode/launch.json
