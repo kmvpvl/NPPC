@@ -107,7 +107,7 @@ class ORMNavi :
 					else :
 						logging.debug("%s workcenters for this operation found", len(facop))
 						for wc in facop :
-							if wc.tag <> "workcenter" : raise ORMException("Tag operation ref = '%s' in factory xml must be a child in tag workcenter" % (el.attrib["ref"]))
+							if wc.tag != "workcenter" : raise ORMException("Tag operation ref = '%s' in factory xml must be a child in tag workcenter" % (el.attrib["ref"]))
 							logging.debug("Workcenter id = '%s' can proceed this operation", wc.attrib["id"])
 							ET.SubElement(tmp, "workcenter", ref = wc.attrib["id"])
 				o = self.__goRoundProdLevel(r[0], "%s.%s" % (outlinelabel, out), tmp)
@@ -220,7 +220,7 @@ class ORMNavi :
 		routesroot = ET.Element("routes", orderref="%s" % orderNum)
 		#searching tag <customer>
 		for customer in orderXMLTree :
-			if customer.tag <> "customer" : raise ORMException("Customer tag was expected as child of order tag" % (orderNum))
+			if customer.tag != "customer" : raise ORMException("Customer tag was expected as child of order tag" % (orderNum))
 			#searching specific routes to customer
 			r = self.__factoryroot.findall(".//road[@to='" + customer.attrib["ref"] + "']")
 			if r :

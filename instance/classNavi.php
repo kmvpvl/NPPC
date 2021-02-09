@@ -1,5 +1,5 @@
 <?php
-opcache_reset();
+//opcache_reset();
 error_reporting(-1);
 ini_set('display_errors', 'On');
 include "classOrder.php";
