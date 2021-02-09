@@ -87,7 +87,7 @@ class naviClient {
 	
 	function getUserIDByName(string $_name) {
 		$x = $this->dblink->query("select getUserID(" . $this->client_id . ", '" . $this->user . "') as user_id;");
-		if (!$x) throw new Exception("User '" . $this->user . "' not found in '" . $database. "': " . $this->dblink->errno . " - " . $this->dblink->error);
+		if (!$x) throw new Exception("User '" . $this->user . "' not found in database. : " . $this->dblink->errno . " - " . $this->dblink->error);
 		$user_id = $x->fetch_assoc()["user_id"];
 		$x->free_result();
 		return $user_id;
@@ -141,7 +141,6 @@ class naviClient {
 	// 
 	function getMessages($_tags = "", $_to = 0, $_read = 0, $_types = "") {
 	    if ($_to == 0) $_to = $this->user_id;
-	    var_dump($_to);
 		$x = $this->dblink->query("call getMessages(" . $this->client_id . ", '" . $_tags . "', " . $_to . ", " . $_read . ", '" . $_types . "')");
 		if (!$x) throw new Exception("Unexpected error while getting messages" . ": " . $this->dblink->errno . " - " . $this->dblink->error . " call getMessages(" . $this->client_id . ", '" . $_tags . "', '" . $_to . "', " . $_read . ", '" . $_types . "')"); 
 		$ret = array();
@@ -402,7 +401,7 @@ class naviClient {
 			foreach ($_wcxml as $wc) {
 				switch ( $wc->getName()	) {
 					case "workcenter":
-						$o = $this->_drawWorkcenter($wc);
+						$o = $this->_drawWorkcenter($wc, $_wloads);
 						$ret->html .= $o->html;
 						$ret->script .= $o->script;
 						break;
