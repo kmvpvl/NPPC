@@ -84,7 +84,7 @@ class ORMNaviFactory {
         $host = "";
         $database = "";
         $dbuser = "";
-        $ddbpassword = "";
+        $dbpassword = "";
 		
 		if (array_key_exists("database", $settings)) {
 			if (array_key_exists("host", $settings["database"])) $host = $settings["database"]["host"];
@@ -97,14 +97,14 @@ class ORMNaviFactory {
 		if ($this->dblink->connect_errno) throw new ORMNaviException("Unable connect to database (" . $host . " - " . $database . "): " . $this->dblink->connect_errno . " - " . $this->dblink->connect_error);
 		$this->dblink->set_charset("utf-8");
 		$this->dblink->query("set names utf8");
-		if (!is_null($this->time_zone)) $this->dblink->query("SET @@session.time_zone='" . ((0 < $this->time_zone)? "+":"") . $this->time_zone . ":00';");
+		if (!is_null($this->time_zone)) $this->dblink->query("SET @@session.time_zone='" . $this->time_zone->getName() . "';");
 		// loading client ID
 		$x = $this->dblink->query("select getClientID('" . $this->factory . "') as client_id;");
 		
 		if (!$x) throw new ORMNaviException("Factory '" . $this->factory . "' not found in '" . $database. "': " . $this->dblink->errno . " - " . $this->dblink->error);
 		$this->client_id = $x->fetch_assoc()["client_id"];
 		$x->free_result();
-		
+		$x = $this->dblink->next_result();
 		$this->user_id = $this->getUserIDByName($this->user);
 	}
 	function __destruct() {
@@ -117,6 +117,13 @@ class ORMNaviFactory {
 	public function getOrder(string $order_number) :? ORMNaviOrder {
 
 	}
-
+	protected function getUserIDByName(string $user_name): int {
+		$x = $this->dblink->query("select getUserID(" . $this->client_id . ", '" . $this->user . "') as user_id;");
+		if (!$x) throw new Exception("User '" . $this->user . "' not found in database. : " . $this->dblink->errno . " - " . $this->dblink->error);
+		$user_id = $x->fetch_assoc()["user_id"];
+		$x->free_result();
+		$x = $this->dblink->next_result();
+		return $user_id;
+	}
 }
 ?>

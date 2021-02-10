@@ -1,4 +1,5 @@
 <?php
 require_once("classORMNavi.php");
-$navi = new ORMNaviFactory("David Rhuxel", "*******", "example2", null);
+$tz = new DateTimeZone("+0300");
+$navi = new ORMNaviFactory("David Rhuxel", "*******", "example2", $tz);
 ?>
