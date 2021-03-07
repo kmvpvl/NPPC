@@ -171,8 +171,6 @@ div[assign] {
 #btn-move-assign:hover {
     background-color: yellow;
 }
-#btn-order-info::after {
-}
 #btn-order-info {
     position: absolute;
     display: none;
@@ -312,13 +310,6 @@ order > lagdeadest:before {
     content: "";
 }
 
-.cell-data[order][state='ASSIGNED'] {
-}
-.cell-data[order][state='ASSIGNED']::before {
-}
-
-.cell-data[order][state='ASSIGNED']::after {
-}
 
 #block-btn-imported-orders {
     display: none;
@@ -367,9 +358,19 @@ messages > messages-container > message {
     float: left;
     margin: 2px;
 }
-messages > messages-container > message > user {
+message > user {
     font-weight: bold;
+    font-size: smaller;
+    display: block;
 }
-messages > messages-container > message.primary {
+message[message_id].INFO {
     color: navy;
+    background-color: white;
+}
+message[message_id].WARNING {
+    color:white;
+    background-color: brown;
+}
+message[message_id].CRITICAL {
+    color: red;
 }

@@ -1,5 +1,6 @@
 <?php include "header.php"?>
 <script src="naviNPPC.js"></script>
+<script src="ORMNavi.js"></script>
 <?php include "menu.php"?>
 <instance>
 </instance>
@@ -9,25 +10,17 @@
 </messages-shortcut>    
 <messages-toolbar>
 <strong class="mr-auto>">Messages</strong>
-<input type="checkbox" checked="1">success</input>
-<input type="checkbox" checked="1">warnings</input>
+<input type="checkbox" checked="1">INFO</input>
+<input type="checkbox" checked="1">WARNING</input>
 <input id="btn-new-message" type="button" value="[new]"></input>
 <button type="button" class="ml-2 mb-1 close" messages="collapse">&times;</button>
 <message-template>
 <div class="input-group mb-0">
-    <div class="input-group-prepend">
-        <span class="input-group-text">@</span>
-    </div>
-    <input id="message_order" type="text" class="form-control" placeholder="Order" aria-label="Order">
-    <div class="input-group-text">
-        <input type="checkbox" aria-label="Checkbox for following text input">
-    </div>
-    <input id="message_to" type="text" class="form-control" placeholder="Username" aria-label="Username">
-    <select class="custom-select" id="message_type">
-        <option value="primary">info</option>
-        <option value="warning">warning</option>
-        <option value="danger">danger</option>
-    </select>
+	<select class="custom-select" id="message_type">
+		<option value="INFO">info</option>
+		<option value="WARNING">warning</option>
+		<option value="CRITICAL">critical</option>
+	</select>
     <div class="input-group-append">
         <button id="btn-send-message" class="btn btn-outline-secondary" type="button">Send</button>
     </div>
@@ -52,7 +45,7 @@
 		<label for="factory">Factory</label>
 		<input type="text" placeholder="Enter factory" id="factory" required value="example2"></input>
 		<label for="timezone">Timezone</label>
-		<input id="timezone" type="number" min="-12" max="12" class="digit" value="3"></input>
+		<select id="timezone" type="select"><option value="+0300" default="default">Moscow</option><option value="+0400">Samara</option></select>
 		<label for="language">Language</label>
 		<select id="language" type="select"><option value="en" default="default">EN</option><option value="ru">RU</option></select>
 		
@@ -90,86 +83,9 @@ $(document).ready (function (){
 $("#btn-new-message").on('click', function (){
     $('message-template').show();
 })
-$('#message_order').on ('change', function () {
-    
-})
-$('#message_to').on ('input', function () {
-	var p = $.post("apiGetUserByLetters.php",
-	{
-		username: $("#username").val(),
-		factory:  $("#factory").val(),
-		password: $("#password").val(),
-		language: $("#language").val(),
-		timezone: $("#timezone").val(),
-		letters: $('#message_to').val()
-	},
-	function(data, status){
-		hideLoading();
-		//debugger;
-		switch (status) {
-			case "success":
-			    var users = jQuery.parseJSON(data);
-			    if (users.length == 1) {
-			        $('#message_to').val(users[0]);
-			    }
-				break;
-			default:
-                ;
-		}
-	});
-	p.fail(function(data, status) {
-		hideLoading();
-		switch (data.status) {
-			case 401:
-				clearInstance();
-				showLoginForm();
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-				break;
-			default:				
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-		}
-	})
-})
 $("#btn-send-message").on('click', function () {
-	showLoading();
-	//debugger;
-	var p = $.post("apiSendMessage.php",
-	{
-		username: $("#username").val(),
-		factory:  $("#factory").val(),
-		password: $("#password").val(),
-		language: $("#language").val(),
-		timezone: $("#timezone").val(),
-		message_type: $('#message_type').val(),
-		message_text: $('#message_text').val(),
-		message_order: (('' == $('#message_order').val())?undefined : $('#message_order').val()),
-		message_to: (('' == $('#message_to').val())?undefined : $('#message_to').val()),
-		message_reply: $('#message_reply').val()
-	},
-	function(data, status){
-		hideLoading();
-		//debugger;
-		switch (status) {
-			case "success":
-                $('message-template').hide();
-                updateMessages();
-				break;
-			default:
-                ;
-		}
-	});
-	p.fail(function(data, status) {
-		hideLoading();
-		switch (data.status) {
-			case 401:
-				clearInstance();
-				showLoginForm();
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-				break;
-			default:				
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-		}
-	})
+	debugger;
+	ORMNaviMessage.send($("#message_text").val(), $("#message_type").val());
 })
 
 function makeMessageRead(_message_id) {
@@ -226,9 +142,7 @@ function updateMessages() {
 				$("messages messages-container").html(data);
                 $('messages messages-container message').prepend('<button type="button" class="ml-2 mb-1 close" message="collapse">&times;</button>');
                 $('message button[message="collapse"]').on ('click', function (event) {
-                    message_id = event.currentTarget.parentElement.attributes['message_id'].nodeValue;
-                    makeMessageRead(message_id);
-                    $('message[message_id="' + message_id + '"]').hide();
+					$(this).parent()[0].json.dismiss();
                 })
 				break;
 			default:
