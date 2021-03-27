@@ -46,9 +46,9 @@
 </instance>
 <messages>
 <messages-toolbar>
-<input type="checkbox" checked data-toggle="toggle" data-on="<b>Inbox</b>" data-off="<b>Sent</b>" data-onstyle="default" data-width="100">
-<input type="checkbox" checked data-toggle="toggle" data-on="info" data-off="not info" data-onstyle="default" data-width="100">
-<input type="checkbox" checked data-toggle="toggle" data-on="warning" data-off="not warning" data-onstyle="default" data-width="120">
+<input type="checkbox" checked data-toggle="toggle" data-on="<b>Inbox</b>" data-off="<b>Sent</b>"  data-width="100">
+<input type="checkbox" checked data-toggle="toggle" data-on="info" data-off="not info" data-width="100">
+<input type="checkbox" checked data-toggle="toggle" data-on="warning" data-off="not warning" data-width="120">
 
 <input id="btn-new-message" type="button" value="[new message]"></input>
 <button type="button" class="ml-2 mb-1 close" messages="collapse">&times;</button>
