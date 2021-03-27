@@ -1,182 +1,110 @@
 <?php
-include "checkUser.php";
-$road = $navi->getRoadInfo($_POST["road"]);
-$brand = trim((string)$road["id"] . ": " . (string)$road["from"]. "-" . (string)$road["to"]);
-//var_dump($road);
-?>
-<?php
-$bucks = [(string)$road["from"], (string)$road["to"]];
-//echo $brand;
+include "checkORMNavi.php";
+$road = $factory->getRoadInfo($_POST["road"]);
+$brand = trim($road);
+$wc_from = (string)$road["from"];
+$wc_to = (string)$road["to"];
+$wc_from_desc = trim($factory->getWorkcenterInfo($wc_from));
+$wc_to_desc = trim($factory->getWorkcenterInfo($wc_to));
 ?>
 <script>
 $(".nav-link.active").removeClass("active");
-$("#menuWorkcenter").addClass("active");
-$(".navbar-brand").text("<?= $brand ?>");
-drawRoads();
-drawMessages();
+$(".navbar-brand").text("<?= $factory->description . ": " . $brand ?>");
+var current_order_in_road = null;
 
-function roadsResize() {
-}
-function messageCenterResize() {
-	if (typeof(resizeMessageCenter) == "function") resizeMessageCenter();	
-}
-
-function resizeRoadsContentAll() {
-    roadsResize();
-    messageCenterResize();
-}
-
-$(window).on ('resize', resizeRoadsContentAll);
-
-//resizeWorkcenterContentAll();
-
-function drawRoads() {
-}
-
-function drawMessages() {
-    $("#messageCenter").html = '';
-	showLoading();
-	var p = $.post("drawMessages.php",
-	{
-		username: $("#username").val(),
-		factory:  $("#factory").val(),
-		password: $("#password").val(),
-		language: $("#language").val(),
-		timezone: $("#timezone").val()
-	},
-	function(data, status){
+function updateOrders() {
+    sendDataToNavi("apiGetRoadOrders", {road: '<?=$_POST["road"]?>'}, 
+    function(data, status){
 		hideLoading();
 		switch (status) {
 			case "success":
-				$("#messageCenter").html(data);
-				resizeMessageCenter();	
-				break;
+                $("income").html("");
+                $("outcome").html("");
+                $("#btnOrderMove").hide();
+                $("#btnOrderInfo").hide();
+                ls = JSON.parse(data);
+				//debugger;
+                for (ind in ls.data['<?=$wc_from?>']) {
+                    o = ls.data['<?=$wc_from?>'][ind];
+					var b = ORMNaviOrder.getBucket(o, '<?=$wc_from?>');
+					$('income').append('<order class="brief" number="'+o.number+'" assign="'+b.assign+'" full="'+o.fullset+'"/>');
+                    ot = new ORMNaviOrder(o);
+                }
+                for (ind in ls.data['<?=$wc_to?>']) {
+                    o = ls.data['<?=$wc_to?>'][ind];
+					var b = ORMNaviOrder.getBucket(o, '<?=$wc_to?>');
+					$('outcome').append('<order class="brief" number="'+o.number+'" assign="'+b.assign+'" full="'+o.fullset+'"/>');
+                    ot = new ORMNaviOrder(o);
+                }
+                if (current_order_in_road)
+                    $('order[number="'+current_order_in_road+'"]').addClass("highlight");
+                $("order[number]").on('click', function() {
+                    //debugger;
+                    var n = $(this).attr("number");
+                    $("order[number]").removeClass("selected");
+                    if ($('order[number="'+n+'"]').hasClass("selected")) $('order[number="'+n+'"]').removeClass("selected");
+                    else $('order[number="'+n+'"]').addClass("selected");
+                    if ($("income > order[number].selected").length == 1 || 
+                    $("processing > order[number].selected").length == 1) {
+                        $("#btnOrderMove").show();
+                        $("#btnOrderMove").css({
+                            left: $("order[number].selected").position().left+$("#btnOrderInfo").outerWidth()+'px',
+    						top: $("order[number].selected").position().top+$("order[number].selected").outerHeight()+'px'
+                        });
+                    } else {
+                        $("#btnOrderMove").hide();
+                    }
+                    if ($("order[number].selected").length == 1) {
+                        //debugger;
+                        $("#btnOrderInfo").show();
+                        $("#btnOrderInfo").css({
+                            left: $("order[number].selected").position().left/*+$("order[number].selected").outerWidth()*/+'px',
+    						top: $("order[number].selected").position().top+$("order[number].selected").outerHeight()+'px'
+                        });
+                    } else {
+                        $("#btnOrderInfo").hide();
+                    }
+                })
+                break;
 			default:
-                ;
+				;
 		}
-	});
-	p.fail(function(data, status) {
-		hideLoading();
-		switch (data.status) {
-			case 401:
-				clearInstance();
-				showLoginForm();
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-				break;
-			default:				
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-		}
-	})
+    });
 }
-
-$("[assign]").on('click', function (event){
-    $(".active[assign]").removeClass("active");
-    var c = $("[assign = " + event.currentTarget.attributes["assign"].value + "]");
-    c.addClass("active");
-    $("#btn-move-assign").css('left',  c.position().left + c.outerWidth() - $("#btn-move-assign").outerWidth() + "px");
-    $("#btn-move-assign").css('top',  c.position().top  + "px");
-    if (c.attr("wc") == '<?=$road["from"]?>') $("#btn-move-assign").show();
-    else $("#btn-move-assign").hide();
-    
-    $("#btn-order-info").css('left',  c.position().left + "px");
-    $("#btn-order-info").css('top',  c.position().top  + "px");
-    $("#btn-order-info").show();
-});
-$("#btn-move-assign").on("click", function(){
-	showLoading();
-	var p = $.post("apiMoveAssignToNextWorkcenter.php",
-	{
-		username: $("#username").val(),
-		password: $("#password").val(),
-		factory:  $("#factory").val(),
-		language: $("#language").val(),
-		timezone: $("#timezone").val(),
-		assign_id: $(".active[assign]").attr("assign")
-	},
-	function(data, status){
-		hideLoading();
-		switch (status) {
-			case "success":
-			    //debugger;
-			    road("<?=$_POST["road"]?>");
-				break;
-			default:
-				clearInstance();
-				showLoginForm();
-		}
-	});
-	p.fail(function(data, status) {
-		hideLoading();
-		switch (data.status) {
-			case 400:
-				clearInstance();
-				showLoginForm();
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-				break;
-			default:				
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-		}
-	})
-})
-$("#btn-order-info").on("click", function(){
-    order($(".active[assign]").attr("order_number"));
-});
-<?php
-if (isset($_POST["highlight"])) {
-?>
-$("number:contains('<?=$_POST["highlight"]?>')").css('animation', "order-highlight 2s 100");
-<?php
-}
-?>
-
-</script>
-<button id="btn-move-assign">[move]</button>
-<button id="btn-order-info">[info]</button>
-<div class="input-group mb-3">
-	<input type="text" class="form-control" placeholder="Search orders...">
-	<div class="input-group-append">
-  		<button class="btn btn-success" type="submit">Go</button> 
-	</div>
-</div>
-<?php
-    //var_dump($bucks);
-    $x = $navi->getRoadAssigns((string)$road["from"], (string)$road["to"]);
-    //var_dump($x);
-?>
-<div class="row ml-0 mr-0">
-    <?php 
-    foreach ($bucks as $b) { 
-    ?>
-	<div class="col-sm-6 cell-header"><?= $b ?></div>
-<?php 
-    }
-?>
-</div>
-<div class="row ml-0 mr-0">
-    <?php 
-    $i = 0;
-    while (TRUE) {
-        $last = TRUE;
-        foreach ($bucks as $b){
-            $c = $x[$b];
-            if ($i < count($c)-1) $last = FALSE;
-            if ($i < count($c)) {
-            $xml_order = order_db_string($c[$i]);
-    ?>
-	<div wc="<?=$b?>" assign="<?=$c[$i]["id"]?>" class="col-sm-6 cell-data" order_number="<?= $c[$i]["number"]?>">
-	<?=$xml_order?>
-	</div>
-    <?php 
-            } else {
-    ?>
-	<div class="col-sm-6 cell-data">&nbsp;</div>
-    <?php 
+updateOrders();
+$("#btnOrderMove").on("click", function(){
+    if ($("order[number].selected").length == 1) {
+        var a = $("order[number].selected").attr("assign");
+        current_order_in_road = $("order[number].selected").attr("number")
+        sendDataToNavi("apiMoveAssignToNextWorkcenter", {assign: a}, 
+        function(data, status) {
+            hideLoading();
+            //debugger;
+            switch (status) {
+                case "success":
+                    updateOrders();
+                    break;
+                default:
+                    ;
             }
-        }
-        if ($last) break;
-        $i++;
+        });
     }
-    ?>
-</div>
-<div id="messageCenter" class="messageCenter popdown">
-</div>
+});
+
+$("#btnOrderInfo").on('click', function(){
+    if ($("order[number].selected").length == 1) {
+        var order = $("order[number].selected").attr("number");
+        modalOrderInfo(order);
+    }
+});
+</script>
+<orders_in_road>
+    <input id="edt-search" type="text" class="form-control" placeholder="Search orders..."></input>
+    <span></span>
+    <span><?=$wc_from_desc?></span>
+    <span><?=$wc_to_desc?></span>
+    <income></income>
+    <outcome></outcome>
+</orders_in_road>
+<span id="btnOrderInfo">info</span>
+<span id="btnOrderMove">move</span>

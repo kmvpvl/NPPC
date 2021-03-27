@@ -1,160 +1,109 @@
 <?php
-include "checkUser.php";
-$brand = trim((string)$navi->getWorkcenterInfo($_POST["workcenter"]));
-//var_dump($_POST["highlight"]);
+include "checkORMNavi.php";
+$brand = trim($factory->getWorkcenterInfo($_POST["workcenter"]));
 ?>
 <script>
 $(".nav-link.active").removeClass("active");
 $("#menuWorkcenter").addClass("active");
-$(".navbar-brand").text("<?= $navi->factoryName . ": " . $brand ?>");
-drawWorkcenter();
-function workcenterResize() {
-	$("#workcenter-div").outerHeight("100%");
-    $(".content-div").css('height', $("#workcenter-div").outerHeight() - $(".content-div").offset().top + "px");
-}
+$(".navbar-brand").text("<?= $factory->description . ": " . $brand ?>");
+var current_order_in_workcenter = null;
 
-
-$(window).on ('resize', workcenterResize());
-workcenterResize();
-
-
-function drawWorkcenter() {
-}
-
-
-$("[assign]").on('click', function (event){
-    $(".active[assign]").removeClass("active");
-    var c = $("[assign = " + event.currentTarget.attributes["assign"].value + "]");
-    c.addClass("active");
-    
-    $("#btn-move-assign").css('left',  c.position().left + c.outerWidth() - $("#btn-move-assign").outerWidth() + "px");
-    //debugger;
-    $("#btn-move-assign").css('top',  $("#content-div").scrollTop() + c.position().top  + "px");
-    if (c.attr("full") == '1' && c.attr("bucket") != 'OUTCOME')  $("#btn-move-assign").show();
-    else $("#btn-move-assign").hide();
-    
-    $("#btn-order-info").css('left',  c.position().left + "px");
-    $("#btn-order-info").css('top',  c.position().top  + "px");
-    $("#btn-order-info").show();
-
-});
-
-$("#btn-order-info").on("click", function(){
-    order($(".active[assign]").attr("order_number"));
-});
-
-$("#edt-search").on("change", function() {
-    if("" != $("#edt-search").val()) {
-        
-        //debugger;
-        $("[assign] > order").each(function () {
-            $(this).hide();
-        });
-        cc = $("order > number:contains('" + $("#edt-search").val() + "')");
-        cc.each(function (value) {
-            $(this).parent().show();
-        });
-    } else {
-        $("[assign] > order").each(function () {
-            $(this).show();
-        });
-    };
-})
-
-$("#btn-move-assign").on("click", function(){
-	showLoading();
-	var p = $.post("apiMoveAssignToNextBucket.php",
-	{
-		username: $("#username").val(),
-		password: $("#password").val(),
-		factory:  $("#factory").val(),
-		language: $("#language").val(),
-		timezone: $("#timezone").val(),
-		assign_id: $(".active[assign]").attr("assign")
-	},
-	function(data, status){
+function updateOrders() {
+    sendDataToNavi("apiGetWorkcenterOrders", {workcenter: '<?=$_POST["workcenter"]?>'}, 
+    function(data, status){
 		hideLoading();
 		switch (status) {
 			case "success":
-			    //debugger;
-			    workcenter("<?=$_POST["workcenter"]?>");
-				break;
+                $("income").html("");
+                $("processing").html("");
+                $("outcome").html("");
+                $("#btnOrderMove").hide();
+                $("#btnOrderInfo").hide();
+                ls = JSON.parse(data);
+                for (ind in ls.data) {
+                    o = ls.data[ind];
+                    //debugger;
+                    var b = ORMNaviOrder.getBucket(o, '<?=$_POST["workcenter"]?>');
+                    if (b) {
+                        $(b.bucket).append('<order class="brief" number="'+o.number+'" assign="'+b.assign+'" full="'+(b.fullset=='1'?"1":"0")+'"/>');
+                    } else {
+                    }
+                    ot = new ORMNaviOrder(o);
+                }
+                $('order[full="0"]').prepend('<span class="order-bage">partly</span>');
+                if (current_order_in_workcenter)
+                    $('order[number="'+current_order_in_workcenter+'"]').addClass("highlight");
+                $("order[number]").on('click', function() {
+                    //debugger;
+                    var n = $(this).attr("number");
+                    $("order[number]").removeClass("selected");
+                    if ($('order[number="'+n+'"]').hasClass("selected")) $('order[number="'+n+'"]').removeClass("selected");
+                    else $('order[number="'+n+'"]').addClass("selected");
+                    if ( ($("income > order[number].selected").length == 1 ||
+                    $("processing > order[number].selected").length == 1) &&
+                    $("order[number].selected").attr("full")=="1") {
+                        $("#btnOrderMove").show();
+                        $("#btnOrderMove").css({
+                            left: $("order[number].selected").position().left+$("#btnOrderInfo").outerWidth()+'px',
+    						top: $("order[number].selected").position().top+$("order[number].selected").outerHeight()+'px'
+                        });
+                    } else {
+                        $("#btnOrderMove").hide();
+                    }
+                    if ($("order[number].selected").length == 1) {
+                        //debugger;
+                        $("#btnOrderInfo").show();
+                        $("#btnOrderInfo").css({
+                            left: $("order[number].selected").position().left/*+$("order[number].selected").outerWidth()*/+'px',
+    						top: $("order[number].selected").position().top+$("order[number].selected").outerHeight()+'px'
+                        });
+                    } else {
+                        $("#btnOrderInfo").hide();
+                    }
+                })
+                break;
 			default:
-				clearInstance();
-				showLoginForm();
+				;
 		}
-	});
-	p.fail(function(data, status) {
-		hideLoading();
-		switch (data.status) {
-			case 400:
-				clearInstance();
-				showLoginForm();
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-				break;
-			default:				
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-		}
-	})
-})
-<?php
-if (isset($_POST["highlight"])) {
-?>
-$("number:contains('<?=$_POST["highlight"]?>')").css('animation', "order-highlight 2s 100");
-<?php
+    });
 }
-?>
-</script>
-<?php
-$bucks = $navi->getWorkcenterAssigns($_POST["workcenter"]);
-//var_dump($bucks);
-//echo $brand;
-?>
-<div id="workcenter-div">
-<div class="input-group mb-3">
-	<input id="edt-search" type="text" class="form-control" placeholder="Search orders...">
-</div>
-<div class="row ml-0 mr-0">
-    <?php 
-    foreach ($bucks as $b => $c) { 
-    ?>
-	<div class="col-sm-4 cell-header"><?= $b ?></div>
-    <?php 
-    }
-    ?>
-</div>
-<div class="content-div">
-<button id="btn-move-assign">[move]</button>
-<button id="btn-order-info">[info]</button>
-    <?php 
-    $i = 0;
-    while (TRUE) {
-?>
-<div class="row  ml-0 mr-0">
-<?php
-    $last = TRUE;
-        foreach ($bucks as $b => $c){
-            if ($i < count($c)-1) $last = FALSE;
-            if ($i < count($c)) {
-            $xml_order = order_db_string($c[$i]);
-    ?>
-	<div bucket="<?=$b?>" assign="<?=$c[$i]["id"]?>" full="<?=(($c[$i]["fullset"] != "1") ? "0" : "1")?>" class="col-sm-4 cell-data" order_number="<?= $c[$i]["number"]?>"><?= ($c[$i]["fullset"] != "1") ? "(not full)" : ""?>
-	<?=$xml_order?>
-	</div>
-    <?php 
-            } else {
-    ?>
-	<div class="col-sm-4 cell-data">&nbsp;</div>
-    <?php 
+updateOrders();
+$("#btnOrderMove").on("click", function(){
+    if ($("order[number].selected").length == 1) {
+        var a = $("order[number].selected").attr("assign");
+        current_order_in_workcenter = $("order[number].selected").attr("number")
+        sendDataToNavi("apiMoveAssignToNextBucket", {assign: a}, 
+        function(data, status) {
+            hideLoading();
+            //debugger;
+            switch (status) {
+                case "success":
+                    updateOrders();
+                    break;
+                default:
+                    ;
             }
-        }
-        if ($last) break;
-        $i++;
-?>
-</div>
-<?php
+        });
     }
-    ?>
-</div>
-</div>
-</div>
+});
+
+$("#btnOrderInfo").on('click', function(){
+    if ($("order[number].selected").length == 1) {
+        var order = $("order[number].selected").attr("number");
+        modalOrderInfo(order);
+    }
+});
+</script>
+<orders_in_workcenter>
+    <input id="edt-search" type="text" class="form-control" placeholder="Search orders..."></input>
+    <span></span>
+    <span></span>
+    <span>INCOME</span>
+    <span>PROCESSING</span>
+    <span>OUTCOME</span>
+    <income></income>
+    <processing></processing>
+    <outcome></outcome>
+</orders_in_workcenter>
+<span id="btnOrderInfo">info</span>
+<span id="btnOrderMove">move</span>

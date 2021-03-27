@@ -10,7 +10,6 @@ $(".nav-link.active").removeClass("active");
 $("#menuWorkcenter").addClass("active");
 $(".navbar-brand").text("<?= $brand ?>");
 drawOrder();
-drawMessages();
 
 
 function messageCenterResize() {
@@ -30,42 +29,6 @@ $(window).on ('resize', resizeOrderContentAll);
 function drawOrder() {
 }
 
-function drawMessages() {
-    $("#messageCenter").html = '';
-	showLoading();
-	var p = $.post("drawMessages.php",
-	{
-		username: $("#username").val(),
-		factory:  $("#factory").val(),
-		password: $("#password").val(),
-		language: $("#language").val(),
-		timezone: $("#timezone").val(),
-		order_id: <?=$order_info["db"]["id"]?>
-	},
-	function(data, status){
-		hideLoading();
-		switch (status) {
-			case "success":
-				$("#messageCenter").html(data);
-				resizeMessageCenter();	
-				break;
-			default:
-                ;
-		}
-	});
-	p.fail(function(data, status) {
-		hideLoading();
-		switch (data.status) {
-			case 401:
-				clearInstance();
-				showLoginForm();
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-				break;
-			default:				
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-		}
-	})
-}
 
 
 </script>

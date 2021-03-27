@@ -1,8 +1,8 @@
 <?php
-include "checkUser.php";
+include "checkORMNavi.php";
 try {
-    $navi->moveAssignToNextWorkcenter($_POST["assign_id"]);
-} catch (Exception $e) {
+    $factory->moveAssignToNextWorkcenter($_POST["data"]["assign"]);
+} catch (ORMNaviException | Exception $e) {
 	http_response_code(400);
 	die ($e->getMessage());
 }

@@ -2,6 +2,14 @@
 class ORMNaviException extends Exception {
 
 }
+
+abstract class ORMNaviRoles {
+	const SUPER_USER = "SUPER_USER";
+	const IMPORT_ORDER = "IMPORT_ORDER";
+	const TAKE_ORDER = "TAKE_ORDER";
+	const PROCESS_ORDER_WC = "PROCESS_ORDER_WC";
+	const PROCESS_ORDER_ROAD = "PROCESS_ORDER_ROAD";
+}
 class ORMNaviTag implements JsonSerializable {
 	protected $factory; 
 	protected $tag;
@@ -55,9 +63,24 @@ class ORMNaviUser implements JsonSerializable {
 	public function authorize() {
 		$user = $this->getUserByName();
 		if ($user["hash"] != $this->hash) throw new ORMNaviException("User was not found or password was incorrect");
-		$this->roles = $user["roles"];
+		$this->roles = explode(";", $user["roles"]);
+		foreach($this->roles as $key=>$role) {
+			if (count(explode("%", $role)) > 1) {
+				$this->roles[$key] = explode("%", $role);
+			}
+		}
 		$this->subscriptions = $user["subscriptions"];
 	}
+
+	public function hasRole(string $role, ?string $context= null) {
+		if (in_array(ORMNaviRoles::SUPER_USER, $this->roles)) return true;
+		if (!is_null($context)) {
+			return in_array([$role, $context], $this->roles);
+		} else {
+			return in_array($role, $this->roles);
+		}
+	}
+
 	function __debugInfo() {
 		return [
 			"factory" => $this->factory->name,
@@ -237,12 +260,15 @@ class ORMNaviOrder implements JsonSerializable {
 	protected $current_route = null;
 	protected $xml = null;
 	protected $routes_xml = null;
+	protected $history = null;
 
 	protected function _arrayImport(array $a) {
 		foreach ($a as $key=>$value) {
 			if (property_exists($this, $key)) {
-
-				$this->$key = $value;
+				$d = DateTime::createFromFormat('Y-m-d H:i:s', $value, $this->factory->timezone);
+				if ($d !== false) {
+					$this->$key = $d;
+				} else $this->$key = $value;
 			}
 		}
 	}
@@ -307,7 +333,7 @@ class ORMNaviOrder implements JsonSerializable {
 			$z = new SimpleXMLElement("<order/>");
 			$z->addAttribute("id", $order_number);
 			$deadline->setTimezone($this->factory->timezone);
-			$z->addAttribute("deadline", $deadline->format('Y-m-d H:i:s'));
+			$z->addAttribute("deadline", $deadline->format(DateTime::RFC1036));
 			$c = $z->addChild("customer");
 			$c->addAttribute("ref", $customer_ref);
 			$outline = $order_number.".1.".$p["id"];
@@ -319,29 +345,63 @@ class ORMNaviOrder implements JsonSerializable {
 			$z->asXML($this->factory->orders_dir . 'order-' . $this->number . '.xml');
 		}
 		$this->xml = $z;
-		$this->deadline = new DateTime($z["deadline"]);
+		if (!$z = simplexml_load_file($this->factory->routes_dir . 'route-' . $this->number . '.xml')) {
+
+		}
+		$this->routes_xml = $z;
+		$this->deadline = new DateTime($this->xml["deadline"], $this->factory->timezone);
 		$sql = "call getOrder('".$this->factory->name."', '".$this->number."');";
 		$x = $this->factory->dblink->query($sql);
-		if (!$x) throw new ORMNaviException("Couldnot execute request ". $sql. ": " . $this->dblink->errno . " - " . $this->dblink->error);
+		if (!$x) throw new ORMNaviException("Couldnot execute request ". $sql. ": " . $this->factory->dblink->errno . " - " . $this->factory->dblink->error);
 		$y = $x->fetch_assoc();
 		$x->free_result();
 		$x = $this->factory->dblink->next_result();
 		if ($y) {
 			$this->_arrayImport($y);
 		}
+		if (is_null($this->id)) return;
+		$x = $this->factory->dblink->query("call getOrderHistory(" . $this->id . ")");
+        
+        if (!$x) throw new ORMNaviException("Could not get order history info" . "': " . $this->factory->dblink->errno . " - " . $this->factory->dblink->error . "call getOrderHistory(" . $this->id . ")"); 
+        $this->history = [];
+        while ($y = $x->fetch_assoc()) {
+            $this->history[] = $y;
+        }
+		$x->free_result();
+		$this->factory->dblink->next_result();
 	}
 
-	public function getEstimatedTime() {
-
+	public function __get($name) {
+		switch ($name) {
+			case 'isImported':
+				return !is_null($this->id);
+				break;
+			case 'routes':
+				return $this->routes_xml;
+				break;
+			
+			default:
+				throw new ORMNaviException("Unknown property ".$name);
+				break;
+		}
 	}
+
     public function jsonSerialize() {
-        return [];
+        return [
+			"factory" => $this->factory->name,
+			"id" => $this->id,
+			"number" => $this->number,
+			"deadline" => $this->deadline->format(DateTime::RFC1036),
+			"baseline" => is_null($this->baseline)?null:$this->baseline->format(DateTime::RFC1036),
+			"estimated" => is_null($this->estimated)?null :$this->estimated->format(DateTime::RFC1036),
+			"priority" => $this->priority,
+			"state" => $this->state,
+			"comment" => $this->comment,
+			"history" => $this->history
+		];
     }
 	function __debugInfo() {
-		return [];
-	}
-	public function getRoute($order_id) {
-
+		return jsonSerialize();
 	}
 	public function addProduct(string $prodmat_ref, float $count) {
 
@@ -434,6 +494,115 @@ class ORMNaviOrder implements JsonSerializable {
 		}
 		$this->routes_xml->asXML($this->factory->routes_dir."route-".$this->number.".xml");
 	}
+
+	public function getRouteBranch(int $id) {
+		$found = $this->routes_xml->xpath("//route[@id='" . $this->number . "." . $id . "']");
+		if (!$found)  throw new ORMNaviException ("Route " . $this->number . "." . $id . " not found!");
+		return $found[0];
+	}
+
+	protected function _checkEstimatedTime(SimpleXMLElement $route_root) {
+        switch ($route_root->getName()){
+			case "operation": 
+			   // looking for order part at workcenter
+			   $found = FALSE;
+			   foreach ($this->history as $wcp) {
+				   if ($wcp["order_part"] == $route_root["ref"]) {
+					   $found = TRUE;
+					   $x = $this->factory->dblink->query("select getAssignConsumptionInWorkcenter(" . $wcp["id"] . ") as consumption");
+					   
+					   if (!$x) throw new ORMNaviException("Could not get time consumption" . "': " . $this->factory->dblink->errno . " - " . $this->factory->dblink->error . " select getAssignConsumptionInWorkcenter(" . $wcp["id"] . ") as consumption"); 
+					   $y = $x->fetch_assoc(); 
+					   $x->free_result();
+					   $this->factory->dblink->next_result();
+					   return floatval($y["consumption"]);
+					   break;
+				   }
+			   }
+			   break;
+		   
+		   default:
+			   break;
+	   }
+	   $max_c = 0.0;
+	   foreach ($route_root as $c) {
+		   $csp = $this->_checkEstimatedTime($c);
+		   if ($csp > $max_c) $max_c = $csp;
+	   }
+	   $c = 0;
+	   if (!is_null($route_root["workcenter"])) {
+		   //var_dump($full_order_info["db"]["id"]);
+		   $x = $this->factory->dblink->query("select getOrderConsumptionInWorkcenter(" . $this->id . ", '" . $route_root["workcenter"] . "') as consumption");
+		   if (!$x) throw new ORMNaviException("Could not get time consumption" . "': " . $this->factory->dblink->errno . " - " . $this->factory->dblink->error . " select getOrderConsumptionInWorkcenter(" . $this->id . ", '" . $route_root["workcenter"] . "') as consumption"); 
+		   $y = $x->fetch_assoc(); 
+		   $c = $y["consumption"];
+		   $x->free_result();
+		   $this->factory->dblink->next_result();
+	   }	   
+	   return $max_c + $c + floatval($route_root["consumption"]);
+    }
+
+	function calcEstimatedTime(): float {
+		if (is_null($this->id)) throw new ORMNaviException("Couldn't calculate estimated time for not imported order");
+		$r = $this->getRouteBranch($this->current_route);
+        $c = $this->_checkEstimatedTime($r);
+		return $c;
+	}
+
+	public function updateEstimatedTime(bool $updateBaseline = false) {
+        $c = $this->calcEstimatedTime($r);
+		$fet = new DateTime('now', $this->factory->timezone);
+		$fet->modify("+" . $c . " minutes");
+		$this->estimated = $fet;
+		if ($updateBaseline) $this->baseline = $fet;
+		$sql = "call ".($updateBaseline?"updateBaseline":"updateEstimatedTime")."(" . $this->id . ", '" . $fet->format('Y-m-d H:i:s') . "');";
+		$this->factory->dblink->query($sql);
+		if ($this->factory->dblink->errno) {
+		    throw new ORMNaviException("Unexpected error while update estimated time order" . "': " . $this->factory->dblink->errno . " - " . $this->factory->dblink->error . $sql);
+		}
+        $this->factory->dblink->next_result();
+	}
+
+	protected function _assignOrderRouteRecur(SimpleXMLElement $routeEl) {
+	    if (count($routeEl->children()) == 0 && $routeEl->getName() == "operation" ) {
+			$sql = "call assignWorkcenterToRoutePart('" . $this->factory->name . "', '" . $this->id . "', '" . $routeEl["ref"] . "', '" . $routeEl["refref"] . "', '" . $routeEl["workcenter"] . "', 'INCOME', " . $routeEl["consumption"] . ")";
+
+    		$x = $this->factory->dblink->query($sql);
+    		if ($this->factory->dblink->errno) {
+    		    $this->factory->dblink->rollback();
+        	    $this->factory->dblink->autocommit(true);
+    		    throw new ORMNaviException("Unexpected error while setting mode" . "': " . $this->factory->dblink->errno . " - " . $this->factory->dblink->error . $sql); 
+    		}
+			$this->factory->dblink->next_result();
+	    } else {
+	        foreach ($routeEl as $zzz) {
+	            $this->_assignOrderRouteRecur($zzz);
+	        }
+	    }
+	}
+	function assignOrderRoute(int $route_id) {
+	    $this->factory->dblink->autocommit(false);
+		$sql = "select addOrder('" . $this->factory->name . "', '" . $this->number . "', 'ASSIGNED', " . $route_id . ", '" . $this->deadline->format('Y-m-d H:i:s') . "') as order_id;";
+        $x = $this->factory->dblink->query($sql);
+		if ($this->factory->dblink->errno) {
+		    $this->factory->dblink->rollback();
+    	    $this->factory->dblink->autocommit(true);
+		    throw new ORMNaviException("Unexpected error while adding order" . "': " . $this->factory->dblink->errno . " - " . $this->factory->dblink->error . $sql);
+		}
+		$this->id = $x->fetch_assoc()["order_id"];
+		$this->current_route = $route_id;
+        $this->factory->dblink->next_result();
+		$r = $this->getRouteBranch($route_id);
+		foreach ($r as $zz) {
+	        $this->_assignOrderRouteRecur($zz);
+	    }
+		$this->updateEstimatedTime(true);
+		if (!$this->factory->dblink->commit()) {
+    	    $this->factory->dblink->autocommit(true);
+		    throw new ORMNaviException("Unexpected error while commit transaction" . "': " . $this->factory->dblink->errno . " - " . $this->factory->dblink->error);
+		} 
+	    $this->factory->dblink->autocommit(true);
+	}
 }
 class ORMNaviFactory {
     // factory mnemonic unique ID in this instance
@@ -514,8 +683,12 @@ class ORMNaviFactory {
 				return $this->routes_dir;
 				break;
 
-				case 'name':
+			case 'name':
 				return $this->factory;
+				break;
+
+			case 'description':
+				return (string) $this->factory_xml["name"];
 				break;
 
 			case 'timezone':
@@ -531,13 +704,7 @@ class ORMNaviFactory {
 				break;
 		}
 	}
-	public function createOrder(string $order_number, string $customer_ref, DateTime $deadline ): ORMNaviOrder {
 
-	}
-
-	public function getOrder(string $order_number) :? ORMNaviOrder {
-
-	}
 	public function getMDMCustomer(string $customer_ref): SimpleXMLElement {
 		$f = $this->mdm_xml->xpath("customer[@id='".$customer_ref."']");
 		return $f[0];
@@ -577,7 +744,7 @@ class ORMNaviFactory {
 		return $y;
 	}
 
-	public function getIncomingMessages(bool $read = false, string $message_types = "") {
+	public function getIncomingMessages(bool $read = false, string $message_types = ""):array {
 		$sql = "call getIncomingMessages('" . $this->name . "', '" . $this->user->name . "', '" . $this->user->subscriptionsForSearch . "', " . ($read?1:0) . ", '".$message_types."')";
 	    $x = $this->dblink->query($sql);
 	    if ($this->dblink->errno || !$x) throw new ORMNaviException("Could not get messages: " . $this->dblink->errno . " - " . $this->dblink->error);
@@ -590,6 +757,171 @@ class ORMNaviFactory {
 		$this->dblink->next_result();
 		return $ret;
 	}
+	public function getAllOrders ():array {
+		$ret = [];
+        $fd = scandir($this->orders_dir);
+        $fd = array_filter($fd, function ($v, $k) {
+            return fnmatch("order-*.xml", $v);
+            
+        }, ARRAY_FILTER_USE_BOTH);
+        foreach ($fd as $k => $fn) {
+            $order_num = substr($fn, 6, strlen($fn) - 8 - strrpos($fn, ".xml"));
+            $x = new ORMNaviOrder($this, $order_num);
+            $ret[$order_num] = $x;
+        }
+        asort($ret);
+		return $ret;
+	}
+	
+	function getWorkcenterOrders(string $workcenter_id):array{
+		$sql = "select getBuckets(1) as `buckets`;";
+	    $x = $this->dblink->query($sql);
+		if (!$x) throw new ORMNaviException("Could not get buckets" . "': " . $this->dblink->errno . " - " . $this->dblink->error . $sql); 	    
+	    $ret = [];
+		$y = $x->fetch_assoc();
+	    $bucks = $y["buckets"];
+	    $this->dblink->next_result();
 
+        $sql = "call getAssignsByWorkcenter('" . $this->name . "', '" . $workcenter_id . "', '" . $bucks . "');";
+		$a = $this->dblink->query($sql);
+        if (!$a) throw new ORMNaviException("Could not get assigns by workcenter" . "': " . $this->dblink->errno . " - " . $this->dblink->error . $sql); 
+	    while ($z = $a->fetch_assoc()) {
+	        $ret[] = $z;
+	    }
+	    $a->free_result();
+	    $this->dblink->next_result();
+		foreach($ret as $k=>$z) {
+			$o = new ORMNaviOrder($this, $z["number"]);
+			$ret[$k] = $o;
+		}
+		return $ret;
+	}
+
+	function getRoadOrders(string $road):array {
+		$z = $this->getRoadInfo($road);
+		$wc_from = (string)$z["from"];
+		$wc_to = (string)$z["to"];
+	    $ret = [];
+	    $ret[$wc_from] = [];
+	    $ret[$wc_to] = [];
+		$sql = "call getAssignsByRoads('" . $this->name . "', '" . $wc_from . "', '" . $wc_to . "');";
+        $a = $this->dblink->query($sql);
+        if (!$a) throw new ORMNaviException("Could not get assigns by workcenter" . "': " . $this->dblink->errno . " - " . $this->dblink->error . $sql); 
+	    while ($z = $a->fetch_assoc()) {
+	        $ret[$wc_from][] = $z;
+	    }
+	    $a->free_result();
+	    $this->dblink->next_result();
+	    $sql = "call getAssignsByWorkcenter('" . $this->name . "', '" . $wc_to . "', 'INCOME');";
+        $a = $this->dblink->query($sql);
+        if (!$a) throw new ORMNaviException("Could not get assigns by workcenter" . "': " . $this->dblink->errno . " - " . $this->dblink->error . $sql); 
+	    while ($z = $a->fetch_assoc()) {
+	        $ret[$wc_to][] = $z;
+	    }
+	    $a->free_result();	    
+	    $this->dblink->next_result();
+		foreach($ret[$wc_from] as $k=>$z) {
+			$o = new ORMNaviOrder($this, $z["number"]);
+			$ret[$wc_from][$k] = $o;
+		}
+		foreach($ret[$wc_to] as $k=>$z) {
+			$o = new ORMNaviOrder($this, $z["number"]);
+			$ret[$wc_to][$k] = $o;
+		}
+		return $ret;
+	}
+
+
+	function getWorkcenterInfo($wc):SimpleXMLElement{
+		$found = $this->factory_xml->xpath("//workcenter[@id='" . $wc . "']");
+		if (!$found)  throw new ORMNaviException ("workcenter " . $wc . " not found!");
+		return $found[0];
+	}
+
+	function getRoadInfo(string $road):SimpleXMLElement {
+		$found = $this->factory_xml->xpath("//road[@id='" . $road . "']");
+		if (!$found)  throw new ORMNaviException ("Road " . $road . " not found!");
+		return $found[0];
+	}
+	function moveAssignToNextBucket($assign_id) {
+	    $this->dblink->autocommit(false);
+		$sql = "call moveAssignToNextBucket(" . $assign_id . ");";
+		$x = $this->dblink->query($sql);
+		if (!$x) {
+		    $this->dblink->rollback();
+    	    $this->dblink->autocommit(true);
+		    throw new ORMNaviException("Unexpected error while move Assign to next bucket" . "': " . $this->dblink->errno . " - " . $this->dblink->error . $sql);
+		}
+		$x = $x->fetch_assoc();
+		$this->dblink->next_result();
+		$nextbucket = $x["next_bucket"];
+		$ordernum = $x["order_num"];
+		$order_id = $x["order_id"];
+		if ('' == $nextbucket) {
+		    $this->dblink->rollback();
+    	    $this->dblink->autocommit(true);
+		    throw new ORMNaviException("Got empty next bucket. ASSIGN_ID=" . $assign_id);
+		}
+		// if order_part has processed, must update by route tree into new part
+		    //we have to update order_part and look for next workcenter according with current route
+		$order = new ORMNaviOrder($this, $ordernum);
+		if ('OUTCOME' == $nextbucket) {
+		    $z = $order->getRouteBranch($x["route_num"]);
+		    $found = $z->xpath("//operation[@ref='" . $x["order_part"] . "']/..");
+		    if (!$found) {
+    		    $this->dblink->rollback();
+        	    $this->dblink->autocommit(true);
+		        throw new ORMNaviException("Order num = " . $x["order_num"] . ". Route num = " . $x["route_num"] . ". Product part = " . $x["order_part"] . ". Assign width id = " . $assign_id . " needs to update route");
+		        
+		    }
+		    $readyorderpart = (string)$found[0]["ref"];
+		    
+		    while ((string)$found[0]["workcenter"]=='' and $found[0]->getName() != 'route') {
+		        $found = $z->xpath("//*[@ref='" . $found[0]["ref"] . "']/..");
+		    }
+		    $nextworkcenter = (string)$found[0]["workcenter"];
+		    $nextoperation = (string)$found[0]["refref"];
+		    if ($found[0]->getName() == 'route') $nextorderpart = "";
+		    else $nextorderpart = (string)$found[0]["ref"];
+			$sql = "call updateAssignOrderPart(" . $assign_id . ", '" . $readyorderpart . "', '" . $nextworkcenter . "', '" . $nextorderpart . "', '" . $nextoperation . "', " . $found[0]["consumption"] . ")";
+	        $this->dblink->query($sql);
+	        if ($this->dblink->errno) {
+    		    $this->dblink->rollback();
+        	    $this->dblink->autocommit(true);
+		        throw new ORMNaviException("Unexpected error while update Assign to OUTCOME bucket" . "': " . $this->dblink->errno . " - " . $this->dblink->error . $sql);
+            }
+			$this->dblink->next_result();
+			$tmp = $this->dblink->escape_string("Order #" . $ordernum . " processed '" . $x["operation"] . "' and ready to next workcenter '" . $nextworkcenter . "'");
+	        $msg = new ORMNaviMessage($this, $tmp, ORMNaviMessageType::INFO);
+			$msg->send();
+		}
+		if (!$this->dblink->commit()) {
+    	    $this->dblink->autocommit(true);
+		    throw new ORMNaviException("Unexpected error while commit transaction" . "': " . $this->dblink->errno . " - " . $this->dblink->error);
+		} 
+	    $this->dblink->autocommit(true);
+	}
+
+	function moveAssignToNextWorkcenter($assign_id) {
+		$sql = "call getAssignInfo(" . $assign_id . ");";
+	    $x = $this->dblink->query($sql);
+		if (!$x) throw new ORMNaviException("Could not get assign info" . "': " . $this->dblink->errno . " - " . $this->dblink->error . $sql);
+		$res = $x->fetch_assoc();
+        //var_dump($res);
+        $ordernum = (string)$res["number"];
+        $route_id = (string)$res["current_route"];
+        $nextorderpart = (string)$res["next_order_part"];
+        $x->free_result();
+        $this->dblink->next_result();
+		$order = new ORMNaviOrder($this, $ordernum);
+		$r = $order->getRouteBranch($route_id);
+        $found = $r->xpath("//operation[@ref='" . $nextorderpart . "']");
+		$sql = "call moveAssignToNextWorkcenter(" . $assign_id . ", " . $found[0]->count() . ");";
+		$x = $this->dblink->query($sql);
+		if ($this->dblink->errno) {
+		    throw new ORMNaviException("Unexpected error while move Assign to next workcenter" . "': " . $this->dblink->errno . " - " . $this->dblink->error . $sql);
+		}
+        $this->dblink->next_result();
+	}
 }
 ?>

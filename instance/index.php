@@ -1,19 +1,58 @@
 <?php include "header.php"?>
 <script src="naviNPPC.js"></script>
 <script src="ORMNavi.js"></script>
-<?php include "menu.php"?>
+<nav class="navbar navbar-expand-sm navbar-dark bg-dark ml-0">
+	<a class="navbar-brand" href="#">My factory
+	</a>
+	<span id="messages-popup"></span>
+	<!--button type="button" class="btn btn-success">Refresh</button-->
+	<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+		<span class="navbar-toggler-icon"></span>
+	</button>
+	<div class="collapse navbar-collapse" id="navbarSupportedContent">
+	<ul class="navbar-nav mr-auto">
+		<li class="nav-item active">
+			<a class="nav-link" instance="factory.php" id="menuFactory" data-toggle="collapse" data-target=".navbar-collapse.show">Factory</a>
+		</li>
+		<li class="nav-item" >
+			<a class="nav-link" instance="orders.php" id="menuOrders" data-toggle="collapse" data-target=".navbar-collapse.show">Orders</a>
+		</li>
+		<li class="nav-item dropdown">
+			<a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Master Data</a>
+			<div class="dropdown-menu" aria-labelledby="navbarDropdown">
+				<a class="dropdown-item" href="#">Factory, workcentres, routes</a>
+				<a class="dropdown-item" href="#">Products</a>
+				<a class="dropdown-item" href="#">Customers</a>
+				<a class="dropdown-item" href="#">Suppliers</a>
+				<div class="dropdown-divider"></div>
+				<a class="dropdown-item" href="#">Users</a>
+				<a class="dropdown-item" href="#">Settings</a>
+			</div>
+		</li>
+	</ul>
+	<ul class="navbar-nav lr-auto">
+		<li class="nav-item dropdown">
+			<a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">David Rhuxel</a>
+			<div class="dropdown-menu" aria-labelledby="navbarDropdown">
+				<a class="dropdown-item" href="#">My settings</a>
+				<a class="dropdown-item" href="#">My subscriptions</a>
+				<a class="dropdown-item" href="#">Logout</a>
+			</div>
+		</li>
+	</ul>
+	</div>
+</nav>
 <instance>
 </instance>
 <messages>
-<messages-shortcut>
-<span class="badge badge-primary">New</span>
-</messages-shortcut>    
 <messages-toolbar>
-<strong class="mr-auto>">Messages</strong>
-<input type="checkbox" checked="1">INFO</input>
-<input type="checkbox" checked="1">WARNING</input>
-<input id="btn-new-message" type="button" value="[new]"></input>
+<input type="checkbox" checked data-toggle="toggle" data-on="<b>Inbox</b>" data-off="<b>Sent</b>" data-onstyle="default" data-width="100">
+<input type="checkbox" checked data-toggle="toggle" data-on="info" data-off="not info" data-onstyle="default" data-width="100">
+<input type="checkbox" checked data-toggle="toggle" data-on="warning" data-off="not warning" data-onstyle="default" data-width="120">
+
+<input id="btn-new-message" type="button" value="[new message]"></input>
 <button type="button" class="ml-2 mb-1 close" messages="collapse">&times;</button>
+</messages-toolbar>
 <message-template>
 <div class="input-group mb-0">
 	<select class="custom-select" id="message_type">
@@ -32,7 +71,6 @@
   <textarea id="message_text" class="form-control" aria-label="With textarea"></textarea>
 </div>
 </message-template>    
-</messages-toolbar>
 <messages-container>
 </messages-container>
 </messages>
@@ -64,20 +102,30 @@
     <span></span>
 </div>
 <div id="loadingSpinner" class="spinner-border"></div>
+<div id="informationMessage" class="alert alert-success">
+    <span></span>
+</div>
 <script>
 function collapseMessages() {
-    $('messages messages-container').hide();
-    $('messages messages-toolbar').hide();
-    $('message-template').hide();
-    $('messages messages-shortcut').show();
-    $('messages').removeClass('expanded');
-    $('messages').addClass('collapsed');
-	$('messages').css('top', -$('messages').outerWidth() + "px");
+	$('message-template').hide();
+    $('messages').hide();
 }
 $(document).ready (function (){
-	collapseMessages();
-	$(window).resize();
+	$(window).resize(function() {
+		$('instance').css('height', $(window).height()-$('instance').position().top + "px");
+		$("#loadingSpinner").offset({
+			top: ($('body').innerHeight() - $("#loadingSpinner").outerHeight()) / 2, 
+			left: ($('body').innerWidth() - $("#loadingSpinner").outerWidth()) / 2
+		});
+	})
 	tryLogin();
+	loadMessages();
+	collapseMessages();
+	//$('input[data-toggle="toggle"]').forEach( function(){		$(this).bootstrapToggle();	});
+	$("#messages-popup").on('click', function() {
+		$('messages').show();
+	});
+	$(window).resize();
 })
 
 $("#btn-new-message").on('click', function (){
@@ -88,107 +136,38 @@ $("#btn-send-message").on('click', function () {
 	ORMNaviMessage.send($("#message_text").val(), $("#message_type").val());
 })
 
-function makeMessageRead(_message_id) {
-	showLoading();
-	var p = $.post("apiMakeMessageRead.php",
-	{
-		username: $("#username").val(),
-		factory:  $("#factory").val(),
-		password: $("#password").val(),
-		language: $("#language").val(),
-		timezone: $("#timezone").val(),
-		message_id: _message_id
-	},
-	function(data, status){
-		hideLoading();
-		//debugger;
-		switch (status) {
-			case "success":
-				break;
-			default:
-                ;
-		}
-	});
-	p.fail(function(data, status) {
-		hideLoading();
-		switch (data.status) {
-			case 401:
-				clearInstance();
-				showLoginForm();
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-				break;
-			default:				
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-		}
-	})
+function updateMessages(data, status) {
+	//debugger;
+    $("messages messages-container").html('');
+	hideLoading();
+	switch (status) {
+		case "success":
+			ls = JSON.parse(data);
+			if (ls.data.length)	$("#messages-popup").html(ls.data.length+" messages");
+			else $("#messages-popup").html("No messages")
+			for (ind in ls.data) {
+				$("messages messages-container").append('<message message_id="'+ls.data[ind].id+'"/>');
+			    m = new ORMNaviMessage(ls.data[ind]);
+			}
+			$('messages messages-container message').prepend('<button type="button" class="ml-2 mb-1 close" message="collapse">&times;</button>');
+			$('message button[message="collapse"]').on ('click', function (event) {
+				$(this).parent()[0].ORMNaviMessage.dismiss();
+				loadMessages();
+			})
+			break;
+		default:
+			;
+	}
 }
 
-
-function updateMessages() {
-    $("messages messages-container").html = '';
-	showLoading();
-	var p = $.post("drawMessages.php",
-	{
-		username: $("#username").val(),
-		factory:  $("#factory").val(),
-		password: $("#password").val(),
-		language: $("#language").val(),
-		timezone: $("#timezone").val()
-	},
-	function(data, status){
-		hideLoading();
-		switch (status) {
-			case "success":
-				$("messages messages-container").html(data);
-                $('messages messages-container message').prepend('<button type="button" class="ml-2 mb-1 close" message="collapse">&times;</button>');
-                $('message button[message="collapse"]').on ('click', function (event) {
-					$(this).parent()[0].json.dismiss();
-                })
-				break;
-			default:
-                ;
-		}
-	});
-	p.fail(function(data, status) {
-		hideLoading();
-		switch (data.status) {
-			case 401:
-				clearInstance();
-				showLoginForm();
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-				break;
-			default:				
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-		}
-	})
-}
-$('messages').on ('click', function (){
-    if ($('messages').hasClass('expanded')) return;
-    $('messages').removeClass('collapsed');
-    $('messages').addClass('expanded');
-    $('messages messages-container').show();
-    $('messages messages-toolbar').show();
-    $('messages messages-shortcut').hide();
-	$('messages').css('top', -$('instance').innerHeight()*0.67 + "px");
-	$('messages').css('height', $('instance').innerHeight()*0.67 + "px");
-    $('messages messages-toolbar button[messages="collapse"]').on('click', function (event) {
-        collapseMessages();
-        event.stopPropagation();
-    })
-    updateMessages();
-})
-
-$(window).resize(function() {
-	$('instance').css('height', $(window).height()-$('instance').offset().top + "px");
-	$("#loadingSpinner").offset({
-		top: ($('instance').outerHeight() - $("#loadingSpinner").outerHeight()) / 2, 
-		left: ($('instance').outerWidth() - $("#loadingSpinner").outerWidth()) / 2
-	});
+$('messages messages-toolbar button[messages="collapse"]').on('click', function (event) {
+	collapseMessages();
+	event.stopPropagation();
 })
 
 
 function clearInstance() {
-	$("instance").html = "";
+	$("instance").html("");
 }
 function showLoginForm() {
 	$("#loginform").show();
@@ -200,6 +179,10 @@ function showLoadingError(_text) {
 	$("#loadingSpinner").hide();
 	$("#errorLoadingMessage > span").html(_text);
 	$("#errorLoadingMessage").show();
+	$("#errorLoadingMessage").offset({
+		left: 0,
+		top: ($('body').innerHeight() - $("#errorLoadingMessage").outerHeight())/2
+	});
 }
 function showLoading() {
 	$("#errorLoadingMessage").hide();
@@ -208,6 +191,20 @@ function showLoading() {
 function hideLoading() {
 	$("#loadingSpinner").hide();
 } 
+function loadMessages() {
+	sendDataToNavi("apiGetIncomingMessages", undefined, updateMessages);
+}
+function showInformation(text) {
+	$("#informationMessage > span").html(text);
+	$("#informationMessage").show();
+	$("#informationMessage").offset({
+		left: 0,
+		top: ($('body').innerHeight() - $("#informationMessage").outerHeight())/2
+	});
+	setTimeout(function() {
+		$("#informationMessage").hide();
+	}, 1500);
+}
 function tryLogin() {
 	showLoading();
 	var p = $.post("factory.php",
@@ -223,6 +220,9 @@ function tryLogin() {
 		switch (status) {
 			case "success":
 				$("instance").html(data);
+				setInterval( function () {
+					loadMessages();
+				}, 60000);
 				break;
 			default:
 				clearInstance();
@@ -407,5 +407,4 @@ function road(_id, _ordhighlight = undefined) {
     </div>
   </div>
 </div>
-
 <?php include "footer.php"?>

@@ -10,6 +10,8 @@ $factory = new ORMNaviFactory("David Rhuxel", "*******", "example2", $tz);
 //    $value->dismiss();
 //}
 //echo json_encode($a);
-$o = new ORMNaviOrder($factory, "o-290", new DateTime(), "c2", "1");
-$o->route();
+//$o = new ORMNaviOrder($factory, "o-259"/*, new DateTime(), "c2", "1"*/);
+//$o->route();
+$oo = $factory->getAllOrders();
+echo json_encode($oo);
 ?>

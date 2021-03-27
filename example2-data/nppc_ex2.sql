@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 07, 2021 at 05:47 AM
+-- Generation Time: Mar 27, 2021 at 07:00 PM
 -- Server version: 10.4.17-MariaDB
 -- PHP Version: 8.0.0
 
@@ -46,8 +46,11 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `assignRouteToOrder` (IN `_client_id
 update routes set route=`_route` where `client_id` = `_client_id` and number like `_order`$$
 
 DROP PROCEDURE IF EXISTS `assignWorkcenterToRoutePart`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `assignWorkcenterToRoutePart` (IN `_client_id` BIGINT UNSIGNED, IN `_order_id` BIGINT UNSIGNED, IN `_order_part` VARCHAR(4096), IN `_operation` VARCHAR(250), IN `_wc` VARCHAR(50), IN `_bucket` VARCHAR(10), IN `_consumption_plan` DOUBLE)  NO SQL
-insert into assigns  (client_id, order_id, order_part, operation, workcenter_id, bucket, fullset, consumption_plan) VALUES(`_client_id`, `_order_id`, `_order_part`, `_operation`, getWorkcenterID(`_client_id`, `_wc`), `_bucket`, 1, `_consumption_plan`)$$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `assignWorkcenterToRoutePart` (IN `_factory` VARCHAR(50), IN `_order_id` BIGINT UNSIGNED, IN `_order_part` VARCHAR(4096), IN `_operation` VARCHAR(250), IN `_wc` VARCHAR(50), IN `_bucket` VARCHAR(10), IN `_consumption_plan` DOUBLE)  NO SQL
+BEGIN
+set @client_id = getClientID(`_factory`);
+insert into assigns  (client_id, order_id, order_part, operation, workcenter_id, bucket, fullset, consumption_plan) VALUES(@client_id, `_order_id`, `_order_part`, `_operation`, getWorkcenterID(@client_id, `_wc`), `_bucket`, 1, `_consumption_plan`);
+END$$
 
 DROP PROCEDURE IF EXISTS `deleteOrder`$$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `deleteOrder` (IN `_client_id` BIGINT UNSIGNED, IN `_order` VARCHAR(50))  NO SQL
@@ -78,18 +81,20 @@ left join orders on orders.id = assigns.order_id
 WHERE assigns.id = `_assign_id`$$
 
 DROP PROCEDURE IF EXISTS `getAssignsByRoads`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `getAssignsByRoads` (IN `_client_id` BIGINT UNSIGNED, IN `_wc_from` VARCHAR(50), IN `_wc_to` VARCHAR(50))  NO SQL
+CREATE DEFINER=`root`@`localhost` PROCEDURE `getAssignsByRoads` (IN `_factory` VARCHAR(50), IN `_wc_from` VARCHAR(50), IN `_wc_to` VARCHAR(50))  NO SQL
 BEGIN
+set @client_id = getClientID(`_factory`);
 SELECT assigns.*, orders.number, orders.state, orders.estimated, orders.deadline, orders.baseline FROM assigns 
 left join orders on orders.id=assigns.order_id
-WHERE bucket like  'OUTCOME' and getWorkcenterID(`_client_id`, `_wc_from`) = workcenter_id and getWorkcenterID(`_client_id`, `_wc_to`) = next_workcenter_id order by orders.priority desc, orders.deadline asc;
+WHERE bucket like  'OUTCOME' and getWorkcenterID(@client_id, `_wc_from`) = workcenter_id and getWorkcenterID(@client_id, `_wc_to`) = next_workcenter_id order by orders.priority desc, orders.deadline asc;
 end$$
 
 DROP PROCEDURE IF EXISTS `getAssignsByWorkcenter`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `getAssignsByWorkcenter` (IN `_client_id` BIGINT UNSIGNED, IN `_wc` VARCHAR(50), IN `_buckets` VARCHAR(250))  NO SQL
+CREATE DEFINER=`root`@`localhost` PROCEDURE `getAssignsByWorkcenter` (IN `_factory` VARCHAR(50), IN `_wc` VARCHAR(50), IN `_buckets` VARCHAR(250))  NO SQL
 BEGIN
-set @wc_id = getWorkcenterID(`_client_id`, `_wc`);
-call getAssignsByWorkcenterID(`_client_id`, @wc_id, `_buckets`);
+set @client_id = getClientID(`_factory`);
+set @wc_id = getWorkcenterID(@client_id, `_wc`);
+call getAssignsByWorkcenterID(@client_id, @wc_id, `_buckets`);
 end$$
 
 DROP PROCEDURE IF EXISTS `getAssignsByWorkcenterID`$$
@@ -103,10 +108,6 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `getAssignsCount` (IN `_client_id` B
 BEGIN
 select workcenters.name, b.* from (select workcenter_id, operation, count(id) as assings_count from assigns as a where client_id = `_client_id` and find_in_set(bucket, `_buckets`) > 0 group by a.workcenter_id, a.operation) as b left join workcenters on workcenters.id = b.workcenter_id;
 end$$
-
-DROP PROCEDURE IF EXISTS `getBuckets`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `getBuckets` (IN `_widget` INT)  NO SQL
-SELECT bucket from workcenter_bucket where showit =`_widget`  order by orderby$$
 
 DROP PROCEDURE IF EXISTS `getIncomingMessages`$$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `getIncomingMessages` (IN `_factory` VARCHAR(50), IN `_user` VARCHAR(50), IN `_tags` VARCHAR(250), IN `_read` BOOLEAN, IN `_types` VARCHAR(50))  NO SQL
@@ -143,7 +144,7 @@ END$$
 
 DROP PROCEDURE IF EXISTS `getOrderHistory`$$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `getOrderHistory` (IN `_order_id` BIGINT UNSIGNED)  NO SQL
-select assigns.*, workcenters.name as workcenter_name, roads.id as road_id, roads.name as road_name
+select assigns.*, workcenters.name as workcenter_name, workcenters.description as workcenter_desc, roads.id as road_id, roads.name as road_name, roads.description as road_desc
 from assigns
 left join workcenters on workcenters.id=assigns.workcenter_id
 left join roads on roads.from_wc = assigns.workcenter_id and roads.to_wc = assigns.next_workcenter_id 
@@ -264,10 +265,11 @@ update workcenters set `description`=`_desc` where client_id=`_client_id` and `n
 -- Functions
 --
 DROP FUNCTION IF EXISTS `addOrder`$$
-CREATE DEFINER=`root`@`localhost` FUNCTION `addOrder` (`_client_id` BIGINT UNSIGNED, `_number` VARCHAR(50), `_state` VARCHAR(10), `_route_id` INT, `_deadline` DATETIME) RETURNS BIGINT(20) UNSIGNED NO SQL
+CREATE DEFINER=`root`@`localhost` FUNCTION `addOrder` (`_factory` VARCHAR(50), `_number` VARCHAR(50), `_state` VARCHAR(10), `_route_id` INT, `_deadline` DATETIME) RETURNS BIGINT(20) UNSIGNED NO SQL
     COMMENT 'adds new order and returns uniq ID of order in database'
 begin
-insert into orders (number, client_id, state, current_route, deadline) values(`_number`, `_client_id`, `_state`, `_route_id`, `_deadline`);
+set @client_id = getClientID(`_factory`);
+insert into orders (number, client_id, state, current_route, deadline) values(`_number`, @client_id, `_state`, `_route_id`, `_deadline`);
 return (SELECT LAST_INSERT_ID());
 end$$
 
@@ -279,6 +281,10 @@ from assigns where id = `_assign_id`;
 set @r = (select sum(consumption_plan) from assigns where id <= `_assign_id` and priority >= @pr and workcenter_id=@wc_id and (bucket LIKE 'INCOME' or bucket like 'PROCESSING'));
 return @r;
 end$$
+
+DROP FUNCTION IF EXISTS `getBuckets`$$
+CREATE DEFINER=`root`@`localhost` FUNCTION `getBuckets` (`_widget` INT) RETURNS VARCHAR(1024) CHARSET utf8 NO SQL
+return (SELECT GROUP_CONCAT(bucket order by orderby SEPARATOR ',') from workcenter_bucket where showit =`_widget`)$$
 
 DROP FUNCTION IF EXISTS `getClientID`$$
 CREATE DEFINER=`root`@`localhost` FUNCTION `getClientID` (`_factoryName` VARCHAR(50)) RETURNS BIGINT(20) UNSIGNED NO SQL
