@@ -36,14 +36,13 @@ function updateOrders() {
 					$('outcome').append('<order class="brief" number="'+o.number+'" assign="'+b.assign+'" full="'+o.fullset+'"/>');
                     ot = new ORMNaviOrder(o);
                 }
-                if (current_order_in_road)
-                    $('order[number="'+current_order_in_road+'"]').addClass("highlight");
+                if (current_order_in_road) $('order[number="'+current_order_in_road+'"]').addClass("highlight");
                 $("order[number]").on('click', function() {
                     //debugger;
                     var n = $(this).attr("number");
                     $("order[number]").removeClass("selected");
                     if ($('order[number="'+n+'"]').hasClass("selected")) $('order[number="'+n+'"]').removeClass("selected");
-                    else $('order[number="'+n+'"]').addClass("selected");
+                    else $(this).addClass("selected");
                     if ($("income > order[number].selected").length == 1 || 
                     $("processing > order[number].selected").length == 1) {
                         $("#btnOrderMove").show();
