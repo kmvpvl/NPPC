@@ -94,17 +94,32 @@ $("#btnOrderInfo").on('click', function(){
         modalOrderInfo(order);
     }
 });
+
+function filterOrders() {
+    if ($("#edt-search").val() || $("#slct-operation").val()) {
+        $('order[number]').hide();
+        $('order'+($("#edt-search").val()?'[number^="'+$("#edt-search").val()+'"]':'')+($("#slct-operation").val()?'[operation="'+$("#slct-operation").val()+'"]':'')).show();
+    } else {
+        $('order[number]').show();
+    }
+}
+$("#edt-search").change(function(){
+    filterOrders();
+});
+$("#slct-operation").change(function(){
+    filterOrders();
+});
 </script>
 <orders_in_workcenter>
-    <input id="edt-search" type="text" class="form-control" placeholder="Search orders..."></input>
     <select class="custom-select" id="slct-operation">
-    <option value="all">All operations</option>
+    <option value="">All operations</option>
 <?php
     foreach ($wcInfo as $op) {
         echo ('<option value="'.$op["ref"].'">'.$op["ref"].'</option>');
     }
 ?>
 	</select>
+    <input id="edt-search" type="text" class="form-control" placeholder="Search orders..."></input>
     <span></span>
     <span>INCOME</span>
     <span>PROCESSING</span>
