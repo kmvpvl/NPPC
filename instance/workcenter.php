@@ -1,6 +1,7 @@
 <?php
 include "checkORMNavi.php";
-$brand = trim($factory->getWorkcenterInfo($_POST["workcenter"]));
+$wcInfo = $factory->getWorkcenterInfo($_POST["workcenter"]);
+$brand = trim($wcInfo);
 ?>
 <script>
 $(".nav-link.active").removeClass("active");
@@ -25,7 +26,7 @@ function updateOrders() {
                     //debugger;
                     var b = ORMNaviOrder.getBucket(o, '<?=$_POST["workcenter"]?>');
                     if (b) {
-                        $(b.bucket).append('<order class="brief" number="'+o.number+'" assign="'+b.assign+'" full="'+(b.fullset=='1'?"1":"0")+'"/>');
+                        $(b.bucket).append('<order class="brief" number="'+o.number+'" assign="'+b.assign+'" full="'+(b.fullset=='1'?"1":"0")+'" operation="'+b.operation+'"/>');
                     } else {
                     }
                     ot = new ORMNaviOrder(o);
@@ -93,10 +94,32 @@ $("#btnOrderInfo").on('click', function(){
         modalOrderInfo(order);
     }
 });
+
+function filterOrders() {
+    if ($("#edt-search").val() || $("#slct-operation").val()) {
+        $('order[number]').hide();
+        $('order'+($("#edt-search").val()?'[number^="'+$("#edt-search").val()+'"]':'')+($("#slct-operation").val()?'[operation="'+$("#slct-operation").val()+'"]':'')).show();
+    } else {
+        $('order[number]').show();
+    }
+}
+$("#edt-search").change(function(){
+    filterOrders();
+});
+$("#slct-operation").change(function(){
+    filterOrders();
+});
 </script>
 <orders_in_workcenter>
+    <select class="custom-select" id="slct-operation">
+    <option value="">All operations</option>
+<?php
+    foreach ($wcInfo as $op) {
+        echo ('<option value="'.$op["ref"].'">'.$op["ref"].'</option>');
+    }
+?>
+	</select>
     <input id="edt-search" type="text" class="form-control" placeholder="Search orders..."></input>
-    <span></span>
     <span></span>
     <span>INCOME</span>
     <span>PROCESSING</span>
