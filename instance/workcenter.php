@@ -98,7 +98,7 @@ $("#btnOrderInfo").on('click', function(){
 function filterOrders() {
     if ($("#edt-search").val() || $("#slct-operation").val()) {
         $('order[number]').hide();
-        $('order'+($("#edt-search").val()?'[number^="'+$("#edt-search").val()+'"]':'')+($("#slct-operation").val()?'[operation="'+$("#slct-operation").val()+'"]':'')).show();
+        $('order'+($("#edt-search").val()?'[number*="'+$("#edt-search").val()+'"]':'')+($("#slct-operation").val()?'[operation="'+$("#slct-operation").val()+'"]':'')).show();
     } else {
         $('order[number]').show();
     }
