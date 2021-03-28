@@ -2,7 +2,6 @@
 //opcache_reset();
 error_reporting(-1);
 ini_set('display_errors', 'On');
-include "classOrder.php";
 //------------------
 // naviClient class 
 //
@@ -329,7 +328,7 @@ class naviClient {
     		if (!$found_to) return $ret; //throw new Exception ("Road " . $_roadxml["id"] . "referenced to nonexistent workcenter '" . $_roadxml["to"] . "'!");
 	    }
 	    $c = 0;
-	    $c_index = (string)$_roadxml["from"] . "_" . (string)$_roadxml["to"];
+	    $c_index = (string)$_roadxml["id"];
 	    if (array_key_exists($c_index, $_rload)) $c = $_rload[$c_index];
 	    $cc = 11;
 	    if ($c < $c_max) $cc = round($c/$c_max * 12);
@@ -339,7 +338,7 @@ class naviClient {
 	    $from_center = (object)['lat'=>(explode(",", $from_coords[1])[0] + explode(",", $from_coords[0])[0])/2, 'lng'=>(explode(",", $from_coords[1])[1] + explode(",", $from_coords[0])[1])/2];
 	    $to_center = (object)['lat'=>(explode(",", $to_coords[1])[0] + explode(",", $to_coords[0])[0])/2, 'lng'=>(explode(",", $to_coords[1])[1] + explode(",", $to_coords[0])[1])/2];
 	    
-		$ret->html .= "<line id='" . $_roadxml['id'] . "' x1='0' y1='0' x2='0' y2='0' class='road" . (($cc < 0)? " noduty":" duty-" . $cc)  . "' />";
+		$ret->html .= "<line id='" . $_roadxml['id'] . "' x1='0' y1='0' x2='0' y2='0' class='road" . (($cc < 0)? " noduty":" duty-" . $cc)  . "' road='".$_roadxml['id']."'/>";
 		$ret->script .= "$('#" . $_roadxml['id'] . "').attr('x1', map.LAT2X(" . $from_center->lat . "));\n";
 		$ret->script .= "$('#" . $_roadxml['id'] . "').attr('x2', map.LAT2X(" . $to_center->lat . "));\n";
 		$ret->script .= "$('#" . $_roadxml['id'] . "').attr('y1', map.LNG2Y(" . $from_center->lng . "));\n";
@@ -381,7 +380,7 @@ class naviClient {
 		//echo($_wcxml['id'] . " " . (($cc < 0)? "":" duty-" . $cc));
 		
 		//var_dump($_wcxml);
-		$ret->html .= '<rect id="' . $_wcxml['id'] . '" width="0" height="0" data-toggle="tooltip" class="workcenter' . (($cc < 0)? " noduty":" duty-" . $cc) . '" title="' . trim((string) $ttip) . '"></rect>';
+		$ret->html .= '<rect id="' . $_wcxml['id'] . '" width="0" height="0" data-toggle="tooltip" class="workcenter' . (($cc < 0)? " noduty":" duty-" . $cc) . '" title="' . trim((string) $ttip) . '" workcenter="'.$_wcxml['id'].'"></rect>';
 		$ret->html .= '<text id="' . $_wcxml['id'] . '_label" text-anchor="middle" x="0" y="0">' . trim((string) $_wcxml) . '</text>';
 		if ($_wcxml['location'] != "") {
 			$ret->script .= "loc = '" . $_wcxml['location'] . "'.split(';');\n";
@@ -424,10 +423,10 @@ class naviClient {
         $this->dblink->next_result();
         
 	    // loading current workload of roads 
-	    $x = $this->dblink->query("call getRoadsWorkload(" . $this->client_id . ");");
+	    $x = $this->dblink->query("call getRoadsWorkload('" . $this->factory . "');");
 		if (!$x) throw new Exception("Could not get count of ready to road" . "': " . $this->dblink->errno . " - " . $this->dblink->error . "ccall getRoadsWorkload(" . $this->client_id . ");");
 		$roadloads = array();
-		while ($res = $x->fetch_assoc()) $roadloads[$res["src_wc_name"] . "_" . $res["dst_wc_name"]] = $res["ready_count"];
+		while ($res = $x->fetch_assoc()) $roadloads[$res["name"]] = $res["delivery_count"];
 		//var_dump($roadloads);
 		
 		$ret = (object) [

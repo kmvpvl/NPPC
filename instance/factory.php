@@ -10,8 +10,6 @@ $("#menuFactory").addClass("active");
 $(".navbar-brand").text("<?= $navi->factoryName ?>: Overview");
 drawFactoryMap();
 
-drawFactoryMap();
-
 function drawFactoryMap() {
     $("#factoryMap").html('');
 	sendDataToNavi("drawFactory", undefined,

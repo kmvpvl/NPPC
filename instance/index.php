@@ -117,11 +117,11 @@ $(document).ready (function (){
 			top: ($('body').innerHeight() - $("#loadingSpinner").outerHeight()) / 2, 
 			left: ($('body').innerWidth() - $("#loadingSpinner").outerWidth()) / 2
 		});
-	})
+	});
 	tryLogin();
-	loadMessages();
+	ORMNaviFactory.updateWorkloads();
+	updateMessages();
 	collapseMessages();
-	//$('input[data-toggle="toggle"]').forEach( function(){		$(this).bootstrapToggle();	});
 	$("#messages-popup").on('click', function() {
 		$('messages').show();
 	});
@@ -131,44 +131,21 @@ $(document).ready (function (){
 $("#btn-new-message").on('click', function (){
     $('message-template').show();
 })
+
 $("#btn-send-message").on('click', function () {
-	debugger;
+	//debugger;
 	ORMNaviMessage.send($("#message_text").val(), $("#message_type").val());
 })
-
-function updateMessages(data, status) {
-	//debugger;
-    $("messages messages-container").html('');
-	hideLoading();
-	switch (status) {
-		case "success":
-			ls = JSON.parse(data);
-			if (ls.data.length)	$("#messages-popup").html(ls.data.length+" messages");
-			else $("#messages-popup").html("No messages")
-			for (ind in ls.data) {
-				$("messages messages-container").append('<message message_id="'+ls.data[ind].id+'"/>');
-			    m = new ORMNaviMessage(ls.data[ind]);
-			}
-			$('messages messages-container message').prepend('<button type="button" class="ml-2 mb-1 close" message="collapse">&times;</button>');
-			$('message button[message="collapse"]').on ('click', function (event) {
-				$(this).parent()[0].ORMNaviMessage.dismiss();
-				loadMessages();
-			})
-			break;
-		default:
-			;
-	}
-}
 
 $('messages messages-toolbar button[messages="collapse"]').on('click', function (event) {
 	collapseMessages();
 	event.stopPropagation();
 })
 
-
 function clearInstance() {
 	$("instance").html("");
 }
+
 function showLoginForm() {
 	$("#loginform").show();
 	$("#submitLogin").on ('click', function (){
@@ -188,12 +165,39 @@ function showLoading() {
 	$("#errorLoadingMessage").hide();
 	$("#loadingSpinner").show();
 }
+function updateMessages() {
+	sendDataToNavi("apiGetIncomingMessages", undefined, 
+	function(data, status) {
+		//debugger;
+		$("messages messages-container").html('');
+		hideLoading();
+		switch (status) {
+			case "success":
+				ls = JSON.parse(data);
+				if (ls.data.length)	{
+					$("#messages-popup").html(ls.data.length+" messages");
+				} else {
+					$("#messages-popup").html("No messages");
+				}
+				for (ind in ls.data) {
+					$("messages messages-container").append('<message message_id="'+ls.data[ind].id+'"/>');
+					m = new ORMNaviMessage(ls.data[ind]);
+				}
+				$('messages messages-container message').prepend('<button type="button" class="ml-2 mb-1 close" message="collapse">&times;</button>');
+				$('message button[message="collapse"]').on ('click', function (event) {
+					$(this).parent()[0].ORMNaviMessage.dismiss();
+					updateMessages();
+				})
+				break;
+			default:
+				;
+		}
+	});
+}
+
 function hideLoading() {
 	$("#loadingSpinner").hide();
 } 
-function loadMessages() {
-	sendDataToNavi("apiGetIncomingMessages", undefined, updateMessages);
-}
 function showInformation(text) {
 	$("#informationMessage > span").html(text);
 	$("#informationMessage").show();
@@ -221,7 +225,8 @@ function tryLogin() {
 			case "success":
 				$("instance").html(data);
 				setInterval( function () {
-					loadMessages();
+					updateMessages();
+					ORMNaviFactory.updateWorkloads();
 				}, 60000);
 				break;
 			default:

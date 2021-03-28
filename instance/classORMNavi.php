@@ -832,7 +832,7 @@ class ORMNaviFactory {
 	}
 
 
-	function getWorkcenterInfo($wc):SimpleXMLElement{
+	function getWorkcenterInfo(string $wc):SimpleXMLElement{
 		$found = $this->factory_xml->xpath("//workcenter[@id='" . $wc . "']");
 		if (!$found)  throw new ORMNaviException ("workcenter " . $wc . " not found!");
 		return $found[0];
@@ -922,6 +922,34 @@ class ORMNaviFactory {
 		    throw new ORMNaviException("Unexpected error while move Assign to next workcenter" . "': " . $this->dblink->errno . " - " . $this->dblink->error . $sql);
 		}
         $this->dblink->next_result();
+	}
+	function getWorkcentersWorkload():array {
+		$ret = ['capacity'=>[], 'assigns'=>[]];
+		$sql = "call getWorkcentersWorkload('" . $this->name . "');";
+	    $x = $this->dblink->query($sql);
+		if (!$x) throw new ORMNaviException("Could not get workloads" . "': " . $this->dblink->errno . " - " . $this->dblink->error . $sql);
+		while ($w = $x->fetch_assoc()) {
+			$ret['assigns'][$w["name"]][$w["operation"]] = floatval($w["operation_count"]);
+			$wc = $this->getWorkcenterInfo($w["name"]); 
+			$f = $wc->xpath("operation[@ref='".$w["operation"]."']");
+			$ret['capacity'][$w["name"]][$w["operation"]] = floatval($f[0]["capacity"]);
+		}
+        $x->free_result();
+        $this->dblink->next_result();
+		return $ret;
+	}
+	function getRoadsWorkload():array {
+		$ret = ['capacity'=>[], 'assigns'=>[]];
+		$sql = "call getRoadsWorkload('" . $this->name . "');";
+	    $x = $this->dblink->query($sql);
+		if (!$x) throw new ORMNaviException("Could not get workloads" . "': " . $this->dblink->errno . " - " . $this->dblink->error . $sql);
+		while ($r = $x->fetch_assoc()) {
+			$ret['assigns'][$r["name"]] = floatval($r["delivery_count"]);
+			$ret['capacity'][$r["name"]] = floatval($this->getRoadInfo($r["name"])["capacity"]);
+		}
+        $x->free_result();
+        $this->dblink->next_result();
+		return $ret;
 	}
 }
 ?>

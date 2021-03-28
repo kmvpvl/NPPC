@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 27, 2021 at 07:00 PM
+-- Generation Time: Mar 28, 2021 at 04:23 PM
 -- Server version: 10.4.17-MariaDB
 -- PHP Version: 8.0.0
 
@@ -160,16 +160,32 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `getOrders` (IN `_client_id` BIGINT 
 select * from orders where client_id = `_client_id` order by orders.priority desc, orders.deadline asc$$
 
 DROP PROCEDURE IF EXISTS `getRoadsWorkload`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `getRoadsWorkload` (IN `_client_id` INT)  NO SQL
-SELECT s.name as src_wc_name, d.name as dst_wc_name, COUNT(assigns.id) as ready_count from assigns 
-left join workcenters as s on assigns.workcenter_id = s.id
-left join workcenters as d on assigns.next_workcenter_id = d.id
-where assigns.client_id = _client_id and bucket like 'OUTCOME'
-group by workcenter_id, next_workcenter_id$$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `getRoadsWorkload` (IN `_factory` VARCHAR(50))  NO SQL
+BEGIN
+set @client_id = getClientID(`_factory`);
+select `roads`.`name`, count(`assigns`.id) as delivery_count
+from `roads`
+left join `workcenters` on `workcenters`.`id`=`roads`.`from_wc`
+left JOIN `assigns` on `assigns`.`workcenter_id`=`workcenters`.`id`
+where `roads`.`client_id`=@client_id and find_in_set(`assigns`.`bucket`, 'OUTCOME')
+group by `roads`.`id`;
+END$$
 
 DROP PROCEDURE IF EXISTS `getUser`$$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `getUser` (IN `_factory` VARCHAR(50), IN `_user` VARCHAR(50))  NO SQL
 select * from `users` WHERE `users`.`client_id` = getClientID(`_factory`) and `users`.`name` like `_user`$$
+
+DROP PROCEDURE IF EXISTS `getWorkcentersWorkload`$$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `getWorkcentersWorkload` (IN `_factory` VARCHAR(50))  NO SQL
+BEGIN
+set @client_id = getClientID(`_factory`);
+select `workcenters`.`name`, `workcenters`.`description`, `assigns`.`operation`
+ , count(`assigns`.`id`) as `operation_count`
+from `workcenters`
+left JOIN `assigns` on `assigns`.`workcenter_id`=`workcenters`.`id`
+where `workcenters`.`client_id`=@client_id and find_in_set(`assigns`.`bucket`, 'INCOME,PROCESSING')
+ group by `workcenters`.`id`, `assigns`.`operation`;
+END$$
 
 DROP PROCEDURE IF EXISTS `makeMessageRead`$$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `makeMessageRead` (IN `_message_id` BIGINT UNSIGNED, IN `_user` VARCHAR(50))  NO SQL

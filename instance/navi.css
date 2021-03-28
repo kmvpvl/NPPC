@@ -16,54 +16,67 @@ a{
 .duty-0 {
     fill:hsl(145, 63%, 49%);
     stroke:hsl(145, 63%, 49%);
+    background-color: hsl(145, 63%, 49%);
 }
 .duty-1 {
     fill:hsl(145, 63%, 59%);
     stroke:hsl(145, 63%, 59%);
+    background-color: hsl(145, 63%, 59%);
 }
 .duty-2 {
     fill:hsl(145, 63%, 69%);
     stroke:hsl(145, 63%, 69%);
+    background-color: hsl(145, 63%, 69%);
 }
 .duty-3 {
     fill:hsl(145, 63%, 79%);
     stroke:hsl(145, 63%, 79%);
+    background-color: hsl(145, 63%, 79%);
 }
 .duty-4 {
     fill:hsl(48, 89%, 80%);
     stroke:hsl(48, 89%, 80%);
+    background-color: hsl(48, 89%, 80%);
 }
 .duty-5 {
     fill:hsl(37, 90%, 71%);
     stroke:hsl(37, 90%, 71%);
+    background-color: hsl(37, 90%, 71%);
 }
 .duty-6 {
     fill:hsl(28, 80%, 61%);
     stroke:hsl(28, 80%, 61%);
+    background-color: hsl(28, 80%, 61%);
 }
 .duty-7 {
     fill:hsl(24, 100%, 41%);
     stroke:hsl(24, 100%, 41%);
+    background-color: hsl(24, 100%, 41%);
 }
 .duty-8 {
     fill:hsl(24, 100%, 36%);
     stroke:hsl(24, 100%, 36%);
+    background-color: hsl(24, 100%, 36%);
 }
 .duty-9 {
     fill:hsl(24, 100%, 31%);
     stroke:hsl(24, 100%, 31%);
+    background-color: hsl(24, 100%, 31%);
 }
 .duty-10 {
     fill:hsl(24, 100%, 26%);
     stroke:hsl(24, 100%, 26%);
+    background-color: hsl(24, 100%, 26%);
 }
 .duty-11 {
     fill:hsl(24, 100%, 21%);
     stroke:hsl(24, 100%, 21%);
+    background-color: hsl(24, 100%, 21%);
 }
 .noduty {
     fill:rgb(127,127,127);
     stroke:rgb(127,127,127);
+    background-color: rgb(127,127,127);
 }
 
 .workcenter {
@@ -76,20 +89,11 @@ a{
     stroke:rgb(0,0,0);
 }
 line.road {
-    stroke-width:5;    
+    stroke-width:15;    
     cursor: pointer;
 }
 line.road:hover {
-    stroke-width:7;    
-}
-
-@keyframes anim-trouble {  
-    0% {opacity:0;}
-    20% {opacity: 0.2;}
-    40% {opacity: 0.4;}
-    60% {opacity: 0.8;}
-    80% {opacity: 0.4;}
-    100% {opacity: 0.2;}
+    stroke-width:17;    
 }
 
 instance {
@@ -103,42 +107,6 @@ instance {
 #loadingSpinner {
     position: absolute;
     display: none;
-}
-.content-div {
-    position: relative;
-    border: solid 0px red;
-    padding: 0;
-    margin: 0;
-    overflow-y: auto;
-    opacity: 1;
-}
-.cell-data {
-    border-left:1px solid;
-    border-bottom:1px solid;
-    text-align:center;
-}
-.cell-data-left {
-    border-left:1px solid;
-    border-bottom:1px solid;
-    text-align:left;
-}
-.cell-header {
-    border-left:1px solid;
-    border-bottom:1px solid;
-    border-top:1px solid;
-    font-weight: bold;
-    text-align:center;
-}
-div[assign] {
-    cursor: pointer;
-}
-
-.active[assign] {
-    background-color: grey;
-}
-
-.active[order] {
-    background-color: grey;
 }
 
 #loginform {
@@ -157,17 +125,6 @@ div[assign] {
     height: 100%;
 }
 
-#btn-move-assign {
-    position: absolute;
-    display: none;
-    border: 1px solid black;
-    cursor: pointer;
-    opacity: 1;
-    z-index: 2;
-}
-#btn-move-assign:hover {
-    background-color: yellow;
-}
 #btnOrderInfo {
     position: absolute;
     display: none;
@@ -446,7 +403,6 @@ orderinfo > orderhistory > event > eventtime {
 
 orderinfo > orderhistory > event > workcenter {
     display: inline-block;
-    background-color: blueviolet;
     color: white;
     border-radius: 3px;
     cursor: pointer;
@@ -455,7 +411,6 @@ orderinfo > orderhistory > event > workcenter {
 }
 orderinfo > orderhistory > event > road {
     display: inline-block;
-    background-color: blueviolet;
     color: white;
     border-radius: 3px;
     cursor: pointer;

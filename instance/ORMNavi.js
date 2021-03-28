@@ -80,20 +80,7 @@ class ORMNaviMessage {
 class ORMNaviOrder {
 	static current_order = null;
     el = null;
-	options = null;
-    constructor (obj, opt = null, htmlelement = null) {
-		this.options = opt;
-		if (!this.options) {
-			this.options = {
-				number: 'brief',
-				customer: 'none',
-				content: 'none',
-				deadline: 'brief',
-				estimated: 'brief',
-				baseline: 'brief',
-				history: 'none'
-		   };
-		}
+    constructor (obj, htmlelement = null) {
         Object.assign(this, obj);
 		if (!htmlelement) {
 			this.el = $('order[number="'+this.number+'"]');
@@ -103,19 +90,6 @@ class ORMNaviOrder {
         this.drawOrder();
         this.el[0].ORMNaviOrder = this;
     }
-
-	/**
-	 * draw options
-	 * {
-	 * number: full | brief | none,
-	 * customer: full | brief | none,
-	 * content: full | brief | none,
-	 * deadline: full | diff | none,
-	 * estimated: full | diff | none,
-	 * baseline: full | diff | none,
-	 * history: full | brief | none
-	 * }
-	 */
 
 	drawOrder() {
 		var dl = new Date(this.deadline);
@@ -137,9 +111,9 @@ class ORMNaviOrder {
 			//debugger;
 			for (ind in this.history){
 				tmp += '<event><eventtime>'+ORMNaviOrder.drawDateTime(new Date(this.history[ind].event_time))+'</eventtime>';
-				tmp += '<workcenter name="'+(this.history[ind].workcenter_name?this.history[ind].workcenter_name:'')+'">'+(this.history[ind].workcenter_desc?this.history[ind].workcenter_desc:'')+'</workcenter>'
-				tmp += '<bucket>'+(this.history[ind].bucket?this.history[ind].bucket:'')+'</bucket>'
-				tmp += '<road name="'+(this.history[ind].road_name?this.history[ind].road_name:'')+'">'+(this.history[ind].road_desc?this.history[ind].road_desc:'')+'</road>'
+				tmp += '<workcenter name="'+(this.history[ind].workcenter_name?this.history[ind].workcenter_name:'')+'" operation="'+this.history[ind].operation+'">'+(this.history[ind].workcenter_desc?this.history[ind].workcenter_desc:'')+'</workcenter>';
+				tmp += '<bucket>'+(this.history[ind].bucket?this.history[ind].bucket:'')+'</bucket>';
+				if (this.history[ind].road_name) tmp += '<road name="'+(this.history[ind].road_name?this.history[ind].road_name:'')+'">'+(this.history[ind].road_desc?this.history[ind].road_desc:'')+'</road>';
 				tmp += '</event>';
 			}
 		}
@@ -202,7 +176,7 @@ class ORMNaviOrder {
 		for (ind in obj.history) {
 			if (workcenter == obj.history[ind].workcenter_name) {
 				//debugger;
-				return {bucket: obj.history[ind].bucket, assign: obj.history[ind].id, fullset:obj.history[ind].fullset}; 
+				return {bucket: obj.history[ind].bucket, assign: obj.history[ind].id, fullset:obj.history[ind].fullset, operation: obj.history[ind].operation}; 
 			}
 		}
 		return null;
@@ -210,6 +184,20 @@ class ORMNaviOrder {
 }
 
 class ORMNaviFactory {
+	static workloads = null;
+	static updateWorkloads() {
+		sendDataToNavi("apiGetWorkloads", undefined, function(data, status){
+			hideLoading();
+			switch (status) {
+				case "success":
+					var ls = JSON.parse(data);
+					ORMNaviFactory.workloads = ls.data;
+					break;
+				default:
+					showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
+			}
+		});
+	}
 }
 
 function modalOrderInfo(order_number) {
@@ -221,17 +209,39 @@ function modalOrderInfo(order_number) {
 		switch (status) {
 			case "success":
 				var ls = JSON.parse(data);
-				opt = {
-					number: 'full',
-					customer: 'full',
-					content: 'full',
-					deadline: 'full',
-					estimated: 'full',
-					baseline: 'full',
-					history: 'full'
-			   };
-					//$(".modal").find(".orderHistory").text(JSON.stringify(ls.data.history));
-				var temp = new ORMNaviOrder(ls.data, opt, $("orderinfo"));
+				var temp = new ORMNaviOrder(ls.data, $("orderinfo"));
+				$("orderinfo > orderhistory > event > workcenter").each (function () {
+					var w = $(this).attr("name");
+					var o = $(this).attr("operation");
+					if (w in ORMNaviFactory.workloads.workcenters.capacity && 
+						w in ORMNaviFactory.workloads.workcenters.assigns && 
+						o in ORMNaviFactory.workloads.workcenters.capacity[w] &&
+						o in ORMNaviFactory.workloads.workcenters.assigns[w]) {
+						
+						var c = ORMNaviFactory.workloads.workcenters.capacity[w][o];
+						var a = ORMNaviFactory.workloads.workcenters.assigns[w][o];
+						var k = a / c;
+						if (k > 1) k = 1.0;
+						k = Math.round(k * 12) - 1;
+						$(this).addClass("duty-"+k);
+					} else {
+						$(this).addClass("noduty");
+					}
+				});
+
+				$("orderinfo > orderhistory > event > road").each (function () {
+					var r = $(this).attr("name");
+					if (r in ORMNaviFactory.workloads.roads.capacity && r in ORMNaviFactory.workloads.roads.assigns) {
+						var c = ORMNaviFactory.workloads.roads.capacity[r];
+						var a = ORMNaviFactory.workloads.roads.assigns[r];
+						var k = a / c;
+						if (k > 1) k = 1.0;
+						k = Math.round(k * 12) - 1;
+						$(this).addClass("duty-"+k);
+					} else {
+						$(this).addClass("noduty");
+					}
+				});
 				$("#dlgModal").modal('show');
 				break;
 			default:
