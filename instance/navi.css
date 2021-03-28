@@ -242,30 +242,30 @@ message[message_id].CRITICAL {
 factory {
     height: 100%;
     display: grid;
-    grid-template-rows: 2em 1fr;
+    grid-template-rows: auto 1fr;
     grid-template-columns: 1fr;
-    grid-gap: 0.5em;
+    grid-gap: 0.1em;
 }
 orders {
     height: 100%;
     display: grid;
-    grid-template-rows: 2em 1.5em 1fr 2em;
+    grid-template-rows: auto auto 1fr auto;
     grid-template-columns: 1fr 1.5fr;
-    grid-gap: 0.5em;
+    grid-gap: 0.1em;
 }
 orders_in_workcenter {
     height: 100%;
     display: grid;
-    grid-template-rows: 2em 2em 1fr;
+    grid-template-rows: auto auto 1fr;
     grid-template-columns: 1fr 1fr 1fr;
-    grid-gap: 0.5em;
+    grid-gap: 0.1em;
 }
 orders_in_road {
     height: 100%;
     display: grid;
-    grid-template-rows: 2em 2em 1fr;
+    grid-template-rows: auto auto 1fr;
     grid-template-columns: 1fr 1fr;
-    grid-gap: 0.5em;
+    grid-gap: 0.1em;
 }
 orders_to_import {
     margin: 0;
