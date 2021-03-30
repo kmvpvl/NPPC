@@ -6,7 +6,7 @@
 	<material id="blankshaft" cost="2100">
 		<operation ref="supplyblankshaft"></operation>
 	</material>
-	<product id="wheelpair"></product>
+	<product id="wheelpair">Wheelpair 800x60 M2 DIN 4534-02</product>
 	<material id="shaft" cost="2000">
 		<operation ref="blankprocessing">
 			<material ref="blankshaft"></material>
@@ -19,5 +19,5 @@
 	<operation id="supplywheel" duration="150" cost="3"/>
 	<operation id="move" duration="5" cost="0.1">
 	</operation>
-	<customer id="c2"/>
+	<customer id="c2">Customer Experience LTD</customer>
 </dictionary>

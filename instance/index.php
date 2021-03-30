@@ -405,11 +405,11 @@ function road(_id, _ordhighlight = undefined) {
 	})
 }
 </script>
-<div class="modal fade" id="dlgModal" tabindex="-1" role="dialog" aria-labelledby="dlgModalLongTitle" aria-hidden="true">
+<div class="modal fade" id="dlgOrderModal" tabindex="-1" role="dialog" aria-labelledby="dlgOrderModalLongTitle" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="dlgModalLongTitle">Modal title</h5>
+        <h5 class="modal-title" id="dlgOrderModalLongTitle">Order information</h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
@@ -418,8 +418,9 @@ function road(_id, _ordhighlight = undefined) {
         ...
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-        <button type="button" dlg-button="btn-dlgModal-ok" class="btn btn-primary"></button>
+	  <button type="button" class="btn btn-success" data-dismiss="">Update Estimated</button>
+	  <button type="button" class="btn btn-success" data-dismiss="">Update Plan</button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
       </div>
     </div>
   </div>

@@ -321,6 +321,11 @@ orders_inprocess {
     overflow-y: auto;
     border: black 1px solid;
 }
+.bucket {
+    width: 100%;
+    display: block;
+    text-align: center;
+}
 income {
     width: 100%;
     height: 100%;
@@ -356,14 +361,16 @@ order.brief {
     width: 100%;
     cursor: pointer;
 }
-order.brief > orderheader > ordercaption,
-order.brief > ordertiming > due > diffdate,
-order.brief > ordertiming > baseline > absolutedate,
-order.brief > ordertiming > estimated > absolutedate,
-order.brief > orderhistory {
+order.brief > order-header > order-caption,
+order.brief > order-header > order-customer,
+order.brief > order-header > order-products,
+order.brief > order-timing > due > diff-date,
+order.brief > order-timing > baseline > absolute-date,
+order.brief > order-timing > estimated > absolute-date,
+order.brief > order-history {
     display: none;
 }
-order.brief > orderheader > number {
+order.brief > order-header > number {
     display: inline-block;
     text-align: center;
     width: 5em;
@@ -378,68 +385,85 @@ order.selected[full="0"]{
 
 orderinfo {
     display: grid;
-    grid-template-rows: 2em 5em 1fr;
+    grid-template-rows: auto auto 1fr;
     grid-template-columns: 1fr;
     grid-gap: 0.1em;    
 }
 
-orderinfo > orderheader {
+orderinfo > order-header {
     display: block;
 }
-orderinfo > orderheader > ordercaption {
+orderinfo > order-header > order-caption {
     font-size: larger;
 }
-orderinfo > orderheader > number {
+orderinfo > order-header > number {
     font-size: larger;
     font-weight: bold;
     text-align: center;
 }
-orderinfo > ordertiming {
+orderinfo > order-header > order-customer {
+    font-size: larger;
+    font-weight: bold;
+    text-align: center;
+    display: inline-block;
+}
+orderinfo > order-header > order-products {
+    font-size: larger;
+    font-weight: bold;
+    text-align: center;
+    display: inline-block;
+}
+orderinfo > order-header > order-customer::before {
+    content: " Customer: ";
+    font-weight: normal;
+    padding-left: 1em;
+}
+orderinfo > order-timing {
     display: grid;
     grid-template-rows: 5em;
     grid-template-columns: 1fr 1fr 1fr;
     grid-gap: 0.1em;    
 }
-orderinfo > ordertiming > due::before {
+orderinfo > order-timing > due::before {
     content: "Due "; 
 }
-orderinfo > ordertiming > estimated::before {
+orderinfo > order-timing > estimated::before {
     content: "Estimated "; 
 }
-orderinfo > ordertiming > baseline::before {
+orderinfo > order-timing > baseline::before {
     content: "Plan "; 
 }
-orderinfo > ordertiming > due,
-orderinfo > ordertiming > estimated,
-orderinfo > ordertiming > baseline {
+orderinfo > order-timing > due,
+orderinfo > order-timing > estimated,
+orderinfo > order-timing > baseline {
     display:inline-block;
     text-align: center;
     border-radius: 3px;
 }
-orderinfo > ordertiming > due > diffdate,
-orderinfo > ordertiming > estimated > diffdate,
-orderinfo > ordertiming > baseline > diffdate,
-orderinfo > ordertiming > due > absolutedate,
-orderinfo > ordertiming > estimated > absolutedate,
-orderinfo > ordertiming > baseline > absolutedate {
+orderinfo > order-timing > due > diff-date,
+orderinfo > order-timing > estimated > diff-date,
+orderinfo > order-timing > baseline > diff-date,
+orderinfo > order-timing > due > absolute-date,
+orderinfo > order-timing > estimated > absolute-date,
+orderinfo > order-timing > baseline > absolute-date {
     display:block;
     text-align: center;
 }
-orderinfo > orderhistory::before {
+orderinfo > order-history::before {
     content: 'History';
 }
-orderinfo > orderhistory > event {
+orderinfo > order-history > event {
     display: block;
     border-top: black 1px solid;
     padding-top: 0.5em;
     padding-bottom: 0.5em;
 }
-orderinfo > orderhistory > event > eventtime {
+orderinfo > order-history > event > event-time {
     display: inline-block;
     width:5em;
 }
 
-orderinfo > orderhistory > event > workcenter {
+orderinfo > order-history > event > workcenter {
     display: inline-block;
     color: white;
     border-radius: 3px;
@@ -447,7 +471,7 @@ orderinfo > orderhistory > event > workcenter {
     padding-left: 1em;
     padding-right: 1em;
 }
-orderinfo > orderhistory > event > road {
+orderinfo > order-history > event > road {
     display: inline-block;
     color: white;
     border-radius: 3px;
@@ -455,24 +479,24 @@ orderinfo > orderhistory > event > road {
     padding-left: 1em;
     padding-right: 1em;
 }
-orderinfo > orderhistory > event > bucket {
+orderinfo > order-history > event > bucket {
     display: inline-block;
     color: blueviolet;
     border-radius: 3px;
     padding-left: 1em;
     padding-right: 1em;
 }
-order.brief > ordertiming > due > absolutedate {
+order.brief > order-timing > due > absolute-date {
     display: inline-block;
     text-align: center;
     width: 5em;
 }
-order.brief > ordertiming > estimated > diffdate {
+order.brief > order-timing > estimated > diff-date {
     display: inline-block;
     text-align: center;
     width: 4em;
 }
-order.brief > ordertiming > baseline > diffdate {
+order.brief > order-timing > baseline > diff-date {
     display: inline-block;
     text-align: center;
     width: 4em;

@@ -121,9 +121,9 @@ $("#slct-operation").change(function(){
 	</select>
     <input id="edt-search" type="text" class="form-control" placeholder="Search orders..."></input>
     <span></span>
-    <span>INCOME</span>
-    <span>PROCESSING</span>
-    <span>OUTCOME</span>
+    <span class="bucket"><b>INCOME</b> (ord, due, est, plan)</span>
+    <span class="bucket"><b>PROCESSING</b> (ord, due, est, plan)</span>
+    <span class="bucket"><b>OUTCOME</b> (ord, due, est, plan)</span>
     <income></income>
     <processing></processing>
     <outcome></outcome>

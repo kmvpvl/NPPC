@@ -149,29 +149,36 @@ class ORMNaviOrder {
 		var dl = new Date(this.deadline);
 		var cd = new Date();
 		
-		var tmp = '<orderheader><ordercaption>ORDER #</ordercaption><number>'+this.number+"</number></orderheader>";
-		tmp += '<ordertiming>';
-		tmp += '<due class="'+(dl>cd?'intime':'late')+'"><absolutedate>'+drawDateTime(dl)+'</absolutedate><diffdate>'+drawDateTimeDiff(dl, cd)+'</diffdate></due>';
+		var tmp = '<order-header>';
+		tmp += '<order-caption>ORDER #</order-caption>';
+		tmp += '<number>'+this.number+"</number>"
+		tmp += "<order-customer>"+this.customer.name+"</order-customer>"
+		tmp += "<order-products>";
+		for (ind in this.products) tmp += "<order-product>"+this.products[ind].name+"</order-product>"
+		tmp += "</order-products>"
+		tmp += "</order-header>";
+		tmp += '<order-timing>';
+		tmp += '<due class="'+(dl>cd?'intime':'late')+'"><absolute-date>'+drawDateTime(dl)+'</absolute-date><diff-date>'+drawDateTimeDiff(dl, cd)+'</diff-date></due>';
 
 		if (this.estimated) {
 			var est = new Date(this.estimated);
 			var bl = new Date(this.baseline);
-			tmp += '<estimated class="'+(est>cd?'intime':'late')+'"><absolutedate>'+drawDateTime(est)+'</absolutedate><diffdate>'+drawDateTimeDiff(est, cd)+'</diffdate></estimated>';
-			tmp += '<baseline class="'+(bl>cd?'intime':'late')+'"><absolutedate>'+drawDateTime(bl)+'</absolutedate><diffdate>'+drawDateTimeDiff(bl, cd)+'</diffdate></baseline>';
+			tmp += '<estimated class="'+(est>cd?'intime':'late')+'"><absolute-date>'+drawDateTime(est)+'</absolute-date><diff-date>'+drawDateTimeDiff(est, cd)+'</diff-date></estimated>';
+			tmp += '<baseline class="'+(bl>cd?'intime':'late')+'"><absolute-date>'+drawDateTime(bl)+'</absolute-date><diff-date>'+drawDateTimeDiff(bl, cd)+'</diff-date></baseline>';
 		}
-		tmp += '</ordertiming>';
-		tmp += '<orderhistory>';
+		tmp += '</order-timing>';
+		tmp += '<order-history>';
 		if (this.history) {
 			//debugger;
 			for (ind in this.history){
-				tmp += '<event><eventtime>'+drawDateTime(new Date(this.history[ind].event_time))+'</eventtime>';
+				tmp += '<event><event-time>'+drawDateTime(new Date(this.history[ind].event_time))+'</event-time>';
 				tmp += '<workcenter name="'+(this.history[ind].workcenter_name?this.history[ind].workcenter_name:'')+'" operation="'+this.history[ind].operation+'">'+(this.history[ind].workcenter_desc?this.history[ind].workcenter_desc:'')+'</workcenter>';
 				tmp += '<bucket>'+(this.history[ind].bucket?this.history[ind].bucket:'')+'</bucket>';
 				if (this.history[ind].road_name) tmp += '<road name="'+(this.history[ind].road_name?this.history[ind].road_name:'')+'">'+(this.history[ind].road_desc?this.history[ind].road_desc:'')+'</road>';
 				tmp += '</event>';
 			}
 		}
-		tmp += '</orderhistory>';
+		tmp += '</order-history>';
 		this.el.html(tmp);
 	}
 	static getBucket(obj, workcenter) {
@@ -212,7 +219,7 @@ function modalOrderInfo(order_number) {
 			case "success":
 				var ls = JSON.parse(data);
 				var temp = new ORMNaviOrder(ls.data, $("orderinfo"));
-				$("orderinfo > orderhistory > event > workcenter").each (function () {
+				$("orderinfo > order-history > event > workcenter").each (function () {
 					var w = $(this).attr("name");
 					var o = $(this).attr("operation");
 					if (w in ORMNaviFactory.workloads.workcenters.capacity && 
@@ -231,7 +238,7 @@ function modalOrderInfo(order_number) {
 					}
 				});
 
-				$("orderinfo > orderhistory > event > road").each (function () {
+				$("orderinfo > order-history > event > road").each (function () {
 					var r = $(this).attr("name");
 					if (r in ORMNaviFactory.workloads.roads.capacity && r in ORMNaviFactory.workloads.roads.assigns) {
 						var c = ORMNaviFactory.workloads.roads.capacity[r];
@@ -244,7 +251,7 @@ function modalOrderInfo(order_number) {
 						$(this).addClass("noduty");
 					}
 				});
-				$("#dlgModal").modal('show');
+				$("#dlgOrderModal").modal('show');
 				break;
 			default:
 				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
