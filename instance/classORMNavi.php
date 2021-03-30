@@ -744,8 +744,8 @@ class ORMNaviFactory {
 		return $y;
 	}
 
-	public function getIncomingMessages(bool $read = false, string $message_types = ""):array {
-		$sql = "call getIncomingMessages('" . $this->name . "', '" . $this->user->name . "', '" . $this->user->subscriptionsForSearch . "', " . ($read?1:0) . ", '".$message_types."')";
+	public function getMessages(string $message_types = ""):array {
+		$sql = "call getMessages('" . $this->name . "', '" . $this->user->name . "', '" . $this->user->subscriptionsForSearch . "', '".$message_types."')";
 	    $x = $this->dblink->query($sql);
 	    if ($this->dblink->errno || !$x) throw new ORMNaviException("Could not get messages: " . $this->dblink->errno . " - " . $this->dblink->error);
 		$ret = array();
@@ -757,6 +757,21 @@ class ORMNaviFactory {
 		$this->dblink->next_result();
 		return $ret;
 	}
+
+	public function getSentMessages(string $message_types = "", string $search_string):array {
+		$sql = "call getSentMessages('" . $this->name . "', '" . $this->user->name . "', '".$message_types."', '".$search_string."')";
+	    $x = $this->dblink->query($sql);
+	    if ($this->dblink->errno || !$x) throw new ORMNaviException("Could not get messages: " . $this->dblink->errno . " - " . $this->dblink->error);
+		$ret = array();
+		while ($y = $x->fetch_assoc()) {
+			$m = ORMNaviMessage::createFromArray($this, $y);
+			$ret[] = $m;
+		}
+		$x->free_result();
+		$this->dblink->next_result();
+		return $ret;
+	}
+
 	public function getAllOrders ():array {
 		$ret = [];
         $fd = scandir($this->orders_dir);
@@ -772,7 +787,7 @@ class ORMNaviFactory {
         asort($ret);
 		return $ret;
 	}
-	
+		
 	function getWorkcenterOrders(string $workcenter_id):array{
 		$sql = "select getBuckets(1) as `buckets`;";
 	    $x = $this->dblink->query($sql);

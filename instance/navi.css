@@ -196,12 +196,21 @@ messages {
     right:0;
     bottom:0;
     display: grid;
-    grid-template-rows: auto auto 1fr;
+    grid-template-rows: auto 1fr auto auto;
     grid-template-columns: 1fr;
     grid-gap: 0.5em;
 }
 message-template {
     height: 100%;
+}
+messages-navigator > span {
+    width:30%;
+    border-radius: 5px;
+    border: black 0px solid;
+    padding-left: 1em;
+    padding-right: 1em;
+    display: inline-block;
+    text-align: center;
 }
 #messages-popup {
     cursor: pointer;
@@ -215,6 +224,18 @@ messages > messages-container {
     overflow-y: auto;
     height: 100%;
 }
+messages > messages-container > unread-separator {
+    text-align: center;
+    border-radius: 3px;
+    border: black 1px solid;
+    display: block;
+    margin-left:auto;
+    margin-right: auto;
+    left:0;
+    right:0;
+    background-color: silver;
+    width: 50%;
+}
 messages > messages-container > message {
     padding: 3px;
     border: solid 1px black;
@@ -222,21 +243,38 @@ messages > messages-container > message {
     display: block;
     margin: 2px;
 }
-message > user {
-    font-weight: bold;
+message > message_time::before {
+    content: "Date/time: ";
+}
+
+message > message_time {
     font-size: smaller;
+}
+message > message_from::before {
+    content: " from: ";
+}
+message > message_from {
+    font-size: smaller;
+}
+message > message_body {
     display: block;
+}
+message[in="0"] {
+    margin-left: 2em;
+}
+message[read="0"] {
+    font-weight: bold;
 }
 message[message_id].INFO {
     color: navy;
     background-color: white;
 }
 message[message_id].WARNING {
-    color:white;
-    background-color: brown;
+    color: brown;
 }
 message[message_id].CRITICAL {
-    color: red;
+    background-color: brown;
+    color: white;
 }
 
 factory {
