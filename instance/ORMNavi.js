@@ -25,8 +25,62 @@ function sendDataToNavi(api, data, callback) {
 			default:				
 				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
 		}
-	})
+	});
 }
+
+function drawDateTime(d) {
+	var options_date = {
+		year: "2-digit",
+		month: "2-digit",
+		day: "2-digit"
+	};
+	var options_time = {
+		hour: "2-digit",
+		minute: "2-digit"
+	};
+	var cd = new Date();
+	if (cd.getFullYear() == d.getFullYear()) {
+		if (cd.getDate() == d.getDate() && cd.getMonth() == d.getMonth()) {
+			return d.toLocaleTimeString($("#language").val(), options_time);			
+		} else {
+			return d.toLocaleDateString($("#language").val(), options_date);
+		}
+	} else {
+		return d.toLocaleDateString($("#language").val(), options_date);
+	}
+}
+
+function drawDateTimeDiff(d, cd) {
+	var diff = Math.abs(d-cd)/1000;
+	var inlate = d - cd > 0 ? "+" : "-";
+	var outlate = d - cd > 0 ? "":"";
+	if (diff > 60) {
+		// sec
+		diff = diff / 60;
+		if (diff > 60) {
+			// min
+			diff = diff / 60;
+			if (diff > 24) {
+				//hours
+				diff = diff / 24;
+				if (diff > 7) {
+					//weeks
+					diff = diff / 7;
+					return  inlate + Math.round(diff) + "w" + outlate;
+				} else {
+					return  inlate + Math.round(diff) + "d" + outlate;
+				}
+			} else {
+				return  inlate + Math.round(diff) + "h" + outlate;
+			}
+		} else {
+			return  inlate + Math.round(diff) + "m" + outlate;
+		}
+	} else {
+		return  inlate + Math.round(diff) + "s" + outlate;
+	}
+}
+
 class ORMNaviMessage {
 	static current_message = null;
     el = null;
@@ -40,40 +94,40 @@ class ORMNaviMessage {
 	 * 
 	 */
 	static send(body, type) {
-		sendDataToNavi('apiSendMessage', {body: body, type:type}, this.sent)
-	}
-
-	static sent(data, status) {
-        hideLoading();
-		//debugger;
-		switch (status) {
-			case "success":
-			break;
-			default:
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-		}
+		sendDataToNavi('apiSendMessage', {body: body, type:type}, 
+		function(data, status) {
+			hideLoading();
+			//debugger;
+			switch (status) {
+				case "success":
+				break;
+				default:
+					showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
+			}
+		});
     }
 
 	drawMessage() {
 		//debugger;
 		this.el.addClass(this.type);
-		this.el.html('<user>from: '+this.from+'</user>'+this.body);
+		var mt = new Date(this.message_time);
+		this.el.html('<message_time>'+drawDateTime(mt)+'</message_time><message_from>'+this.from+'</message_from><message_body>'+this.body+'</message_body>');
 	}
 
     dismiss(){
-        sendDataToNavi('apiMakeMessageRead', {message_id: this.id}, this.hide);
+        sendDataToNavi('apiMakeMessageRead', {message_id: this.id}, 
+		function(data, status) {
+			hideLoading();
+			//debugger;
+			switch (status) {
+				case "success":
+					$("message[message_id='"+ORMNaviMessage.current_message+"']").hide();
+				break;
+				default:
+					showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
+			}
+		});
 		ORMNaviMessage.current_message = this.id;
-    }
-    hide(data, status) {
-        hideLoading();
-		//debugger;
-		switch (status) {
-			case "success":
-                $("message[message_id='"+ORMNaviMessage.current_message+"']").hide();
-			break;
-			default:
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-		}
     }
 }
 
@@ -97,20 +151,20 @@ class ORMNaviOrder {
 		
 		var tmp = '<orderheader><ordercaption>ORDER #</ordercaption><number>'+this.number+"</number></orderheader>";
 		tmp += '<ordertiming>';
-		tmp += '<due class="'+(dl>cd?'intime':'late')+'"><absolutedate>'+ORMNaviOrder.drawDateTime(dl)+'</absolutedate><diffdate>'+ORMNaviOrder.drawDateTimeDiff(dl, cd)+'</diffdate></due>';
+		tmp += '<due class="'+(dl>cd?'intime':'late')+'"><absolutedate>'+drawDateTime(dl)+'</absolutedate><diffdate>'+drawDateTimeDiff(dl, cd)+'</diffdate></due>';
 
 		if (this.estimated) {
 			var est = new Date(this.estimated);
 			var bl = new Date(this.baseline);
-			tmp += '<estimated class="'+(est>cd?'intime':'late')+'"><absolutedate>'+ORMNaviOrder.drawDateTime(est)+'</absolutedate><diffdate>'+ORMNaviOrder.drawDateTimeDiff(est, cd)+'</diffdate></estimated>';
-			tmp += '<baseline class="'+(bl>cd?'intime':'late')+'"><absolutedate>'+ORMNaviOrder.drawDateTime(bl)+'</absolutedate><diffdate>'+ORMNaviOrder.drawDateTimeDiff(bl, cd)+'</diffdate></baseline>';
+			tmp += '<estimated class="'+(est>cd?'intime':'late')+'"><absolutedate>'+drawDateTime(est)+'</absolutedate><diffdate>'+drawDateTimeDiff(est, cd)+'</diffdate></estimated>';
+			tmp += '<baseline class="'+(bl>cd?'intime':'late')+'"><absolutedate>'+drawDateTime(bl)+'</absolutedate><diffdate>'+drawDateTimeDiff(bl, cd)+'</diffdate></baseline>';
 		}
 		tmp += '</ordertiming>';
 		tmp += '<orderhistory>';
 		if (this.history) {
 			//debugger;
 			for (ind in this.history){
-				tmp += '<event><eventtime>'+ORMNaviOrder.drawDateTime(new Date(this.history[ind].event_time))+'</eventtime>';
+				tmp += '<event><eventtime>'+drawDateTime(new Date(this.history[ind].event_time))+'</eventtime>';
 				tmp += '<workcenter name="'+(this.history[ind].workcenter_name?this.history[ind].workcenter_name:'')+'" operation="'+this.history[ind].operation+'">'+(this.history[ind].workcenter_desc?this.history[ind].workcenter_desc:'')+'</workcenter>';
 				tmp += '<bucket>'+(this.history[ind].bucket?this.history[ind].bucket:'')+'</bucket>';
 				if (this.history[ind].road_name) tmp += '<road name="'+(this.history[ind].road_name?this.history[ind].road_name:'')+'">'+(this.history[ind].road_desc?this.history[ind].road_desc:'')+'</road>';
@@ -119,58 +173,6 @@ class ORMNaviOrder {
 		}
 		tmp += '</orderhistory>';
 		this.el.html(tmp);
-	}
-	static drawDateTime(d) {
-		var options_date = {
-			year: "2-digit",
-			month: "2-digit",
-			day: "2-digit"
-		};
-		var options_time = {
-			hour: "2-digit",
-			minute: "2-digit"
-		};
-		var cd = new Date();
-		if (cd.getFullYear() == d.getFullYear()) {
-			if (cd.getDate() == d.getDate() && cd.getMonth() == d.getMonth()) {
-				return d.toLocaleTimeString($("#language").val(), options_time);			
-			} else {
-				return d.toLocaleDateString($("#language").val(), options_date);
-			}
-		} else {
-			return d.toLocaleDateString($("#language").val(), options_date);
-		}
-	}
-
-	static drawDateTimeDiff(d, cd) {
-		var diff = Math.abs(d-cd)/1000;
-		var inlate = d - cd > 0 ? "+" : "-";
-		var outlate = d - cd > 0 ? "":"";
-		if (diff > 60) {
-			// sec
-			diff = diff / 60;
-			if (diff > 60) {
-				// min
-				diff = diff / 60;
-				if (diff > 24) {
-					//hours
-					diff = diff / 24;
-					if (diff > 7) {
-						//weeks
-						diff = diff / 7;
-						return  inlate + Math.round(diff) + "w" + outlate;
-					} else {
-						return  inlate + Math.round(diff) + "d" + outlate;
-					}
-				} else {
-					return  inlate + Math.round(diff) + "h" + outlate;
-				}
-			} else {
-				return  inlate + Math.round(diff) + "m" + outlate;
-			}
-		} else {
-			return  inlate + Math.round(diff) + "s" + outlate;
-		}
 	}
 	static getBucket(obj, workcenter) {
 		for (ind in obj.history) {

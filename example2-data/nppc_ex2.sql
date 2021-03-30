@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 28, 2021 at 04:23 PM
+-- Generation Time: Mar 30, 2021 at 04:35 PM
 -- Server version: 10.4.17-MariaDB
 -- PHP Version: 8.0.0
 
@@ -109,8 +109,8 @@ BEGIN
 select workcenters.name, b.* from (select workcenter_id, operation, count(id) as assings_count from assigns as a where client_id = `_client_id` and find_in_set(bucket, `_buckets`) > 0 group by a.workcenter_id, a.operation) as b left join workcenters on workcenters.id = b.workcenter_id;
 end$$
 
-DROP PROCEDURE IF EXISTS `getIncomingMessages`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `getIncomingMessages` (IN `_factory` VARCHAR(50), IN `_user` VARCHAR(50), IN `_tags` VARCHAR(250), IN `_read` BOOLEAN, IN `_types` VARCHAR(50))  NO SQL
+DROP PROCEDURE IF EXISTS `getMessages`$$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `getMessages` (IN `_factory` VARCHAR(50), IN `_user` VARCHAR(50), IN `_tags` VARCHAR(250), IN `_types` VARCHAR(50))  NO SQL
 BEGIN
 set @client_id = getClientID(`_factory`);
 set @user_id = getUserID(@client_id, `_user`);
@@ -125,12 +125,13 @@ from `messages`
 left join `messages_read` on `messages`.`id` = `messages_read`.`message_id`
 left join `users` on `users`.`id`=`messages`.`message_from`
 where  
-`messages`.`client_id` = @client_id
-and (`messages_read`.`user_id` = @user_id or `messages_read`.`user_id` is null)
-and find_in_set(`messages`.`message_type`, `_types`) > 0
-and MATCH(`messages`.`tags`) against (concat('+("@', `_user`, '"', `_tags`, ')')IN BOOLEAN MODE)
-and if (`messages_read`.`read_time` is not null or `_read`, 1, 0) = `_read`
-and `messages`.`message_from` <> @user_id
+(`messages`.`client_id` = @client_id
+-- and (`messages_read`.`user_id` = @user_id or `messages_read`.`user_id` is null)
+and find_in_set(`messages`.`message_type`, `_types`) > 0)
+or MATCH(`messages`.`tags`) against (concat('+("@', `_user`, '"', `_tags`, ')')IN BOOLEAN MODE)
+-- and if (`messages_read`.`read_time` is not null or `_read`, 1, 0) = `_read`
+-- and `messages`.`message_from` <> @user_id
+order by `messages`.`message_time` DESC
 ;
 end$$
 
