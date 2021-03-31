@@ -379,7 +379,17 @@ class ORMNaviOrder implements JsonSerializable {
 			case 'routes':
 				return $this->routes_xml;
 				break;
-			
+			case 'customer':
+				$cref = (string)$this->xml->customer["ref"];
+				return ['id'=>$cref, 'name'=>(string) $this->factory->getMDMCustomer($cref)];
+				break;
+			case 'products':
+				$a = [];
+				foreach ($this->xml->customer->children() as $prodmat) {
+					$a[] = ['id'=>(string)$prodmat["ref"], 'name'=>(string)$this->factory->getMDMRef($prodmat["ref"])];
+				}
+				return $a;
+				break;
 			default:
 				throw new ORMNaviException("Unknown property ".$name);
 				break;
@@ -391,6 +401,8 @@ class ORMNaviOrder implements JsonSerializable {
 			"factory" => $this->factory->name,
 			"id" => $this->id,
 			"number" => $this->number,
+			"customer" => $this->customer, 
+			"products" => $this->products,
 			"deadline" => $this->deadline->format(DateTime::RFC1036),
 			"baseline" => is_null($this->baseline)?null:$this->baseline->format(DateTime::RFC1036),
 			"estimated" => is_null($this->estimated)?null :$this->estimated->format(DateTime::RFC1036),
@@ -707,11 +719,12 @@ class ORMNaviFactory {
 
 	public function getMDMCustomer(string $customer_ref): SimpleXMLElement {
 		$f = $this->mdm_xml->xpath("customer[@id='".$customer_ref."']");
+		if (!$f) throw new ORMNaviException("Customer with ref '".$customer_ref."' not found");
 		return $f[0];
 	} 
 
 	public function getMDMRef(string $ref) : SimpleXMLElement{
-		$r = $this->mdm_xml->xpath("*[@id='" . $ref . "']");
+		$r = $this->mdm_xml->xpath("//*[@id='" . $ref . "']");
 		if (!$r) throw new ORMNaviException("Element by ref '".$ref."' isn't found in mdm.xml");
 		if (count($r) > 1) throw new ORMNaviException("There are several elements by ref '".$ref."' in mdm.xml");
 		return $r[0];
@@ -744,8 +757,8 @@ class ORMNaviFactory {
 		return $y;
 	}
 
-	public function getIncomingMessages(bool $read = false, string $message_types = ""):array {
-		$sql = "call getIncomingMessages('" . $this->name . "', '" . $this->user->name . "', '" . $this->user->subscriptionsForSearch . "', " . ($read?1:0) . ", '".$message_types."')";
+	public function getMessages(string $message_types = ""):array {
+		$sql = "call getMessages('" . $this->name . "', '" . $this->user->name . "', '" . $this->user->subscriptionsForSearch . "', '".$message_types."')";
 	    $x = $this->dblink->query($sql);
 	    if ($this->dblink->errno || !$x) throw new ORMNaviException("Could not get messages: " . $this->dblink->errno . " - " . $this->dblink->error);
 		$ret = array();
@@ -757,6 +770,21 @@ class ORMNaviFactory {
 		$this->dblink->next_result();
 		return $ret;
 	}
+
+	public function getSentMessages(string $message_types = "", string $search_string):array {
+		$sql = "call getSentMessages('" . $this->name . "', '" . $this->user->name . "', '".$message_types."', '".$search_string."')";
+	    $x = $this->dblink->query($sql);
+	    if ($this->dblink->errno || !$x) throw new ORMNaviException("Could not get messages: " . $this->dblink->errno . " - " . $this->dblink->error);
+		$ret = array();
+		while ($y = $x->fetch_assoc()) {
+			$m = ORMNaviMessage::createFromArray($this, $y);
+			$ret[] = $m;
+		}
+		$x->free_result();
+		$this->dblink->next_result();
+		return $ret;
+	}
+
 	public function getAllOrders ():array {
 		$ret = [];
         $fd = scandir($this->orders_dir);
@@ -772,7 +800,7 @@ class ORMNaviFactory {
         asort($ret);
 		return $ret;
 	}
-	
+		
 	function getWorkcenterOrders(string $workcenter_id):array{
 		$sql = "select getBuckets(1) as `buckets`;";
 	    $x = $this->dblink->query($sql);

@@ -46,33 +46,32 @@
 </instance>
 <messages>
 <messages-toolbar>
-<input type="checkbox" checked data-toggle="toggle" data-on="<b>Inbox</b>" data-off="<b>Sent</b>"  data-width="100">
-<input type="checkbox" checked data-toggle="toggle" data-on="info" data-off="not info" data-width="100">
-<input type="checkbox" checked data-toggle="toggle" data-on="warning" data-off="not warning" data-width="120">
-
-<input id="btn-new-message" type="button" value="[new message]"></input>
 <button type="button" class="ml-2 mb-1 close" messages="collapse">&times;</button>
+<input id="edt-search" type="text" placeholder="Search message..."></input>
 </messages-toolbar>
+<messages-container>
+</messages-container>
 <message-template>
-<div class="input-group mb-0">
-	<select class="custom-select" id="message_type">
+<div class="input-group">
+  <div class="input-group-prepend">
+  <span class="input-group-text">Text</span>
+  <select class="custom-select" id="message_type">
 		<option value="INFO">info</option>
 		<option value="WARNING">warning</option>
 		<option value="CRITICAL">critical</option>
 	</select>
-    <div class="input-group-append">
-        <button id="btn-send-message" class="btn btn-outline-secondary" type="button">Send</button>
-    </div>
-</div>
-<div class="input-group">
-  <div class="input-group-prepend">
-    <span class="input-group-text">Text</span>
   </div>
-  <textarea id="message_text" class="form-control" aria-label="With textarea"></textarea>
+  <textarea id="message_text" class="form-control" aria-label="With textarea" rows="1"></textarea>
+  <div class="input-group-append">
+	  <button id="btn-send-message" class="btn btn-outline-secondary" type="button">Send</button>
+  </div>
 </div>
 </message-template>    
-<messages-container>
-</messages-container>
+<messages-navigator>
+	<span>By order</span>
+	<span>By user</span>
+	<span>Subscription</span>
+</messages-navigator>
 </messages>
 <form id="loginform">
 	<div class="container">
@@ -107,7 +106,6 @@
 </div>
 <script>
 function collapseMessages() {
-	$('message-template').hide();
     $('messages').hide();
 }
 $(document).ready (function (){
@@ -124,12 +122,9 @@ $(document).ready (function (){
 	collapseMessages();
 	$("#messages-popup").on('click', function() {
 		$('messages').show();
+		scrollMessages();
 	});
 	$(window).resize();
-})
-
-$("#btn-new-message").on('click', function (){
-    $('message-template').show();
 })
 
 $("#btn-send-message").on('click', function () {
@@ -165,8 +160,18 @@ function showLoading() {
 	$("#errorLoadingMessage").hide();
 	$("#loadingSpinner").show();
 }
+
+function scrollMessages(){
+	if ($("messages messages-container unread-separator").length) {
+		$('messages messages-container').animate({scrollTop: $("messages messages-container unread-separator").position().top+$("messages messages-container").scrollTop()-$("messages messages-container unread-separator").outerHeight()*2 }, 1000);
+	} else {
+		// scroll to bottom
+		$('messages messages-container').animate({scrollTop: $("messages messages-container")[0].scrollHeight}, 1000);
+	}
+}
+
 function updateMessages() {
-	sendDataToNavi("apiGetIncomingMessages", undefined, 
+	sendDataToNavi("apiGetMessages", undefined, 
 	function(data, status) {
 		//debugger;
 		$("messages messages-container").html('');
@@ -174,16 +179,23 @@ function updateMessages() {
 		switch (status) {
 			case "success":
 				ls = JSON.parse(data);
-				if (ls.data.length)	{
-					$("#messages-popup").html(ls.data.length+" messages");
-				} else {
-					$("#messages-popup").html("No messages");
-				}
+				var unread_count = 0;
 				for (ind in ls.data) {
-					$("messages messages-container").append('<message message_id="'+ls.data[ind].id+'"/>');
+					if (!(ls.data[ind].read_time || ls.data[ind].from == $("#username").val())) unread_count++;
+					$("messages messages-container").prepend('<message message_id="'+ls.data[ind].id+'" read="'+(ls.data[ind].read_time || ls.data[ind].from == $("#username").val()?"1":"0")+'" in="'+(ls.data[ind].from != $("#username").val()?"1":"0")+'"/>');
 					m = new ORMNaviMessage(ls.data[ind]);
+					if (!(ls.data[ind].read_time || ls.data[ind].from == $("#username").val())) {
+						if ($("messages messages-container unread-separator").length) $("messages messages-container unread-separator").remove();
+						$("messages messages-container").prepend('<unread-separator>Unread messages</unread-separator>');	
+					}
 				}
-				$('messages messages-container message').prepend('<button type="button" class="ml-2 mb-1 close" message="collapse">&times;</button>');
+				if (unread_count)	{
+					$("#messages-popup").html(unread_count+" messages");
+				} else {
+					$("#messages-popup").html("No new messages");
+				}
+				scrollMessages();
+				$('messages messages-container message[read="0"]').prepend('<button type="button" class="ml-2 mb-1 close" message="collapse">&times;</button>');
 				$('message button[message="collapse"]').on ('click', function (event) {
 					$(this).parent()[0].ORMNaviMessage.dismiss();
 					updateMessages();
@@ -393,11 +405,11 @@ function road(_id, _ordhighlight = undefined) {
 	})
 }
 </script>
-<div class="modal fade" id="dlgModal" tabindex="-1" role="dialog" aria-labelledby="dlgModalLongTitle" aria-hidden="true">
+<div class="modal fade" id="dlgOrderModal" tabindex="-1" role="dialog" aria-labelledby="dlgOrderModalLongTitle" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="dlgModalLongTitle">Modal title</h5>
+        <h5 class="modal-title" id="dlgOrderModalLongTitle">Order information</h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
@@ -406,8 +418,9 @@ function road(_id, _ordhighlight = undefined) {
         ...
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-        <button type="button" dlg-button="btn-dlgModal-ok" class="btn btn-primary"></button>
+	  <button type="button" class="btn btn-success" data-dismiss="">Update Estimated</button>
+	  <button type="button" class="btn btn-success" data-dismiss="">Update Plan</button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
       </div>
     </div>
   </div>

@@ -3,7 +3,7 @@ include "checkORMNavi.php";
 echo '{"result":';
 $res = '"OK"';
 try {
-	$r = $factory->getIncomingMessages();
+	$r = $factory->getMessages();
     $ls = json_encode($r, JSON_HEX_APOS | JSON_HEX_QUOT);
     $res .= ', "data" : ';
     $res .= $ls;
