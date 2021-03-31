@@ -370,7 +370,7 @@ function order(_id) {
 
 function road(_id, _ordhighlight = undefined) {
 	showLoading();
-	var p = $.post("roads.php",
+	var p = $.post("road.php",
 	{
 		username: $("#username").val(),
 		password: $("#password").val(),

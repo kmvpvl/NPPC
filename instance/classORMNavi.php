@@ -919,6 +919,23 @@ class ORMNaviFactory {
 		        throw new ORMNaviException("Unexpected error while update Assign to OUTCOME bucket" . "': " . $this->dblink->errno . " - " . $this->dblink->error . $sql);
             }
 			$this->dblink->next_result();
+			// check for autodelivery
+			$sql = "call getOutcomeRoad(".$assign_id.")";
+	        $x = $this->dblink->query($sql);
+	        if ($this->dblink->errno || !$x) {
+    		    $this->dblink->rollback();
+        	    $this->dblink->autocommit(true);
+		        throw new ORMNaviException("Unexpected error while getting OUTCOME road for assign" . "': " . $this->dblink->errno . " - " . $this->dblink->error . $sql);
+            }
+			$x = $x->fetch_assoc();
+	        if (!$x) {
+    		    $this->dblink->rollback();
+        	    $this->dblink->autocommit(true);
+		        throw new ORMNaviException("OUTCOME road for assign not found" . "': " . $this->dblink->errno . " - " . $this->dblink->error . $sql);
+            }
+			$this->dblink->next_result();
+			$x = $this->getRoadInfo($x["name"]);
+			if ($x["autodelivery"]) $this->moveAssignToNextWorkcenter($assign_id);
 			$tmp = $this->dblink->escape_string("Order #" . $ordernum . " processed '" . $x["operation"] . "' and ready to next workcenter '" . $nextworkcenter . "'");
 	        $msg = new ORMNaviMessage($this, $tmp, ORMNaviMessageType::INFO);
 			$msg->send();

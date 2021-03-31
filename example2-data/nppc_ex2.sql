@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 30, 2021 at 04:35 PM
+-- Generation Time: Mar 31, 2021 at 08:39 PM
 -- Server version: 10.4.17-MariaDB
 -- PHP Version: 8.0.0
 
@@ -159,6 +159,24 @@ select * from orders where client_id = `_client_id` and number like `_order_num`
 DROP PROCEDURE IF EXISTS `getOrders`$$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `getOrders` (IN `_client_id` BIGINT UNSIGNED ZEROFILL)  NO SQL
 select * from orders where client_id = `_client_id` order by orders.priority desc, orders.deadline asc$$
+
+DROP PROCEDURE IF EXISTS `getOutcomeRoad`$$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `getOutcomeRoad` (IN `_assign_id` BIGINT UNSIGNED)  NO SQL
+BEGIN
+DECLARE CUSTOM_EXCEPTION CONDITION FOR SQLSTATE '45000';
+select `assigns`.`workcenter_id`, `assigns`.`next_workcenter_id`
+INTO @from_wc_id, @to_wc_id
+from `assigns`
+where `assigns`.`id` = `_assign_id`;
+if @from_wc_id is null OR @to_wc_id is null THEN
+	SIGNAL CUSTOM_EXCEPTION
+    SET MESSAGE_TEXT = 'Assign has no OUTCOME road';
+end if;
+
+select * 
+from `roads`
+where `roads`.`from_wc`= @from_wc_id and @to_wc_id;
+END$$
 
 DROP PROCEDURE IF EXISTS `getRoadsWorkload`$$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `getRoadsWorkload` (IN `_factory` VARCHAR(50))  NO SQL
