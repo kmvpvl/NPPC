@@ -383,6 +383,10 @@ order.selected[full="0"]{
     background-color: grey;
 }
 
+order.selected[full="0"] > span.order-bage{
+    display: none;
+}
+
 orderinfo {
     display: grid;
     grid-template-rows: auto auto 1fr;
