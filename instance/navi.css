@@ -203,10 +203,12 @@ messages {
 message-template {
     height: 100%;
 }
-messages-navigator > span {
-    width:30%;
+messages-navigator > select,
+messages-navigator > span
+ {
+    width:32%;
     border-radius: 5px;
-    border: black 0px solid;
+    border: black 1px solid;
     padding-left: 1em;
     padding-right: 1em;
     display: inline-block;

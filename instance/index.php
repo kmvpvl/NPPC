@@ -12,10 +12,10 @@
 	<div class="collapse navbar-collapse" id="navbarSupportedContent">
 	<ul class="navbar-nav mr-auto">
 		<li class="nav-item active">
-			<a class="nav-link" instance="factory.php" id="menuFactory" data-toggle="collapse" data-target=".navbar-collapse.show">Factory</a>
+			<a class="nav-link" instance="factory" id="menuFactory" data-toggle="collapse" data-target=".navbar-collapse.show">Factory</a>
 		</li>
 		<li class="nav-item" >
-			<a class="nav-link" instance="orders.php" id="menuOrders" data-toggle="collapse" data-target=".navbar-collapse.show">Orders</a>
+			<a class="nav-link" instance="orders" id="menuOrders" data-toggle="collapse" data-target=".navbar-collapse.show">Orders</a>
 		</li>
 		<li class="nav-item dropdown">
 			<a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Master Data</a>
@@ -68,9 +68,13 @@
 </div>
 </message-template>    
 <messages-navigator>
-	<span>By order</span>
-	<span>By user</span>
-	<span>Subscription</span>
+	<select id="slct-message-byorder">
+		<option value="">By order</option>
+	</select>
+	<select id="slct-message-byuser">
+		<option value="">By user</option>
+	</select>
+	<span>Subscriptions</span>
 </messages-navigator>
 </messages>
 <form id="loginform">
@@ -222,15 +226,7 @@ function showInformation(text) {
 	}, 1500);
 }
 function tryLogin() {
-	showLoading();
-	var p = $.post("factory.php",
-	{
-		username: $("#username").val(),
-		password: $("#password").val(),
-		factory:  $("#factory").val(),
-		language: $("#language").val(),
-		timezone: $("#timezone").val()
-	},
+	sendDataToNavi("factory", undefined, 
 	function(data, status){
 		hideLoading();
 		switch (status) {
@@ -246,30 +242,10 @@ function tryLogin() {
 				showLoginForm();
 		}
 	});
-	p.fail(function(data, status) {
-		hideLoading();
-		switch (data.status) {
-			case 401:
-				clearInstance();
-				showLoginForm();
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-				break;
-			default:				
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-		}
-	})
 }
 
 $("a[instance]").on ('click', function (event) {
-	showLoading();
-	var p = $.post(event.target.attributes["instance"].value,
-	{
-		username: $("#username").val(),
-		password: $("#password").val(),
-		factory:  $("#factory").val(),
-		language: $("#language").val(),
-		timezone: $("#timezone").val()
-	},
+	sendDataToNavi($(this).attr("instance"), undefined,
 	function(data, status){
 		hideLoading();
 		switch (status) {
@@ -282,31 +258,10 @@ $("a[instance]").on ('click', function (event) {
 				showLoginForm();
 		}
 	});
-	p.fail(function(data, status) {
-		switch (data.status) {
-			case 401:
-				clearInstance();
-				showLoginForm();
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-				break;
-			default:				
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-		}
-	})
 })
 
-function workcenter(_id, _ordhighlight = undefined) {
-	showLoading();
-	var p = $.post("workcenter.php",
-	{
-		username: $("#username").val(),
-		password: $("#password").val(),
-		factory:  $("#factory").val(),
-		language: $("#language").val(),
-		timezone: $("#timezone").val(),
-		highlight: _ordhighlight,
-		workcenter: _id
-	},
+function workcenter(id) {
+	sendDataToNavi("workcenter", {workcenter:id},
 	function(data, status){
 		hideLoading();
 		switch (status) {
@@ -318,31 +273,10 @@ function workcenter(_id, _ordhighlight = undefined) {
 				showLoginForm();
 		}
 	});
-	p.fail(function(data, status) {
-		hideLoading();
-		switch (data.status) {
-			case 401:
-				clearInstance();
-				showLoginForm();
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-				break;
-			default:				
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-		}
-	})
 }
 
-function order(_id) {
-	showLoading();
-	var p = $.post("order.php",
-	{
-		username: $("#username").val(),
-		password: $("#password").val(),
-		factory:  $("#factory").val(),
-		language: $("#language").val(),
-		timezone: $("#timezone").val(),
-		order: _id
-	},
+function road(id) {
+	sendDataToNavi("road", {road:id},
 	function(data, status){
 		hideLoading();
 		switch (status) {
@@ -354,55 +288,6 @@ function order(_id) {
 				showLoginForm();
 		}
 	});
-	p.fail(function(data, status) {
-		hideLoading();
-		switch (data.status) {
-			case 401:
-				clearInstance();
-				showLoginForm();
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-				break;
-			default:				
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-		}
-	})
-}
-
-function road(_id, _ordhighlight = undefined) {
-	showLoading();
-	var p = $.post("road.php",
-	{
-		username: $("#username").val(),
-		password: $("#password").val(),
-		factory:  $("#factory").val(),
-		language: $("#language").val(),
-		timezone: $("#timezone").val(),
-		highlight: _ordhighlight,
-		road: _id
-	},
-	function(data, status){
-		hideLoading();
-		switch (status) {
-			case "success":
-				$("instance").html(data);
-				break;
-			default:
-				clearInstance();
-				showLoginForm();
-		}
-	});
-	p.fail(function(data, status) {
-		hideLoading();
-		switch (data.status) {
-			case 401:
-				clearInstance();
-				showLoginForm();
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-				break;
-			default:				
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-		}
-	})
 }
 </script>
 <div class="modal fade" id="dlgOrderModal" tabindex="-1" role="dialog" aria-labelledby="dlgOrderModalLongTitle" aria-hidden="true">

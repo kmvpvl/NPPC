@@ -1,6 +1,7 @@
 <?php
 include "checkORMNavi.php";
-$road = $factory->getRoadInfo($_POST["road"]);
+$road_name = $_POST["data"]["road"];
+$road = $factory->getRoadInfo($road_name);
 $brand = trim($road);
 $wc_from = (string)$road["from"];
 $wc_to = (string)$road["to"];
@@ -13,7 +14,7 @@ $(".navbar-brand").text("<?= $factory->description . ": " . $brand ?>");
 var current_order_in_road = null;
 
 function updateOrders() {
-    sendDataToNavi("apiGetRoadOrders", {road: '<?=$_POST["road"]?>'}, 
+    sendDataToNavi("apiGetRoadOrders", {road: '<?=$road_name?>'}, 
     function(data, status){
 		hideLoading();
 		switch (status) {

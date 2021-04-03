@@ -209,6 +209,15 @@ class ORMNaviFactory {
 	}
 }
 
+class ORMNaviUser {
+	constructor(obj) {
+		Object.assign(this, obj);
+	}
+	getSubscriptions() {
+		
+	}
+}
+
 function modalOrderInfo(order_number) {
 	$(".modal-body").html("<orderinfo/>");
 	sendDataToNavi("apiGetOrderInfo", {order_number:order_number},
