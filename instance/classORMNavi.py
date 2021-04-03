@@ -99,8 +99,8 @@ class ORMNavi :
 					tmp.set("duration", r[0].attrib["duration"])
 					if "cost" in el.attrib : tmp.set("cost", el.attrib["cost"])
 					if "duration" in el.attrib : tmp.set("duration", el.attrib["duration"])
-					cost += float(tmp.attrib["cost"]);
-					duration += float(tmp.attrib["duration"]);
+					cost += float(tmp.attrib["cost"])
+					duration += float(tmp.attrib["duration"])
 					#looking for the same operation in factory. What center may complete this operation
 					facop = self.__factoryroot.findall(".//operation[@ref='" + el.attrib["ref"] + "']/..")
 					if not facop : raise ORMException("Couldn'n find workcenter for operation with id '%s' in factory" % (el.attrib["ref"]))
@@ -143,8 +143,8 @@ class ORMNavi :
 		if (not self.__mdmroot.findall("customer[@id='" + customerRef + "']")) : raise ORMException("Couldn't find customer id '%s' if MDM" % (customerRef))
 		ocust = ET.SubElement(oroot, "customer", ref=customerRef)
 		i = 1
-		ov_cost = 0
-		ov_duration = 0
+		#ov_cost = 0
+		#ov_duration = 0
 		for productXMLTree in productsXMLTree :
 			outline = "%s.%s.%s" % (orderNum, i, productXMLTree.attrib["id"])
 			oprod = ET.SubElement(ocust, "product", id = outline, ref = productXMLTree.attrib["ref"])

@@ -231,7 +231,7 @@ class ORMNaviMessage implements JsonSerializable {
 		];
     }
 	function __debugInfo() {
-		return jsonSerialize();
+		return $this->jsonSerialize();
 	}
 }
 class ORMNaviRoute implements JsonSerializable {
@@ -413,7 +413,7 @@ class ORMNaviOrder implements JsonSerializable {
 		];
     }
 	function __debugInfo() {
-		return jsonSerialize();
+		return $this->jsonSerialize();
 	}
 	public function addProduct(string $prodmat_ref, float $count) {
 
@@ -444,7 +444,7 @@ class ORMNaviOrder implements JsonSerializable {
 		$forks = [];
 		$x = $prodmat->xpath(".//operation/workcenter[2]/..");
 		foreach ($x as $op) {
-			$y = $op.xpath("workcenter");
+			$y = $op->xpath("workcenter");
 			if (count($forks) > 0) {
 				$temp = [];
 				foreach ($forks as $f) {
@@ -493,7 +493,7 @@ class ORMNaviOrder implements JsonSerializable {
 					} else {
 						foreach ($fs as $path) {
 							$route = $this->routes_xml->addChild("route");
-							$route->addAttribute("id", $this->number. "." . 1 + count($this->routes_xml->children()));
+							$route->addAttribute("id", $this->number. "." . (1 + count($this->routes_xml->children())));
 							$route->addAttribute("workcenter", $eroute["from"]);
 							$this->__routeProduct($route, $prodmat, $path);
 						}
@@ -562,7 +562,7 @@ class ORMNaviOrder implements JsonSerializable {
 	}
 
 	public function updateEstimatedTime(bool $updateBaseline = false) {
-        $c = $this->calcEstimatedTime($r);
+        $c = $this->calcEstimatedTime();
 		$fet = new DateTime('now', $this->factory->timezone);
 		$fet->modify("+" . $c . " minutes");
 		$this->estimated = $fet;
