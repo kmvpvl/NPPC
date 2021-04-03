@@ -10,7 +10,6 @@ $wc_to_desc = trim($factory->getWorkcenterInfo($wc_to));
 <script>
 $(".nav-link.active").removeClass("active");
 $(".navbar-brand").text("<?= $factory->description . ": " . $brand ?>");
-var current_order_in_road = null;
 
 function updateOrders() {
     sendDataToNavi("apiGetRoadOrders", {road: '<?=$_POST["road"]?>'}, 
@@ -36,7 +35,7 @@ function updateOrders() {
 					$('outcome').append('<order class="brief" number="'+o.number+'" assign="'+b.assign+'" full="'+o.fullset+'"/>');
                     ot = new ORMNaviOrder(o);
                 }
-                if (current_order_in_road) $('order[number="'+current_order_in_road+'"]').addClass("highlight");
+                if (ORMNaviFactory.current_order) $('order[number="'+ORMNaviFactory.current_order+'"]').addClass("highlight");
                 $("order[number]").on('click', function() {
                     //debugger;
                     var n = $(this).attr("number");
@@ -74,7 +73,7 @@ updateOrders();
 $("#btnOrderMove").on("click", function(){
     if ($("order[number].selected").length == 1) {
         var a = $("order[number].selected").attr("assign");
-        current_order_in_road = $("order[number].selected").attr("number")
+        ORMNaviFactory.current_order = $("order[number].selected").attr("number")
         sendDataToNavi("apiMoveAssignToNextWorkcenter", {assign: a}, 
         function(data, status) {
             hideLoading();

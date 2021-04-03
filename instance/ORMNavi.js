@@ -132,7 +132,6 @@ class ORMNaviMessage {
 }
 
 class ORMNaviOrder {
-	static current_order = null;
     el = null;
     constructor (obj, htmlelement = null) {
         Object.assign(this, obj);
@@ -193,6 +192,7 @@ class ORMNaviOrder {
 }
 
 class ORMNaviFactory {
+	static current_order = null;
 	static workloads = null;
 	static updateWorkloads() {
 		sendDataToNavi("apiGetWorkloads", undefined, function(data, status){
@@ -237,6 +237,10 @@ function modalOrderInfo(order_number) {
 						$(this).addClass("noduty");
 					}
 				});
+				$("orderinfo > order-history > event > workcenter").on ('click', function(){
+					ORMNaviFactory.current_order = $("orderinfo order-header number").text();
+					workcenter($(this).attr("name"));
+				});
 
 				$("orderinfo > order-history > event > road").each (function () {
 					var r = $(this).attr("name");
@@ -250,6 +254,10 @@ function modalOrderInfo(order_number) {
 					} else {
 						$(this).addClass("noduty");
 					}
+				});
+				$("orderinfo > order-history > event > road").on ('click', function(){
+					ORMNaviFactory.current_order = $("orderinfo order-header number").text();
+					road($(this).attr("name"));
 				});
 				$("#dlgOrderModal").modal('show');
 				break;
