@@ -163,10 +163,10 @@ function showLoading() {
 
 function scrollMessages(){
 	if ($("messages messages-container unread-separator").length) {
-		$('messages messages-container').animate({scrollTop: $("messages messages-container unread-separator").position().top+$("messages messages-container").scrollTop()-$("messages messages-container unread-separator").outerHeight()*2 }, 1000);
+		$('messages messages-container').animate({scrollTop: $("messages messages-container unread-separator").position().top+$("messages messages-container").scrollTop()-$("messages messages-container unread-separator").outerHeight()*2 }, 0);
 	} else {
 		// scroll to bottom
-		$('messages messages-container').animate({scrollTop: $("messages messages-container")[0].scrollHeight}, 1000);
+		$('messages messages-container').animate({scrollTop: $("messages messages-container")[0].scrollHeight}, 0);
 	}
 }
 
