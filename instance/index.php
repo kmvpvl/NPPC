@@ -61,7 +61,7 @@
 		<option value="CRITICAL">critical</option>
 	</select>
   </div>
-  <textarea id="message_text" class="form-control" aria-label="With textarea" rows="1"></textarea>
+  <textarea id="text-new-message" class="form-control" aria-label="With textarea" rows="1"></textarea>
   <div class="input-group-append">
 	  <button id="btn-send-message" class="btn btn-outline-secondary" type="button">Send</button>
   </div>
@@ -77,7 +77,7 @@
 	<span>Subscriptions</span>
 </messages-navigator>
 </messages>
-<form id="loginform">
+<div id="loginform">
 	<div class="container">
 		<label for="username">User name</label>
 		<input type="text" placeholder="Enter Username" id="username" name="username" required value="">
@@ -99,7 +99,7 @@
 	<div class="container" style="background-color:#f1f1f1">
 		<span class="psw">Forgot <a href="">password?</a></span>
 	</div>
-</form>
+</div>
 <div id="errorLoadingMessage" class="alert alert-danger alert-dismissible">
     <button type="button" class="close" data-dismiss="alert">&times;</button>
     <span></span>
@@ -143,7 +143,7 @@ $(document).ready (function (){
 
 $("#btn-send-message").on('click', function () {
 	//debugger;
-	ORMNaviMessage.send($("#message_text").val(), $("#message_type").val());
+	ORMNaviMessage.send($("#text-new-message").val(), $("#message_type").val());
 })
 
 $('messages messages-toolbar button[messages="collapse"]').on('click', function (event) {

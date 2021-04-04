@@ -100,6 +100,9 @@ class ORMNaviMessage {
 			//debugger;
 			switch (status) {
 				case "success":
+					showInformation("Message sent");
+					$("#text-new-message").val("");
+					updateMessages();
 				break;
 				default:
 					showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
