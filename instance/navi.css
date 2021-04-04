@@ -109,10 +109,6 @@ instance {
     display: none;
 }
 
-#loginform {
-    display: none;
-    position: relative;
-}
 #errorLoadingMessage {
     display: none;
     position: relative;
@@ -137,7 +133,7 @@ instance {
     width: 3em;
     height: 3em;
     text-align: center;
-    z-index: 2;
+    z-index: 1;
     animation: btnContext 3s infinite;
     margin:auto;
 }
@@ -154,9 +150,12 @@ instance {
     width: 3em;
     height: 3em;
     text-align: center;
-    z-index: 2;
+    z-index: 1;
     animation: btnContext 3s infinite;
     margin:auto;
+}
+#informationMessage{
+    z-index: 2;
 }
 
 @keyframes order-highlight {
@@ -179,6 +178,17 @@ instance {
         border-radius: 1em;
     }
 }
+#loginform {
+    display: none;
+    position: absolute;
+    width: 80%;
+    height: 80%;
+    margin: auto;
+    top: 0;
+    left:0;
+    right:0;
+    bottom:0;
+}
 
 messages {
     position: absolute;
@@ -199,6 +209,7 @@ messages {
     grid-template-rows: auto 1fr auto auto;
     grid-template-columns: 1fr;
     grid-gap: 0.5em;
+    z-index: 3;
 }
 message-template {
     height: 100%;
@@ -446,6 +457,11 @@ orderinfo > order-timing > baseline {
     text-align: center;
     border-radius: 3px;
 }
+orderinfo > order-timing > estimated,
+orderinfo > order-timing > baseline {
+    cursor: pointer;
+}
+
 orderinfo > order-timing > due > diff-date,
 orderinfo > order-timing > estimated > diff-date,
 orderinfo > order-timing > baseline > diff-date,

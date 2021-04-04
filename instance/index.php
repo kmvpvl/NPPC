@@ -32,11 +32,11 @@
 	</ul>
 	<ul class="navbar-nav lr-auto">
 		<li class="nav-item dropdown">
-			<a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">David Rhuxel</a>
-			<div class="dropdown-menu" aria-labelledby="navbarDropdown">
+			<a class="nav-link dropdown-toggle" href="" id="menu-user" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></a>
+			<div class="dropdown-menu" aria-labelledby="menu-user">
 				<a class="dropdown-item" href="#">My settings</a>
 				<a class="dropdown-item" href="#">My subscriptions</a>
-				<a class="dropdown-item" href="#">Logout</a>
+				<a class="dropdown-item" id="menu-logout">Logout</a>
 			</div>
 		</li>
 	</ul>
@@ -80,11 +80,11 @@
 <form id="loginform">
 	<div class="container">
 		<label for="username">User name</label>
-		<input type="text" placeholder="Enter Username" id="username" name="username" required value="David Rhuxel">
+		<input type="text" placeholder="Enter Username" id="username" name="username" required value="">
 		<label for="password">Password</label>
-		<input type="password" placeholder="Enter Password" id="password" required value="*******"></input>
+		<input type="password" placeholder="Enter Password" id="password" required value=""></input>
 		<label for="factory">Factory</label>
-		<input type="text" placeholder="Enter factory" id="factory" required value="example2"></input>
+		<input type="text" placeholder="Enter factory" id="factory" required value=""></input>
 		<label for="timezone">Timezone</label>
 		<select id="timezone" type="select"><option value="+0300" default="default">Moscow</option><option value="+0400">Samara</option></select>
 		<label for="language">Language</label>
@@ -120,9 +120,19 @@ $(document).ready (function (){
 			left: ($('body').innerWidth() - $("#loadingSpinner").outerWidth()) / 2
 		});
 	});
+	$("#username").val(localStorage.getItem("username")?localStorage.getItem("username"):"");
+	$("#factory").val(localStorage.getItem("factory")?localStorage.getItem("factory"):"");
+	$("#password").val(localStorage.getItem("password")?localStorage.getItem("password"):"");
+	$("#language").val(localStorage.getItem("language")?localStorage.getItem("language"):"");
+	$("#timezone").val(localStorage.getItem("timezone")?localStorage.getItem("timezone"):"");
+//	$("#").val(localStorage.getItem("")?localStorage.getItem(""):"");
+//	$("#").val(localStorage.getItem("")?localStorage.getItem(""):"");
+	$("#menu-logout").on('click', function(){
+		$("messages").hide();
+		$("instance").html("");
+		showLoginForm();
+	});
 	tryLogin();
-	ORMNaviFactory.updateWorkloads();
-	updateMessages();
 	collapseMessages();
 	$("#messages-popup").on('click', function() {
 		$('messages').show();
@@ -147,7 +157,14 @@ function clearInstance() {
 
 function showLoginForm() {
 	$("#loginform").show();
-	$("#submitLogin").on ('click', function (){
+	$("#submitLogin").on ('click', function(){
+		localStorage.setItem("username", $("#username").val());
+		localStorage.setItem("factory", $("#factory").val());
+		localStorage.setItem("password", $("#password").val());
+		localStorage.setItem("language", $("#language").val());
+		localStorage.setItem("timezone", $("#timezone").val());
+//		localStorage.setItem("", $("#").val());
+//		localStorage.setItem("", $("#").val());
 		tryLogin();
 	})
 }
@@ -175,6 +192,7 @@ function scrollMessages(){
 }
 
 function updateMessages() {
+	if (!$("instance").html()) return;
 	sendDataToNavi("apiGetMessages", undefined, 
 	function(data, status) {
 		//debugger;
@@ -219,22 +237,29 @@ function showInformation(text) {
 	$("#informationMessage").show();
 	$("#informationMessage").offset({
 		left: 0,
-		top: ($('body').innerHeight() - $("#informationMessage").outerHeight())/2
+		top: ($('body').innerHeight() - $("#informationMessage").outerHeight()*2)
 	});
 	setTimeout(function() {
 		$("#informationMessage").hide();
 	}, 1500);
 }
 function tryLogin() {
+	if (!$("#username").val() || !$("#factory").val()) {
+		showLoginForm();
+		return;
+	}
 	sendDataToNavi("factory", undefined, 
 	function(data, status){
 		hideLoading();
 		switch (status) {
 			case "success":
+				$("#loginform").hide();
 				$("instance").html(data);
+				ORMNaviFactory.updateFactoryInfo();
+				updateMessages();
 				setInterval( function () {
 					updateMessages();
-					ORMNaviFactory.updateWorkloads();
+					ORMNaviFactory.updateFactoryInfo();
 				}, 60000);
 				break;
 			default:
@@ -303,9 +328,10 @@ function road(id) {
         ...
       </div>
       <div class="modal-footer">
-	  <button type="button" class="btn btn-success" data-dismiss="">Update Estimated</button>
-	  <button type="button" class="btn btn-success" data-dismiss="">Update Plan</button>
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+		<button type="button" id="btn-subscribe" class="btn btn-success" data-dismiss="">Subscribe</button>
+		<button type="button" class="btn btn-success" data-dismiss="">Update Est.</button>
+		<button type="button" class="btn btn-success" data-dismiss="">Update Plan</button>
+    	<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
       </div>
     </div>
   </div>

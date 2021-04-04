@@ -194,13 +194,16 @@ class ORMNaviOrder {
 
 class ORMNaviFactory {
 	static workloads = null;
-	static updateWorkloads() {
-		sendDataToNavi("apiGetWorkloads", undefined, function(data, status){
+	static user = null;
+	static updateFactoryInfo() {
+		sendDataToNavi("apiGetFactoryInfo", undefined, function(data, status){
 			hideLoading();
 			switch (status) {
 				case "success":
 					var ls = JSON.parse(data);
-					ORMNaviFactory.workloads = ls.data;
+					ORMNaviFactory.workloads = ls.data.workloads;
+					ORMNaviFactory.user = ls.data.user;
+					$('#menu-user').text(ORMNaviFactory.user.name);
 					break;
 				default:
 					showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
@@ -259,6 +262,20 @@ function modalOrderInfo(order_number) {
 					} else {
 						$(this).addClass("noduty");
 					}
+				});
+				$("#btn-subscribe").click(function(){
+					sendDataToNavi("apiSubscribe", {tag: "#"+$("orderinfo order-header number").text()},
+					function(data, status){
+						hideLoading();
+						//debugger;
+						switch (status) {
+							case "success":
+								showInformation("You're subscribed!");
+							break;
+							default:
+								showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
+						}
+					});
 				});
 				$("#dlgOrderModal").modal('show');
 				break;

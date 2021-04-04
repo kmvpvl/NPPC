@@ -81,14 +81,23 @@ class ORMNaviUser implements JsonSerializable {
 		}
 	}
 
+	function subscribe(string $tag) {
+		$e = explode(";", $this->subscriptions);
+		$n = explode(";", $tag);
+		foreach($n as $t){
+			if (!in_array($t, $e)) $e[] = $t;
+		}
+		$s = implode(";", $e);
+		$sql = "call updateSubscriptions('".$this->factory->name."', '".$this->user_name."', '".$s."');";
+		$x = $this->factory->dblink->query($sql);
+		if (!$x) throw new ORMNaviException("User '" . $this->user_name . "' not found in factory '" . $this->factory->name. "': " . $this->dblink->errno . " - " . $this->dblink->error);
+		$x = $this->factory->dblink->next_result();
+		$this->authorize();
+		return $this;
+	}
+
 	function __debugInfo() {
-		return [
-			"factory" => $this->factory->name,
-			"username"=> $this->user_name,
-			"hash"=> $this->hash,
-			"roles"=> $this->roles,
-			"subscriptions"=> $this->subscriptions
-		];
+		return $this->jsonSerialize();
 	}
 	public function jsonSerialize() {
 		return [
@@ -115,7 +124,7 @@ class ORMNaviUser implements JsonSerializable {
 				}
 				return $this->factory->dblink->real_escape_string($r);
 			default:
-				# code...
+				throw new ORMNaviException('Wrong property of ORMNaviUser class');
 				break;
 		}
 	}
