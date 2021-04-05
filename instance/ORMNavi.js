@@ -277,13 +277,29 @@ function modalOrderInfo(order_number) {
 						//debugger;
 						switch (status) {
 							case "success":
-								showInformation("You're subscribed!");
+								ls = JSON.parse(data);
+								ORMNaviFactory.user = ls.data;
+								if (ORMNaviFactory.user && 
+								ORMNaviFactory.user.subscriptions.includes("#"+$("orderinfo order-header number").text())) {
+									showInformation("You're subscribed!");
+									$("#btn-subscribe").text("Unsubscribe");
+								} else {
+									showInformation("You're unsubscribed!");
+									$("#btn-subscribe").text("Subscribe");
+								}
+								updateMessages();
 							break;
 							default:
 								showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
 						}
 					});
 				});
+				if (ORMNaviFactory.user && 
+				ORMNaviFactory.user.subscriptions.includes("#"+$("orderinfo order-header number").text())) {
+					$("#btn-subscribe").text("Unsubscribe");
+				} else {
+					$("#btn-subscribe").text("Subscribe");
+				}
 				$("orderinfo > order-history > event > road").on ('click', function(){
 					ORMNaviFactory.current_order = $("orderinfo order-header number").text();
 					road($(this).attr("name"));

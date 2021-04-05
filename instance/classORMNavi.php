@@ -86,6 +86,7 @@ class ORMNaviUser implements JsonSerializable {
 		$n = explode(";", $tag);
 		foreach($n as $t){
 			if (!in_array($t, $e)) $e[] = $t;
+			else unset($e[array_search($t, $e)]);
 		}
 		$s = implode(";", $e);
 		$sql = "call updateSubscriptions('".$this->factory->name."', '".$this->user_name."', '".$s."');";
