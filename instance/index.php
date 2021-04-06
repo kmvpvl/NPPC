@@ -217,6 +217,24 @@ function updateMessages() {
 					$("#messages-popup").html("No new messages");
 				}
 				scrollMessages();
+				if (ORMNaviFactory.user && ORMNaviFactory.user.subscriptions) {
+					$("#slct-message-byorder").html("");
+					$("#slct-message-byorder").append('<option value="">All orders</option>');
+					var a = ORMNaviFactory.user.subscriptions.split(';');
+					a.forEach(element => {
+						$("#slct-message-byorder").append('<option value="'+element+'">'+element+'</option>');
+					});
+				}
+				if (ORMNaviFactory.users) {
+					$("#slct-message-byuser").html("");
+					$("#slct-message-byuser").append('<option value="">All users</option>');
+					for (var username in ORMNaviFactory.users) {
+						if ($("#username").val() != username) {
+							$("#slct-message-byuser").append('<option value="'+username+'">'+username+'</option>');
+						}
+					}
+				}
+
 				$('messages messages-container message[read="0"]').prepend('<button type="button" class="ml-2 mb-1 close" message="collapse">&times;</button>');
 				$('message button[message="collapse"]').on ('click', function (event) {
 					$(this).parent()[0].ORMNaviMessage.dismiss();
@@ -256,9 +274,7 @@ function tryLogin() {
 				$("#loginform").hide();
 				$("instance").html(data);
 				ORMNaviFactory.updateFactoryInfo();
-				updateMessages();
 				setInterval( function () {
-					updateMessages();
 					ORMNaviFactory.updateFactoryInfo();
 				}, 60000);
 				break;

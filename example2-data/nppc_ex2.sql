@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Apr 04, 2021 at 05:35 PM
+-- Generation Time: Apr 06, 2021 at 03:19 PM
 -- Server version: 10.5.8-MariaDB
 -- PHP Version: 7.4.15
 
@@ -133,6 +133,7 @@ and MATCH(`messages`.`tags`) against (concat('+("@', `_user`, '"', `_tags`, ')')
 or `messages`.`message_from` = @user_id
 order by `messages`.`message_time` DESC
 ;
+
 end$$
 
 DROP PROCEDURE IF EXISTS `getOrder`$$
@@ -193,6 +194,11 @@ END$$
 DROP PROCEDURE IF EXISTS `getUser`$$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `getUser` (IN `_factory` VARCHAR(50), IN `_user` VARCHAR(50))  NO SQL
 select * from `users` WHERE `users`.`client_id` = getClientID(`_factory`) and `users`.`name` like `_user`$$
+
+DROP PROCEDURE IF EXISTS `getUsersList`$$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `getUsersList` (IN `_factory` VARCHAR(50))  NO SQL
+select * 
+from `users`$$
 
 DROP PROCEDURE IF EXISTS `getWorkcentersWorkload`$$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `getWorkcentersWorkload` (IN `_factory` VARCHAR(50))  NO SQL
@@ -430,7 +436,7 @@ CREATE TABLE IF NOT EXISTS `assigns` (
   KEY `workcenter_id` (`workcenter_id`),
   KEY `bucket` (`bucket`),
   KEY `operation` (`operation`)
-) ENGINE=InnoDB AUTO_INCREMENT=187 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=188 DEFAULT CHARSET=utf8;
 
 --
 -- Dumping data for table `assigns`
@@ -597,15 +603,15 @@ INSERT INTO `assigns` (`id`, `client_id`, `order_id`, `workcenter_id`, `bucket`,
 (158, 1, 58, 1, 'INCOME', 'o-233.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-03-30 12:12:37', NULL, NULL, 0),
 (159, 1, 58, 5, 'INCOME', 'o-233.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-03-30 12:12:37', NULL, NULL, 0),
 (160, 1, 59, 1, NULL, 'o-234.1.wheelpair.1.1.shaft.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, 4, 'o-234.1.wheelpair.1.1.shaft.1', 'blankprocessing', '2021-03-31 03:29:35', 480, 164, 0),
-(161, 1, 59, 5, 'INCOME', 'o-234.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-03-30 12:12:37', NULL, NULL, 0),
+(161, 1, 59, 5, NULL, 'o-234.1.wheelpair.1.1.wheel', 'supplywheel', 150, NULL, 1, NULL, 3, 'o-234.1.wheelpair.1.1', 'wheelpairassemble', '2021-04-06 04:20:23', 45, 169, 0),
 (162, 1, 60, 1, 'INCOME', 'o-238.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-03-30 12:12:37', NULL, NULL, 0),
 (163, 1, 60, 5, 'INCOME', 'o-238.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-03-30 12:12:37', NULL, NULL, 0),
 (164, 1, 59, 4, NULL, 'o-234.1.wheelpair.1.1.shaft', 'blankprocessing', 480, NULL, 1, NULL, 3, 'o-234.1.wheelpair.1.1', 'wheelpairassemble', '2021-03-31 18:36:35', 45, 169, 0),
 (165, 1, 31, 4, 'PROCESSING', 'o-254.1.wheelpair.1.1.shaft.1', 'blankprocessing', 480, NULL, 1, NULL, NULL, NULL, NULL, '2021-03-31 18:33:07', NULL, NULL, 0),
-(166, 1, 7, 4, 'PROCESSING', 'o-217.1.wheelpair.1.1.shaft.1', 'blankprocessing', 480, NULL, 1, NULL, NULL, NULL, NULL, '2021-03-31 18:33:04', NULL, NULL, 0),
+(166, 1, 7, 4, NULL, 'o-217.1.wheelpair.1.1.shaft', 'blankprocessing', 480, NULL, 1, NULL, 3, 'o-217.1.wheelpair.1.1', 'wheelpairassemble', '2021-04-04 17:50:28', 45, 187, 0),
 (167, 1, 27, 3, NULL, 'o-239.1.wheelpair.1', 'wheelpairassemble', 45, NULL, 1, NULL, 2, 'o-239.1.wheelpair.1', 'qualitycheck', '2021-04-03 19:03:01', 240, 183, 0),
 (168, 1, 53, 3, 'INCOME', 'o-248.1.wheelpair.1.1', 'wheelpairassemble', 45, NULL, NULL, NULL, NULL, NULL, NULL, '2021-03-31 18:36:16', NULL, NULL, 0),
-(169, 1, 59, 3, 'INCOME', 'o-234.1.wheelpair.1.1', 'wheelpairassemble', 45, NULL, NULL, NULL, NULL, NULL, NULL, '2021-03-31 18:36:35', NULL, NULL, 0),
+(169, 1, 59, 3, 'OUTCOME', 'o-234.1.wheelpair.1', 'wheelpairassemble', 45, NULL, 1, NULL, 2, 'o-234.1.wheelpair.1', 'qualitycheck', '2021-04-06 04:20:33', 240, NULL, 0),
 (170, 1, 41, 3, 'OUTCOME', 'o-232.1.wheelpair.1', 'wheelpairassemble', 45, NULL, 1, NULL, 2, 'o-232.1.wheelpair.1', 'qualitycheck', '2021-04-03 17:45:29', 240, NULL, 0),
 (171, 1, 24, 3, 'OUTCOME', 'o-244.1.wheelpair.1', 'wheelpairassemble', 45, NULL, 1, NULL, 2, 'o-244.1.wheelpair.1', 'qualitycheck', '2021-04-03 18:48:24', 240, NULL, 0),
 (172, 1, 26, 3, 'INCOME', 'o-237.1.wheelpair.1.1', 'wheelpairassemble', 45, NULL, NULL, NULL, NULL, NULL, NULL, '2021-03-31 18:37:51', NULL, NULL, 0),
@@ -622,7 +628,8 @@ INSERT INTO `assigns` (`id`, `client_id`, `order_id`, `workcenter_id`, `bucket`,
 (183, 1, 27, 2, 'PROCESSING', 'o-239.1.wheelpair.1', 'qualitycheck', 240, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-03 19:03:37', NULL, NULL, 0),
 (184, 1, 38, 2, 'INCOME', 'o-252.1.wheelpair.1', 'qualitycheck', 240, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-03 19:03:07', NULL, NULL, 0),
 (185, 1, 30, 2, 'INCOME', 'o-246.1.wheelpair.1', 'qualitycheck', 240, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-03 19:03:13', NULL, NULL, 0),
-(186, 1, 39, 2, 'INCOME', 'o-241.1.wheelpair.1', 'qualitycheck', 240, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-03 19:03:15', NULL, NULL, 0);
+(186, 1, 39, 2, 'INCOME', 'o-241.1.wheelpair.1', 'qualitycheck', 240, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-03 19:03:15', NULL, NULL, 0),
+(187, 1, 7, 3, 'INCOME', 'o-217.1.wheelpair.1.1', 'wheelpairassemble', 45, NULL, NULL, NULL, NULL, NULL, NULL, '2021-04-04 17:50:28', NULL, NULL, 0);
 
 -- --------------------------------------------------------
 
@@ -667,7 +674,7 @@ CREATE TABLE IF NOT EXISTS `messages` (
   KEY `message_type` (`message_type`),
   KEY `client_id` (`client_id`),
   KEY `thread_id` (`thread_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=81 DEFAULT CHARSET=utf8 COMMENT='Messages of users';
+) ENGINE=InnoDB AUTO_INCREMENT=87 DEFAULT CHARSET=utf8 COMMENT='Messages of users';
 
 --
 -- Dumping data for table `messages`
@@ -751,7 +758,13 @@ INSERT INTO `messages` (`id`, `message_time`, `client_id`, `message_from`, `mess
 (77, '2021-04-03 18:48:58', 1, 1, 'INFO', 'Order #o-215 processed \'\' and ready to next workcenter \'wc2_3\'', '#o-215', NULL),
 (78, '2021-04-04 14:18:19', 1, 2, 'INFO', '@\"David Rhuxel\" se1', '@\"David Rhuxel\"', NULL),
 (79, '2021-04-04 14:19:12', 1, 1, 'INFO', '@pavel se2', '@pavel', NULL),
-(80, '2021-04-04 14:20:04', 1, 2, 'INFO', '#223 se3', '#223', NULL);
+(80, '2021-04-04 14:20:04', 1, 2, 'INFO', '#223 se3', '#223', NULL),
+(81, '2021-04-04 17:50:28', 1, 2, 'INFO', 'Order #o-217 processed \'\' and ready to next workcenter \'wc2_3\'', '#o-217', NULL),
+(82, '2021-04-04 19:09:22', 1, 1, 'INFO', '@\"David Rhuxel\" se5', '@\"David Rhuxel\"', NULL),
+(83, '2021-04-04 19:10:13', 1, 2, 'INFO', '@\"David Rhuxel\" se6', '@\"David Rhuxel\"', NULL),
+(84, '2021-04-04 19:12:50', 1, 1, 'INFO', '@pavel se7', '@pavel', NULL),
+(85, '2021-04-06 04:20:05', 1, 2, 'INFO', 'Order #o-234 processed \'\' and ready to next workcenter \'wc2_3\'', '#o-234', NULL),
+(86, '2021-04-06 04:20:33', 1, 2, 'INFO', 'Order #o-234 processed \'\' and ready to next workcenter \'wc2_4\'', '#o-234', NULL);
 
 -- --------------------------------------------------------
 
@@ -769,7 +782,7 @@ CREATE TABLE IF NOT EXISTS `messages_read` (
   UNIQUE KEY `message_id_2` (`message_id`,`user_id`),
   KEY `message_id` (`message_id`),
   KEY `user_id` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8 COMMENT='Info about read events';
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8 COMMENT='Info about read events';
 
 --
 -- Dumping data for table `messages_read`
@@ -781,7 +794,15 @@ INSERT INTO `messages_read` (`id`, `message_id`, `user_id`, `read_time`) VALUES
 (3, 39, 2, '2021-04-04 15:03:44'),
 (4, 42, 2, '2021-04-04 15:03:45'),
 (5, 70, 2, '2021-04-04 15:03:58'),
-(6, 79, 2, '2021-04-04 15:04:43');
+(6, 79, 2, '2021-04-04 15:04:43'),
+(7, 21, 2, '2021-04-04 17:49:14'),
+(8, 27, 2, '2021-04-04 17:49:20'),
+(9, 56, 2, '2021-04-04 17:49:23'),
+(10, 76, 2, '2021-04-04 17:49:24'),
+(11, 78, 1, '2021-04-04 19:00:54'),
+(12, 81, 1, '2021-04-04 19:00:57'),
+(13, 15, 2, '2021-04-06 04:15:15'),
+(14, 84, 2, '2021-04-06 04:15:56');
 
 -- --------------------------------------------------------
 
@@ -972,8 +993,8 @@ CREATE TABLE IF NOT EXISTS `users` (
 --
 
 INSERT INTO `users` (`id`, `client_id`, `name`, `hash`, `roles`, `subscriptions`) VALUES
-(1, 1, 'David Rhuxel', '27f02d4e066a8bbe8c055ec420dad009', '', ''),
-(2, 1, 'pavel', '53e6074ce8ba130220b13613bedca72b', '', '#o-252;#o-253;#o-217;#o-254');
+(1, 1, 'David Rhuxel', '27f02d4e066a8bbe8c055ec420dad009', '', '#o-217'),
+(2, 1, 'pavel', '53e6074ce8ba130220b13613bedca72b', '', '#o-252;#o-253;#o-217;#o-266;#o-254;#o-220');
 
 -- --------------------------------------------------------
 

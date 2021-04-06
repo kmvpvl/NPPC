@@ -54,7 +54,7 @@ class ORMNaviUser implements JsonSerializable {
 	protected function getUserByName() {
 		$sql = "call getUser('".$this->factory->name."', '".$this->user_name."');";
 		$x = $this->factory->dblink->query($sql);
-		if (!$x) throw new ORMNaviException("User '" . $this->user_name . "' not found in factory '" . $this->factory->name. "': " . $this->dblink->errno . " - " . $this->dblink->error);
+		if (!$x) throw new ORMNaviException("User '" . $this->user_name . "' not found in factory '" . $this->factory->name. "': " . $this->factory->dblink->errno . " - " . $this->factory->dblink->error);
 		$y = $x->fetch_assoc();
 		$x->free_result();
 		$x = $this->factory->dblink->next_result();
@@ -808,6 +808,19 @@ class ORMNaviFactory {
             $ret[$order_num] = $x;
         }
         asort($ret);
+		return $ret;
+	}
+
+	function getUsersList() {
+		$ret = [];
+		$sql = "call getUsersList('".$this->name."');";
+		$x = $this->dblink->query($sql);
+		if (!$x) throw new ORMNaviException("Could not get users list': " . $this->dblink->errno . " - " . $this->dblink->error . $sql);
+		while($y = $x->fetch_assoc()) {
+			$ret[$y["name"]] = $y;
+		}
+		$x->free_result();
+		$x = $this->dblink->next_result();
 		return $ret;
 	}
 		

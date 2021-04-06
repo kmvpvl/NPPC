@@ -198,6 +198,7 @@ class ORMNaviFactory {
 	static current_order = null;
 	static workloads = null;
 	static user = null;
+	static users = null;
 	static updateFactoryInfo() {
 		sendDataToNavi("apiGetFactoryInfo", undefined, function(data, status){
 			hideLoading();
@@ -206,7 +207,10 @@ class ORMNaviFactory {
 					var ls = JSON.parse(data);
 					ORMNaviFactory.workloads = ls.data.workloads;
 					ORMNaviFactory.user = ls.data.user;
+					ORMNaviFactory.users = ls.data.users;
+
 					$('#menu-user').text(ORMNaviFactory.user.name);
+					updateMessages();
 					break;
 				default:
 					showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
