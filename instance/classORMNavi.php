@@ -54,7 +54,7 @@ class ORMNaviUser implements JsonSerializable {
 	protected function getUserByName() {
 		$sql = "call getUser('".$this->factory->name."', '".$this->user_name."');";
 		$x = $this->factory->dblink->query($sql);
-		if (!$x) throw new ORMNaviException("User '" . $this->user_name . "' not found in factory '" . $this->factory->name. "': " . $this->dblink->errno . " - " . $this->dblink->error);
+		if (!$x) throw new ORMNaviException("User '" . $this->user_name . "' not found in factory '" . $this->factory->name. "': " . $this->factory->dblink->errno . " - " . $this->factory->dblink->error);
 		$y = $x->fetch_assoc();
 		$x->free_result();
 		$x = $this->factory->dblink->next_result();
@@ -81,14 +81,24 @@ class ORMNaviUser implements JsonSerializable {
 		}
 	}
 
+	function subscribe(string $tag) {
+		$e = explode(";", $this->subscriptions);
+		$n = explode(";", $tag);
+		foreach($n as $t){
+			if (!in_array($t, $e)) $e[] = $t;
+			else unset($e[array_search($t, $e)]);
+		}
+		$s = implode(";", $e);
+		$sql = "call updateSubscriptions('".$this->factory->name."', '".$this->user_name."', '".$s."');";
+		$x = $this->factory->dblink->query($sql);
+		if (!$x) throw new ORMNaviException("User '" . $this->user_name . "' not found in factory '" . $this->factory->name. "': " . $this->dblink->errno . " - " . $this->dblink->error);
+		$x = $this->factory->dblink->next_result();
+		$this->authorize();
+		return $this;
+	}
+
 	function __debugInfo() {
-		return [
-			"factory" => $this->factory->name,
-			"username"=> $this->user_name,
-			"hash"=> $this->hash,
-			"roles"=> $this->roles,
-			"subscriptions"=> $this->subscriptions
-		];
+		return $this->jsonSerialize();
 	}
 	public function jsonSerialize() {
 		return [
@@ -115,7 +125,7 @@ class ORMNaviUser implements JsonSerializable {
 				}
 				return $this->factory->dblink->real_escape_string($r);
 			default:
-				# code...
+				throw new ORMNaviException('Wrong property of ORMNaviUser class');
 				break;
 		}
 	}
@@ -798,6 +808,19 @@ class ORMNaviFactory {
             $ret[$order_num] = $x;
         }
         asort($ret);
+		return $ret;
+	}
+
+	function getUsersList() {
+		$ret = [];
+		$sql = "call getUsersList('".$this->name."');";
+		$x = $this->dblink->query($sql);
+		if (!$x) throw new ORMNaviException("Could not get users list': " . $this->dblink->errno . " - " . $this->dblink->error . $sql);
+		while($y = $x->fetch_assoc()) {
+			$ret[$y["name"]] = $y;
+		}
+		$x->free_result();
+		$x = $this->dblink->next_result();
 		return $ret;
 	}
 		

@@ -1,6 +1,7 @@
 <?php
 include "checkORMNavi.php";
-$wcInfo = $factory->getWorkcenterInfo($_POST["workcenter"]);
+$workcenter = $_POST["data"]["workcenter"];
+$wcInfo = $factory->getWorkcenterInfo($workcenter);
 $brand = trim($wcInfo);
 ?>
 <script>
@@ -9,7 +10,7 @@ $("#menuWorkcenter").addClass("active");
 $(".navbar-brand").text("<?= $factory->description . ": " . $brand ?>");
 
 function updateOrders() {
-    sendDataToNavi("apiGetWorkcenterOrders", {workcenter: '<?=$_POST["workcenter"]?>'}, 
+    sendDataToNavi("apiGetWorkcenterOrders", {workcenter: '<?=$workcenter?>'}, 
     function(data, status){
 		hideLoading();
 		switch (status) {
@@ -23,7 +24,7 @@ function updateOrders() {
                 for (ind in ls.data) {
                     o = ls.data[ind];
                     //debugger;
-                    var b = ORMNaviOrder.getBucket(o, '<?=$_POST["workcenter"]?>');
+                    var b = ORMNaviOrder.getBucket(o, '<?=$workcenter?>');
                     if (b) {
                         $(b.bucket).append('<order class="brief" number="'+o.number+'" assign="'+b.assign+'" full="'+(b.fullset=='1'?"1":"0")+'" operation="'+b.operation+'"/>');
                     } else {

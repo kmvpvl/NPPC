@@ -100,6 +100,9 @@ class ORMNaviMessage {
 			//debugger;
 			switch (status) {
 				case "success":
+					showInformation("Message sent");
+					$("#text-new-message").val("");
+					updateMessages();
 				break;
 				default:
 					showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
@@ -111,7 +114,15 @@ class ORMNaviMessage {
 		//debugger;
 		this.el.addClass(this.type);
 		var mt = new Date(this.message_time);
-		this.el.html('<message_time>'+drawDateTime(mt)+'</message_time><message_from>'+this.from+'</message_from><message_body>'+this.body+'</message_body>');
+		var tags = '';
+		if (this.tags) {
+			this.tags.forEach(element => {
+				if (!tags) tags += ' ';
+				tags += element.tag;
+			});
+		}
+		var mb = '<message-time>'+drawDateTime(mt)+'</message-time><message-from>'+this.from+'</message-from><message-body>'+this.body+'</message-body><message-tags>'+tags+'</message-tags>';
+		this.el.html(mb);
 	}
 
     dismiss(){
@@ -194,18 +205,34 @@ class ORMNaviOrder {
 class ORMNaviFactory {
 	static current_order = null;
 	static workloads = null;
-	static updateWorkloads() {
-		sendDataToNavi("apiGetWorkloads", undefined, function(data, status){
+	static user = null;
+	static users = null;
+	static updateFactoryInfo() {
+		sendDataToNavi("apiGetFactoryInfo", undefined, function(data, status){
 			hideLoading();
 			switch (status) {
 				case "success":
 					var ls = JSON.parse(data);
-					ORMNaviFactory.workloads = ls.data;
+					ORMNaviFactory.workloads = ls.data.workloads;
+					ORMNaviFactory.user = ls.data.user;
+					ORMNaviFactory.users = ls.data.users;
+
+					$('#menu-user').text(ORMNaviFactory.user.name);
+					updateMessages();
 					break;
 				default:
 					showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
 			}
 		});
+	}
+}
+
+class ORMNaviUser {
+	constructor(obj) {
+		Object.assign(this, obj);
+	}
+	getSubscriptions() {
+		
 	}
 }
 
@@ -255,6 +282,36 @@ function modalOrderInfo(order_number) {
 						$(this).addClass("noduty");
 					}
 				});
+				$("#btn-subscribe").click(function(){
+					sendDataToNavi("apiSubscribe", {tag: "#"+$("orderinfo order-header number").text()},
+					function(data, status){
+						hideLoading();
+						//debugger;
+						switch (status) {
+							case "success":
+								ls = JSON.parse(data);
+								ORMNaviFactory.user = ls.data;
+								if (ORMNaviFactory.user && 
+								ORMNaviFactory.user.subscriptions.includes("#"+$("orderinfo order-header number").text())) {
+									showInformation("You're subscribed!");
+									$("#btn-subscribe").text("Unsubscribe");
+								} else {
+									showInformation("You're unsubscribed!");
+									$("#btn-subscribe").text("Subscribe");
+								}
+								updateMessages();
+							break;
+							default:
+								showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
+						}
+					});
+				});
+				if (ORMNaviFactory.user && 
+				ORMNaviFactory.user.subscriptions.includes("#"+$("orderinfo order-header number").text())) {
+					$("#btn-subscribe").text("Unsubscribe");
+				} else {
+					$("#btn-subscribe").text("Subscribe");
+				}
 				$("orderinfo > order-history > event > road").on ('click', function(){
 					ORMNaviFactory.current_order = $("orderinfo order-header number").text();
 					road($(this).attr("name"));

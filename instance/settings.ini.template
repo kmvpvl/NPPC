@@ -1,0 +1,12 @@
+
+[dir]
+products = ""
+orders = "orders/"
+routes = "routes/"
+messages = ""
+
+[database]
+user = nppc_user
+password = 
+host=localhost
+database=nppc_ex2

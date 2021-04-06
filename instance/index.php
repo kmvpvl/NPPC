@@ -12,10 +12,10 @@
 	<div class="collapse navbar-collapse" id="navbarSupportedContent">
 	<ul class="navbar-nav mr-auto">
 		<li class="nav-item active">
-			<a class="nav-link" instance="factory.php" id="menuFactory" data-toggle="collapse" data-target=".navbar-collapse.show">Factory</a>
+			<a class="nav-link" instance="factory" id="menuFactory" data-toggle="collapse" data-target=".navbar-collapse.show">Factory</a>
 		</li>
 		<li class="nav-item" >
-			<a class="nav-link" instance="orders.php" id="menuOrders" data-toggle="collapse" data-target=".navbar-collapse.show">Orders</a>
+			<a class="nav-link" instance="orders" id="menuOrders" data-toggle="collapse" data-target=".navbar-collapse.show">Orders</a>
 		</li>
 		<li class="nav-item dropdown">
 			<a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Master Data</a>
@@ -32,11 +32,11 @@
 	</ul>
 	<ul class="navbar-nav lr-auto">
 		<li class="nav-item dropdown">
-			<a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">David Rhuxel</a>
-			<div class="dropdown-menu" aria-labelledby="navbarDropdown">
+			<a class="nav-link dropdown-toggle" href="" id="menu-user" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></a>
+			<div class="dropdown-menu" aria-labelledby="menu-user">
 				<a class="dropdown-item" href="#">My settings</a>
 				<a class="dropdown-item" href="#">My subscriptions</a>
-				<a class="dropdown-item" href="#">Logout</a>
+				<a class="dropdown-item" id="menu-logout">Logout</a>
 			</div>
 		</li>
 	</ul>
@@ -61,26 +61,30 @@
 		<option value="CRITICAL">critical</option>
 	</select>
   </div>
-  <textarea id="message_text" class="form-control" aria-label="With textarea" rows="1"></textarea>
+  <textarea id="text-new-message" class="form-control" aria-label="With textarea" rows="1"></textarea>
   <div class="input-group-append">
 	  <button id="btn-send-message" class="btn btn-outline-secondary" type="button">Send</button>
   </div>
 </div>
 </message-template>    
 <messages-navigator>
-	<span>By order</span>
-	<span>By user</span>
-	<span>Subscription</span>
+	<select id="slct-message-byorder">
+		<option value="">By order</option>
+	</select>
+	<select id="slct-message-byuser">
+		<option value="">By user</option>
+	</select>
+	<span>Subscriptions</span>
 </messages-navigator>
 </messages>
-<form id="loginform">
+<div id="loginform">
 	<div class="container">
 		<label for="username">User name</label>
-		<input type="text" placeholder="Enter Username" id="username" name="username" required value="David Rhuxel">
+		<input type="text" placeholder="Enter Username" id="username" name="username" required value="">
 		<label for="password">Password</label>
-		<input type="password" placeholder="Enter Password" id="password" required value="*******"></input>
+		<input type="password" placeholder="Enter Password" id="password" required value=""></input>
 		<label for="factory">Factory</label>
-		<input type="text" placeholder="Enter factory" id="factory" required value="example2"></input>
+		<input type="text" placeholder="Enter factory" id="factory" required value=""></input>
 		<label for="timezone">Timezone</label>
 		<select id="timezone" type="select"><option value="+0300" default="default">Moscow</option><option value="+0400">Samara</option></select>
 		<label for="language">Language</label>
@@ -95,7 +99,7 @@
 	<div class="container" style="background-color:#f1f1f1">
 		<span class="psw">Forgot <a href="">password?</a></span>
 	</div>
-</form>
+</div>
 <div id="errorLoadingMessage" class="alert alert-danger alert-dismissible">
     <button type="button" class="close" data-dismiss="alert">&times;</button>
     <span></span>
@@ -116,9 +120,19 @@ $(document).ready (function (){
 			left: ($('body').innerWidth() - $("#loadingSpinner").outerWidth()) / 2
 		});
 	});
+	$("#username").val(localStorage.getItem("username")?localStorage.getItem("username"):"");
+	$("#factory").val(localStorage.getItem("factory")?localStorage.getItem("factory"):"");
+	$("#password").val(localStorage.getItem("password")?localStorage.getItem("password"):"");
+	$("#language").val(localStorage.getItem("language")?localStorage.getItem("language"):"");
+	$("#timezone").val(localStorage.getItem("timezone")?localStorage.getItem("timezone"):"");
+//	$("#").val(localStorage.getItem("")?localStorage.getItem(""):"");
+//	$("#").val(localStorage.getItem("")?localStorage.getItem(""):"");
+	$("#menu-logout").on('click', function(){
+		$("messages").hide();
+		$("instance").html("");
+		showLoginForm();
+	});
 	tryLogin();
-	ORMNaviFactory.updateWorkloads();
-	updateMessages();
 	collapseMessages();
 	$("#messages-popup").on('click', function() {
 		$('messages').show();
@@ -129,7 +143,7 @@ $(document).ready (function (){
 
 $("#btn-send-message").on('click', function () {
 	//debugger;
-	ORMNaviMessage.send($("#message_text").val(), $("#message_type").val());
+	ORMNaviMessage.send($("#text-new-message").val(), $("#message_type").val());
 })
 
 $('messages messages-toolbar button[messages="collapse"]').on('click', function (event) {
@@ -143,7 +157,14 @@ function clearInstance() {
 
 function showLoginForm() {
 	$("#loginform").show();
-	$("#submitLogin").on ('click', function (){
+	$("#submitLogin").on ('click', function(){
+		localStorage.setItem("username", $("#username").val());
+		localStorage.setItem("factory", $("#factory").val());
+		localStorage.setItem("password", $("#password").val());
+		localStorage.setItem("language", $("#language").val());
+		localStorage.setItem("timezone", $("#timezone").val());
+//		localStorage.setItem("", $("#").val());
+//		localStorage.setItem("", $("#").val());
 		tryLogin();
 	})
 }
@@ -171,6 +192,7 @@ function scrollMessages(){
 }
 
 function updateMessages() {
+	if (!$("instance").html()) return;
 	sendDataToNavi("apiGetMessages", undefined, 
 	function(data, status) {
 		//debugger;
@@ -195,7 +217,30 @@ function updateMessages() {
 					$("#messages-popup").html("No new messages");
 				}
 				scrollMessages();
+				if (ORMNaviFactory.user && ORMNaviFactory.user.subscriptions) {
+					$("#slct-message-byorder").html("");
+					$("#slct-message-byorder").append('<option value="">All orders</option>');
+					var a = ORMNaviFactory.user.subscriptions.split(';');
+					a.forEach(element => {
+						$("#slct-message-byorder").append('<option value="'+element+'">'+element+'</option>');
+					});
+				}
+				if (ORMNaviFactory.users) {
+					$("#slct-message-byuser").html("");
+					$("#slct-message-byuser").append('<option value="">All users</option>');
+					for (var username in ORMNaviFactory.users) {
+						if ($("#username").val() != username) {
+							$("#slct-message-byuser").append('<option value="'+username+'">'+username+'</option>');
+						}
+					}
+				}
+
 				$('messages messages-container message[read="0"]').prepend('<button type="button" class="ml-2 mb-1 close" message="collapse">&times;</button>');
+				$("#slct-message-byorder").change(function(){
+					$('messages messages-container message').hide();
+					$("messages messages-container message:has(message-tags:contains('"+$("#slct-message-byorder").val()+"'))").show();
+					//filterMessages();
+				});
 				$('message button[message="collapse"]').on ('click', function (event) {
 					$(this).parent()[0].ORMNaviMessage.dismiss();
 					updateMessages();
@@ -215,30 +260,27 @@ function showInformation(text) {
 	$("#informationMessage").show();
 	$("#informationMessage").offset({
 		left: 0,
-		top: ($('body').innerHeight() - $("#informationMessage").outerHeight())/2
+		top: ($('body').innerHeight() - $("#informationMessage").outerHeight()*2)
 	});
 	setTimeout(function() {
 		$("#informationMessage").hide();
 	}, 1500);
 }
 function tryLogin() {
-	showLoading();
-	var p = $.post("factory.php",
-	{
-		username: $("#username").val(),
-		password: $("#password").val(),
-		factory:  $("#factory").val(),
-		language: $("#language").val(),
-		timezone: $("#timezone").val()
-	},
+	if (!$("#username").val() || !$("#factory").val()) {
+		showLoginForm();
+		return;
+	}
+	sendDataToNavi("factory", undefined, 
 	function(data, status){
 		hideLoading();
 		switch (status) {
 			case "success":
+				$("#loginform").hide();
 				$("instance").html(data);
+				ORMNaviFactory.updateFactoryInfo();
 				setInterval( function () {
-					updateMessages();
-					ORMNaviFactory.updateWorkloads();
+					ORMNaviFactory.updateFactoryInfo();
 				}, 60000);
 				break;
 			default:
@@ -246,30 +288,10 @@ function tryLogin() {
 				showLoginForm();
 		}
 	});
-	p.fail(function(data, status) {
-		hideLoading();
-		switch (data.status) {
-			case 401:
-				clearInstance();
-				showLoginForm();
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-				break;
-			default:				
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-		}
-	})
 }
 
 $("a[instance]").on ('click', function (event) {
-	showLoading();
-	var p = $.post(event.target.attributes["instance"].value,
-	{
-		username: $("#username").val(),
-		password: $("#password").val(),
-		factory:  $("#factory").val(),
-		language: $("#language").val(),
-		timezone: $("#timezone").val()
-	},
+	sendDataToNavi($(this).attr("instance"), undefined,
 	function(data, status){
 		hideLoading();
 		switch (status) {
@@ -282,31 +304,10 @@ $("a[instance]").on ('click', function (event) {
 				showLoginForm();
 		}
 	});
-	p.fail(function(data, status) {
-		switch (data.status) {
-			case 401:
-				clearInstance();
-				showLoginForm();
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-				break;
-			default:				
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-		}
-	})
 })
 
-function workcenter(_id, _ordhighlight = undefined) {
-	showLoading();
-	var p = $.post("workcenter.php",
-	{
-		username: $("#username").val(),
-		password: $("#password").val(),
-		factory:  $("#factory").val(),
-		language: $("#language").val(),
-		timezone: $("#timezone").val(),
-		highlight: _ordhighlight,
-		workcenter: _id
-	},
+function workcenter(id) {
+	sendDataToNavi("workcenter", {workcenter:id},
 	function(data, status){
 		hideLoading();
 		switch (status) {
@@ -318,31 +319,10 @@ function workcenter(_id, _ordhighlight = undefined) {
 				showLoginForm();
 		}
 	});
-	p.fail(function(data, status) {
-		hideLoading();
-		switch (data.status) {
-			case 401:
-				clearInstance();
-				showLoginForm();
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-				break;
-			default:				
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-		}
-	})
 }
 
-function order(_id) {
-	showLoading();
-	var p = $.post("order.php",
-	{
-		username: $("#username").val(),
-		password: $("#password").val(),
-		factory:  $("#factory").val(),
-		language: $("#language").val(),
-		timezone: $("#timezone").val(),
-		order: _id
-	},
+function road(id) {
+	sendDataToNavi("road", {road:id},
 	function(data, status){
 		hideLoading();
 		switch (status) {
@@ -354,55 +334,6 @@ function order(_id) {
 				showLoginForm();
 		}
 	});
-	p.fail(function(data, status) {
-		hideLoading();
-		switch (data.status) {
-			case 401:
-				clearInstance();
-				showLoginForm();
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-				break;
-			default:				
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-		}
-	})
-}
-
-function road(_id, _ordhighlight = undefined) {
-	showLoading();
-	var p = $.post("road.php",
-	{
-		username: $("#username").val(),
-		password: $("#password").val(),
-		factory:  $("#factory").val(),
-		language: $("#language").val(),
-		timezone: $("#timezone").val(),
-		highlight: _ordhighlight,
-		road: _id
-	},
-	function(data, status){
-		hideLoading();
-		switch (status) {
-			case "success":
-				$("instance").html(data);
-				break;
-			default:
-				clearInstance();
-				showLoginForm();
-		}
-	});
-	p.fail(function(data, status) {
-		hideLoading();
-		switch (data.status) {
-			case 401:
-				clearInstance();
-				showLoginForm();
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-				break;
-			default:				
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-		}
-	})
 }
 </script>
 <div class="modal fade" id="dlgOrderModal" tabindex="-1" role="dialog" aria-labelledby="dlgOrderModalLongTitle" aria-hidden="true">
@@ -418,9 +349,10 @@ function road(_id, _ordhighlight = undefined) {
         ...
       </div>
       <div class="modal-footer">
-	  <button type="button" class="btn btn-success" data-dismiss="">Update Estimated</button>
-	  <button type="button" class="btn btn-success" data-dismiss="">Update Plan</button>
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+		<button type="button" id="btn-subscribe" class="btn btn-success" data-dismiss="">Subscribe</button>
+		<button type="button" class="btn btn-success" data-dismiss="">Update Est.</button>
+		<button type="button" class="btn btn-success" data-dismiss="">Update Plan</button>
+    	<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
       </div>
     </div>
   </div>
