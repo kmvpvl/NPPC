@@ -236,6 +236,11 @@ function updateMessages() {
 				}
 
 				$('messages messages-container message[read="0"]').prepend('<button type="button" class="ml-2 mb-1 close" message="collapse">&times;</button>');
+				$("#slct-message-byorder").change(function(){
+					$('messages messages-container message').hide();
+					$("messages messages-container message:has(message-tags:contains('"+$("#slct-message-byorder").val()+"'))").show();
+					//filterMessages();
+				});
 				$('message button[message="collapse"]').on ('click', function (event) {
 					$(this).parent()[0].ORMNaviMessage.dismiss();
 					updateMessages();

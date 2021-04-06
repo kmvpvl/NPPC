@@ -114,7 +114,15 @@ class ORMNaviMessage {
 		//debugger;
 		this.el.addClass(this.type);
 		var mt = new Date(this.message_time);
-		this.el.html('<message_time>'+drawDateTime(mt)+'</message_time><message_from>'+this.from+'</message_from><message_body>'+this.body+'</message_body>');
+		var tags = '';
+		if (this.tags) {
+			this.tags.forEach(element => {
+				if (!tags) tags += ' ';
+				tags += element.tag;
+			});
+		}
+		var mb = '<message-time>'+drawDateTime(mt)+'</message-time><message-from>'+this.from+'</message-from><message-body>'+this.body+'</message-body><message-tags>'+tags+'</message-tags>';
+		this.el.html(mb);
 	}
 
     dismiss(){
