@@ -573,3 +573,12 @@ order.selected {
     color: white;
     border-radius: 2px;
 }
+orders-to-import-list {
+    display: block;
+}
+orders-to-import-list::before {
+    content: "Orders: ";
+}
+select {
+    border: white 0px solid;
+}

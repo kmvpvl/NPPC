@@ -237,7 +237,7 @@ class ORMNaviUser {
 }
 
 function modalOrderInfo(order_number) {
-	$(".modal-body").html("<orderinfo/>");
+	$("#dlgOrderModalBody").html("<orderinfo/>");
 	sendDataToNavi("apiGetOrderInfo", {order_number:order_number},
 	function (data, status) {
         hideLoading();
