@@ -91,7 +91,7 @@ class ORMNaviUser implements JsonSerializable {
 		$s = implode(";", $e);
 		$sql = "call updateSubscriptions('".$this->factory->name."', '".$this->user_name."', '".$s."');";
 		$x = $this->factory->dblink->query($sql);
-		if (!$x) throw new ORMNaviException("User '" . $this->user_name . "' not found in factory '" . $this->factory->name. "': " . $this->dblink->errno . " - " . $this->dblink->error);
+		if (!$x) throw new ORMNaviException("User '" . $this->user_name . "' not found in factory '" . $this->factory->name. "': " . $this->factory->dblink->errno . " - " . $this->factory->dblink->error);
 		$x = $this->factory->dblink->next_result();
 		$this->authorize();
 		return $this;
@@ -187,7 +187,7 @@ class ORMNaviMessage implements JsonSerializable {
 	protected function implode_tags() {
 		$r = array();
 		foreach ($this->tags as $value) {
-			$r[] = $value->tag;
+		$r[] = $value->tag;
 		}
 		return implode(";", $r);
 	}
@@ -618,6 +618,19 @@ class ORMNaviOrder implements JsonSerializable {
 		foreach ($r as $zz) {
 	        $this->_assignOrderRouteRecur($zz);
 	    }
+		$x = $this->factory->dblink->query("call getOrderHistory(" . $this->id . ")");
+        if (!$x) {
+		    $this->factory->dblink->rollback();
+    	    $this->factory->dblink->autocommit(true);
+			throw new ORMNaviException("Could not get order history info after import" . "': " . $this->factory->dblink->errno . " - " . $this->factory->dblink->error . "call getOrderHistory(" . $this->id . ")"); 
+		}
+        $this->history = [];
+        while ($y = $x->fetch_assoc()) {
+            $this->history[] = $y;
+        }
+		$x->free_result();
+		$this->factory->dblink->next_result();
+
 		$this->updateEstimatedTime(true);
 		if (!$this->factory->dblink->commit()) {
     	    $this->factory->dblink->autocommit(true);
@@ -769,20 +782,6 @@ class ORMNaviFactory {
 
 	public function getMessages(string $message_types = ""):array {
 		$sql = "call getMessages('" . $this->name . "', '" . $this->user->name . "', '" . $this->user->subscriptionsForSearch . "', '".$message_types."')";
-	    $x = $this->dblink->query($sql);
-	    if ($this->dblink->errno || !$x) throw new ORMNaviException("Could not get messages: " . $this->dblink->errno . " - " . $this->dblink->error);
-		$ret = array();
-		while ($y = $x->fetch_assoc()) {
-			$m = ORMNaviMessage::createFromArray($this, $y);
-			$ret[] = $m;
-		}
-		$x->free_result();
-		$this->dblink->next_result();
-		return $ret;
-	}
-
-	public function getSentMessages(string $message_types = "", string $search_string):array {
-		$sql = "call getSentMessages('" . $this->name . "', '" . $this->user->name . "', '".$message_types."', '".$search_string."')";
 	    $x = $this->dblink->query($sql);
 	    if ($this->dblink->errno || !$x) throw new ORMNaviException("Could not get messages: " . $this->dblink->errno . " - " . $this->dblink->error);
 		$ret = array();
@@ -1018,6 +1017,25 @@ class ORMNaviFactory {
         $x->free_result();
         $this->dblink->next_result();
 		return $ret;
+	}
+	function subscribeUser(string $user_name, string $tag) {
+		$sql = "call getUser('".$this->name."', '".$user_name."');";
+		$x = $this->dblink->query($sql);
+		if (!$x) throw new ORMNaviException("User '" . $user_name . "' not found in factory '" . $this->name. "': " . $this->dblink->errno . " - " . $this->dblink->error);
+		$y = $x->fetch_assoc();
+		$x->free_result();
+		$x = $this->dblink->next_result();
+		$e = explode(";", $y["subscriptions"]);
+		$n = explode(";", $tag);
+		foreach($n as $t){
+			if (!in_array($t, $e)) $e[] = $t;
+			else unset($e[array_search($t, $e)]);
+		}
+		$s = implode(";", $e);
+		$sql = "call updateSubscriptions('".$this->name."', '".$user_name."', '".$s."');";
+		$x = $this->dblink->query($sql);
+		if (!$x) throw new ORMNaviException("User '" . $user_name . "' not found in factory '" . $this->name. "': " . $this->dblink->errno . " - " . $this->dblink->error);
+		$x = $this->dblink->next_result();
 	}
 }
 ?>
