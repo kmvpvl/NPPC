@@ -47,7 +47,7 @@
 <messages>
 <messages-toolbar>
 <button type="button" class="ml-2 mb-1 close" messages="collapse">&times;</button>
-<input id="edt-search" type="text" placeholder="Search message..."></input>
+<input id="edt-message-search" type="text" placeholder="Search message..."></input>
 </messages-toolbar>
 <messages-container>
 </messages-container>
@@ -190,6 +190,13 @@ function scrollMessages(){
 		$('messages messages-container').animate({scrollTop: $("messages messages-container")[0].scrollHeight}, 0);
 	}
 }
+function filterMessages(){
+	$('messages messages-container message').hide();
+	$("messages messages-container message:has(message-tags:contains('"+$("#slct-message-byorder").val()+"'))",($("#slct-message-byuser").val()?" + messages messages-container message:has(message-tags:contains('@"+$("#slct-message-byuser").val()+"'))":"")).show();
+	$("messages messages-container message:has(message-tags:contains('"+$("#slct-message-byorder").val()+"'))",($("#slct-message-byuser").val()?" + messages messages-container message:has(message-from:contains('"+$("#slct-message-byuser").val()+"'))":"")).show();
+	//edt-search
+	$("messages messages-container message:has(message-body:not(:contains('"+$("#edt-message-search").val()+"')))").hide();
+}
 
 function updateMessages() {
 	if (!$("instance").html()) return;
@@ -236,10 +243,14 @@ function updateMessages() {
 				}
 
 				$('messages messages-container message[read="0"]').prepend('<button type="button" class="ml-2 mb-1 close" message="collapse">&times;</button>');
+				$("#edt-message-search").change(function(){
+					filterMessages();
+				});
+				$("#slct-message-byuser").change(function(){
+					filterMessages();
+				});
 				$("#slct-message-byorder").change(function(){
-					$('messages messages-container message').hide();
-					$("messages messages-container message:has(message-tags:contains('"+$("#slct-message-byorder").val()+"'))").show();
-					//filterMessages();
+					filterMessages();
 				});
 				$('message button[message="collapse"]').on ('click', function (event) {
 					$(this).parent()[0].ORMNaviMessage.dismiss();
