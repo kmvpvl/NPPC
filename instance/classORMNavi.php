@@ -145,6 +145,7 @@ class ORMNaviMessage implements JsonSerializable {
 	protected $message_time;
 	protected $thread_id;
 	protected $read_time;
+	protected $flagged;
 	protected function _arrayImport(array $a) {
 		foreach ($a as $key=>$value) {
 			if (is_null($this->$key)) $this->$key = $value;
@@ -237,7 +238,8 @@ class ORMNaviMessage implements JsonSerializable {
 			"from"=>$this->from,
 			"message_time"=>$this->message_time,
 			"read_time"=>$this->read_time,
-			"thread_id"=>$this->thread_id
+			"thread_id"=>$this->thread_id,
+			"flagged"=>$this->flagged
 		];
     }
 	function __debugInfo() {
@@ -958,7 +960,8 @@ class ORMNaviFactory {
 			$this->dblink->next_result();
 			$x = $this->getRoadInfo($x["name"]);
 			if ($x["autodelivery"]) $this->moveAssignToNextWorkcenter($assign_id);
-			$tmp = $this->dblink->escape_string("Order #" . $ordernum . " processed '" . $x["operation"] . "' and ready to next workcenter '" . $nextworkcenter . "'");
+			$wc_info = trim($this->getWorkcenterInfo($nextworkcenter));
+			$tmp = $this->dblink->escape_string("Order #" . $ordernum . " processed '" . $readyorderpart . "' and ready to @\"" . $wc_info . "\"");
 	        $msg = new ORMNaviMessage($this, $tmp, ORMNaviMessageType::INFO);
 			$msg->send();
 		}
@@ -1035,6 +1038,12 @@ class ORMNaviFactory {
 		$sql = "call updateSubscriptions('".$this->name."', '".$user_name."', '".$s."');";
 		$x = $this->dblink->query($sql);
 		if (!$x) throw new ORMNaviException("User '" . $user_name . "' not found in factory '" . $this->name. "': " . $this->dblink->errno . " - " . $this->dblink->error);
+		$x = $this->dblink->next_result();
+	}
+	function flagMessage(int $message_id, bool $flag) {
+		$sql = "call flagMessage(".$message_id.", ".($flag?1:0).");";
+		$x = $this->dblink->query($sql);
+		if (!$x) throw new ORMNaviException("Could not set flag label to message': " . $this->dblink->errno . " - " . $this->dblink->error);
 		$x = $this->dblink->next_result();
 	}
 }

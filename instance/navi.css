@@ -256,15 +256,12 @@ messages > messages-container > message {
     display: block;
     margin: 2px;
 }
-message > message-time::before {
-    content: "Date/time: ";
-}
 
 message > message-time {
     font-size: smaller;
 }
 message > message-from::before {
-    content: " from: ";
+    content: " | "
 }
 message > message-from {
     font-size: smaller;

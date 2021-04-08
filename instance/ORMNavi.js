@@ -132,7 +132,7 @@ class ORMNaviMessage {
 			//debugger;
 			switch (status) {
 				case "success":
-					$("message[message_id='"+ORMNaviMessage.current_message+"']").hide();
+					//$("message[message_id='"+ORMNaviMessage.current_message+"']").hide();
 				break;
 				default:
 					showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
@@ -140,6 +140,21 @@ class ORMNaviMessage {
 		});
 		ORMNaviMessage.current_message = this.id;
     }
+	flag() {
+        sendDataToNavi('apiFlagMessage', {message_id: this.id, flag: (this.flagged=='1'?0:1)}, 
+		function(data, status) {
+			hideLoading();
+			//debugger;
+			switch (status) {
+				case "success":
+					//$("message[message_id='"+ORMNaviMessage.current_message+"']").hide();
+				break;
+				default:
+					showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
+			}
+		});
+		ORMNaviMessage.current_message = this.id;
+	}
 }
 
 class ORMNaviOrder {

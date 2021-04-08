@@ -74,7 +74,8 @@
 	<select id="slct-message-byuser">
 		<option value="">By user</option>
 	</select>
-	<span>Subscriptions</span>
+	<span>
+	<input type="checkbox" data-toggle="toggle" data-size="mini" data-height="16" data-width="120" data-onstyle="default" data-on="<i class='fa fa-flag' aria-hidden='true' style='color:red;'></i> Flagged" data-off="<i class='fa fa-flag-o' aria-hidden='true'></i></i> All messages"></span>
 </messages-navigator>
 </messages>
 <div id="loginform">
@@ -211,7 +212,7 @@ function updateMessages() {
 				var unread_count = 0;
 				for (ind in ls.data) {
 					if (!(ls.data[ind].read_time || ls.data[ind].from == $("#username").val())) unread_count++;
-					$("messages messages-container").prepend('<message message_id="'+ls.data[ind].id+'" read="'+(ls.data[ind].read_time || ls.data[ind].from == $("#username").val()?"1":"0")+'" in="'+(ls.data[ind].from != $("#username").val()?"1":"0")+'"/>');
+					$("messages messages-container").prepend('<message message_id="'+ls.data[ind].id+'" read="'+(ls.data[ind].read_time || ls.data[ind].from == $("#username").val()?"1":"0")+'" in="'+(ls.data[ind].from != $("#username").val()?"1":"0")+'" flagged="'+(ls.data[ind].flagged?ls.data[ind].flagged:'0')+'"/>');
 					m = new ORMNaviMessage(ls.data[ind]);
 					if (!(ls.data[ind].read_time || ls.data[ind].from == $("#username").val())) {
 						if ($("messages messages-container unread-separator").length) $("messages messages-container unread-separator").remove();
@@ -223,6 +224,9 @@ function updateMessages() {
 				} else {
 					$("#messages-popup").html("No new messages");
 				}
+				$("messages messages-container message message-from").prepend('<i class="fa fa-user-circle" aria-hidden="true"></i>');
+				$("messages messages-container message message-time").prepend('<i class="fa fa-clock-o" aria-hidden="true"></i>');
+				
 				scrollMessages();
 				if (ORMNaviFactory.user && ORMNaviFactory.user.subscriptions) {
 					$("#slct-message-byorder").html("");
@@ -242,7 +246,12 @@ function updateMessages() {
 					}
 				}
 
-				$('messages messages-container message[read="0"]').prepend('<button type="button" class="ml-2 mb-1 close" message="collapse">&times;</button>');
+				$('messages messages-container message[in="1"]').prepend('<button type="button" class="ml-2 mb-1 close" message="reply"><i class="fa fa-reply" aria-hidden="true"></i></button>');				
+				$('messages messages-container message[flagged="0"][in="0"]').prepend('<button type="button" class="ml-2 mb-1 close" message="flag"><i class="fa fa-flag-o" aria-hidden="true"></i></button>');				
+				$('messages messages-container message[flagged="1"]').prepend('<button type="button" class="ml-2 mb-1 close" message="flag"><i class="fa fa-flag" style="color:red" aria-hidden="true"></i></button>');				
+				$('messages messages-container message[read="0"]').prepend('<button type="button" class="ml-2 mb-1 close" message="collapse"><i class="fa fa-envelope-open-o" aria-hidden="true"></i></button>');
+				//$('messages messages-container message[read="1"]').prepend('<button type="button" class="ml-2 mb-1 close" message="reply"><i class="fa fa-envelope-o" aria-hidden="true"></i></button>');
+
 				$("#edt-message-search").change(function(){
 					filterMessages();
 				});
@@ -254,6 +263,10 @@ function updateMessages() {
 				});
 				$('message button[message="collapse"]').on ('click', function (event) {
 					$(this).parent()[0].ORMNaviMessage.dismiss();
+					updateMessages();
+				})
+				$('message button[message="flag"]').on ('click', function (event) {
+					$(this).parent()[0].ORMNaviMessage.flag();
 					updateMessages();
 				})
 				break;
