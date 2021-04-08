@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Apr 08, 2021 at 07:24 AM
+-- Generation Time: Apr 08, 2021 at 11:15 AM
 -- Server version: 10.5.8-MariaDB
 -- PHP Version: 7.4.15
 
@@ -319,32 +319,6 @@ update workcenters set `description`=`_desc` where client_id=`_client_id` and `n
 --
 -- Functions
 --
-DROP FUNCTION IF EXISTS `addMessage`$$
-CREATE DEFINER=`root`@`localhost` FUNCTION `addMessage` (`_client_id` BIGINT UNSIGNED, `_order_id` BIGINT UNSIGNED, `_message_from` BIGINT UNSIGNED, `_message_to` BIGINT UNSIGNED, `_message_type` VARCHAR(9), `_body` VARCHAR(250), `_thread_id` BIGINT UNSIGNED) RETURNS BIGINT(20) UNSIGNED NO SQL
-    COMMENT 'adds new Message'
-BEGIN
-if `_order_id` = 0 THEN
-set `_order_id` = NULL;
-end IF;
-
-if `_message_to` = 0 THEN
-set `_message_to` = NULL;
-end IF;
-
-
-if `_message_from` = 0 THEN
-set `_message_from` = NULL;
-end IF;
-
-if `_thread_id` = 0 THEN
-set `_thread_id` = NULL;
-end IF;
-
-INSERT INTO `messages`(`client_id`, `order_id`, `message_from`, `message_to`, `message_type`, `body`, thread_id) VALUES (`_client_id`, `_order_id`, `_message_from`, `_message_to`, `_message_type`, `_body`, `_thread_id`);
-return (SELECT LAST_INSERT_ID());
-
-end$$
-
 DROP FUNCTION IF EXISTS `addOrder`$$
 CREATE DEFINER=`root`@`localhost` FUNCTION `addOrder` (`_factory` VARCHAR(50), `_number` VARCHAR(50), `_state` VARCHAR(10), `_route_id` INT, `_deadline` DATETIME) RETURNS BIGINT(20) UNSIGNED NO SQL
     COMMENT 'adds new order and returns uniq ID of order in database'
@@ -726,7 +700,7 @@ CREATE TABLE IF NOT EXISTS `messages` (
   KEY `message_type` (`message_type`),
   KEY `client_id` (`client_id`),
   KEY `thread_id` (`thread_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=134 DEFAULT CHARSET=utf8 COMMENT='Messages of users';
+) ENGINE=InnoDB AUTO_INCREMENT=136 DEFAULT CHARSET=utf8 COMMENT='Messages of users';
 
 --
 -- Dumping data for table `messages`
@@ -861,9 +835,11 @@ INSERT INTO `messages` (`id`, `message_time`, `client_id`, `message_from`, `mess
 (128, '2021-04-07 12:18:51', 1, 1, 'WARNING', 'The order #o-268 started. The owner of order is @pavel - ', '#o-268;@pavel', NULL, 1),
 (129, '2021-04-07 12:18:55', 1, 1, 'WARNING', 'The order #o-269 started. The owner of order is @pavel - ', '#o-269;@pavel', NULL, 1),
 (130, '2021-04-07 15:46:56', 1, 2, 'INFO', '@\"David Rhuxel\" supply #o-260', '@\"David Rhuxel\";#o-260', NULL, NULL),
-(131, '2021-04-07 15:48:24', 1, 1, 'INFO', 'Order #o-260 processed \'o-260.1.wheelpair.1.1.shaft.1.1\' and ready to @\"Blank processing\"', '#o-260', NULL, 1),
+(131, '2021-04-07 15:48:24', 1, 1, 'INFO', 'Order #o-260 processed \'o-260.1.wheelpair.1.1.shaft.1.1\' and ready to @\"Blank processing\"', '#o-260', NULL, 0),
 (132, '2021-04-07 15:51:20', 1, 2, 'INFO', 'Order #o-260 processed \'o-260.1.wheelpair.1.1.shaft\' and ready to @\"Wheel pair assembly\"', '#o-260', NULL, NULL),
-(133, '2021-04-07 15:51:59', 1, 2, 'INFO', 'Order #o-260 processed \'o-260.1.wheelpair.1.1.wheel\' and ready to @\"Wheel pair assembly\"', '#o-260', NULL, NULL);
+(133, '2021-04-07 15:51:59', 1, 2, 'INFO', 'Order #o-260 processed \'o-260.1.wheelpair.1.1.wheel\' and ready to @\"Wheel pair assembly\"', '#o-260', NULL, 1),
+(134, '2021-04-08 09:10:50', 1, 2, 'INFO', '@\"David Rhuxel\" answer to 129', '@\"David Rhuxel\"', NULL, NULL),
+(135, '2021-04-08 09:11:35', 1, 1, 'INFO', '@\"pavel\" test passed', '@\"pavel\"', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -882,7 +858,7 @@ CREATE TABLE IF NOT EXISTS `messages_read` (
   UNIQUE KEY `message_id_2` (`message_id`,`user_id`),
   KEY `message_id` (`message_id`),
   KEY `user_id` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=35 DEFAULT CHARSET=utf8 COMMENT='Info about read events';
+) ENGINE=InnoDB AUTO_INCREMENT=36 DEFAULT CHARSET=utf8 COMMENT='Info about read events';
 
 --
 -- Dumping data for table `messages_read`
@@ -922,7 +898,8 @@ INSERT INTO `messages_read` (`id`, `message_id`, `user_id`, `read_time`, `flagge
 (31, 130, 1, '2021-04-07 15:53:37', NULL),
 (32, 132, 1, '2021-04-07 15:53:41', NULL),
 (33, 133, 1, '2021-04-07 15:53:44', NULL),
-(34, 131, 2, '2021-04-08 07:23:48', NULL);
+(34, 131, 2, '2021-04-08 07:23:48', NULL),
+(35, 128, 2, '2021-04-08 10:38:19', NULL);
 
 -- --------------------------------------------------------
 

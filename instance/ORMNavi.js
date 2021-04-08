@@ -93,8 +93,8 @@ class ORMNaviMessage {
 	/**
 	 * 
 	 */
-	static send(body, type) {
-		sendDataToNavi('apiSendMessage', {body: body, type:type}, 
+	static send(body, type, thread) {
+		sendDataToNavi('apiSendMessage', {body: body, type:type, thread:thread==""?undefined:thread}, 
 		function(data, status) {
 			hideLoading();
 			//debugger;
@@ -102,6 +102,7 @@ class ORMNaviMessage {
 				case "success":
 					showInformation("Message sent");
 					$("#text-new-message").val("");
+					$("#txt-new-message-thread").text("");
 					updateMessages();
 				break;
 				default:

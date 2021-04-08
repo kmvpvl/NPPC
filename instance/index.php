@@ -55,6 +55,7 @@
 <div class="input-group">
   <div class="input-group-prepend">
   <span class="input-group-text">Text</span>
+  <span id="txt-new-message-thread" class="input-group-text"></span>
   <select class="custom-select" id="message_type">
 		<option value="INFO">info</option>
 		<option value="WARNING">warning</option>
@@ -144,7 +145,7 @@ $(document).ready (function (){
 
 $("#btn-send-message").on('click', function () {
 	//debugger;
-	ORMNaviMessage.send($("#text-new-message").val(), $("#message_type").val());
+	ORMNaviMessage.send($("#text-new-message").val(), $("#message_type").val(), $("#txt-new-message-thread").text());
 })
 
 $('messages messages-toolbar button[messages="collapse"]').on('click', function (event) {
@@ -247,10 +248,19 @@ function updateMessages() {
 				}
 
 				$('messages messages-container message[in="1"]').prepend('<button type="button" class="ml-2 mb-1 close" message="reply"><i class="fa fa-reply" aria-hidden="true"></i></button>');				
+				
 				$('messages messages-container message[flagged="0"][in="0"]').prepend('<button type="button" class="ml-2 mb-1 close" message="flag"><i class="fa fa-flag-o" aria-hidden="true"></i></button>');				
 				$('messages messages-container message[flagged="1"]').prepend('<button type="button" class="ml-2 mb-1 close" message="flag"><i class="fa fa-flag" style="color:red" aria-hidden="true"></i></button>');				
 				$('messages messages-container message[read="0"]').prepend('<button type="button" class="ml-2 mb-1 close" message="collapse"><i class="fa fa-envelope-open-o" aria-hidden="true"></i></button>');
 				//$('messages messages-container message[read="1"]').prepend('<button type="button" class="ml-2 mb-1 close" message="reply"><i class="fa fa-envelope-o" aria-hidden="true"></i></button>');
+
+				$('message button[message="reply"]').click(function(){
+					$("#txt-new-message-thread").text($(this).parent()[0].ORMNaviMessage.id);
+					var q = "";
+					if ($(this).parent()[0].ORMNaviMessage.from.indexOf(" ")) q = '"';
+					$("#text-new-message").val("@"+q+$(this).parent()[0].ORMNaviMessage.from + q+" " +$("#text-new-message").val());
+					$("#text-new-message").focus();					
+				});
 
 				$("#edt-message-search").change(function(){
 					filterMessages();
