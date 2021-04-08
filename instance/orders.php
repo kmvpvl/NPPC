@@ -127,7 +127,7 @@ $("#btnOrderInfo").on('click', function(){
 	<label for="message-text" class="col-form-label">Message:</label>
 	<textarea class="form-control" id="message-text"></textarea>
 </div>
-<span id="btnOrderInfo">info</span>
+<span id="btnOrderInfo"><i class="fa fa-info" aria-hidden="true"></i></span>
 <div class="modal fade" id="dlgImportOrderModal" tabindex="-1" role="dialog" aria-labelledby="dlgOrderImportModalLongTitle" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">

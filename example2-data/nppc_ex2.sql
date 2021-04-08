@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Apr 08, 2021 at 11:15 AM
+-- Generation Time: Apr 08, 2021 at 12:21 PM
 -- Server version: 10.5.8-MariaDB
 -- PHP Version: 7.4.15
 
@@ -28,7 +28,8 @@ DELIMITER $$
 -- Procedures
 --
 DROP PROCEDURE IF EXISTS `addMessage`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `addMessage` (IN `_factory` VARCHAR(50), IN `_message_from` VARCHAR(50), IN `_message_type` VARCHAR(9), IN `_body` VARCHAR(250), IN `_tags` VARCHAR(1024), IN `_thread_id` BIGINT UNSIGNED)  NO SQL
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `addMessage` (IN `_factory` VARCHAR(50), IN `_message_from` VARCHAR(50), IN `_message_type` VARCHAR(9), IN `_body` VARCHAR(250), IN `_tags` VARCHAR(1024), IN `_thread_id` BIGINT UNSIGNED)  MODIFIES SQL DATA
+    SQL SECURITY INVOKER
     COMMENT 'adds new Message'
 BEGIN
 set @client_id = getClientID(`_factory`);
@@ -41,19 +42,22 @@ select * from `messages` where `messages`.`id` = @m_id;
 end$$
 
 DROP PROCEDURE IF EXISTS `assignRouteToOrder`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `assignRouteToOrder` (IN `_client_id` BIGINT UNSIGNED, IN `_order` VARCHAR(50), IN `_route` INT)  NO SQL
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `assignRouteToOrder` (IN `_client_id` BIGINT UNSIGNED, IN `_order` VARCHAR(50), IN `_route` INT)  MODIFIES SQL DATA
+    SQL SECURITY INVOKER
     COMMENT 'sets route to added order'
 update routes set route=`_route` where `client_id` = `_client_id` and number like `_order`$$
 
 DROP PROCEDURE IF EXISTS `assignWorkcenterToRoutePart`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `assignWorkcenterToRoutePart` (IN `_factory` VARCHAR(50), IN `_order_id` BIGINT UNSIGNED, IN `_order_part` VARCHAR(4096), IN `_operation` VARCHAR(250), IN `_wc` VARCHAR(50), IN `_bucket` VARCHAR(10), IN `_consumption_plan` DOUBLE)  NO SQL
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `assignWorkcenterToRoutePart` (IN `_factory` VARCHAR(50), IN `_order_id` BIGINT UNSIGNED, IN `_order_part` VARCHAR(4096), IN `_operation` VARCHAR(250), IN `_wc` VARCHAR(50), IN `_bucket` VARCHAR(10), IN `_consumption_plan` DOUBLE)  MODIFIES SQL DATA
+    SQL SECURITY INVOKER
 BEGIN
 set @client_id = getClientID(`_factory`);
 insert into assigns  (client_id, order_id, order_part, operation, workcenter_id, bucket, fullset, consumption_plan) VALUES(@client_id, `_order_id`, `_order_part`, `_operation`, getWorkcenterID(@client_id, `_wc`), `_bucket`, 1, `_consumption_plan`);
 END$$
 
 DROP PROCEDURE IF EXISTS `deleteOrder`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `deleteOrder` (IN `_client_id` BIGINT UNSIGNED, IN `_order` VARCHAR(50))  NO SQL
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `deleteOrder` (IN `_client_id` BIGINT UNSIGNED, IN `_order` VARCHAR(50))  MODIFIES SQL DATA
+    SQL SECURITY INVOKER
 begin
 set @orid = (select id from orders where client_id=`_client_id` and number like `_order`);
 delete from assigns where client_id=`_client_id` and order_id = @orid;
@@ -62,7 +66,8 @@ delete from orders where client_id=`_client_id` and number like `_order`;
 end$$
 
 DROP PROCEDURE IF EXISTS `flagMessage`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `flagMessage` (IN `_id` BIGINT UNSIGNED, IN `_flag` BOOLEAN)  NO SQL
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `flagMessage` (IN `_id` BIGINT UNSIGNED, IN `_flag` BOOLEAN)  MODIFIES SQL DATA
+    SQL SECURITY INVOKER
 BEGIN
 update `messages`
 set `messages`.`flagged` = `_flag`
@@ -70,7 +75,8 @@ where `messages`.`id` = `_id`;
 END$$
 
 DROP PROCEDURE IF EXISTS `getAllTags`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `getAllTags` ()  NO SQL
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `getAllTags` ()  MODIFIES SQL DATA
+    SQL SECURITY INVOKER
 BEGIN
 -- SELECT GROUP_CONCAT(`tags` SEPARATOR ';') AS data FROM `messages`;
 drop TEMPORARY table if EXISTS temp;
@@ -83,13 +89,15 @@ SELECT `tag`, count(`tag`) as c FROM `temp` group by `tag` order by c desc;
 END$$
 
 DROP PROCEDURE IF EXISTS `getAssignInfo`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `getAssignInfo` (IN `_assign_id` INT)  NO SQL
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `getAssignInfo` (IN `_assign_id` INT)  READS SQL DATA
+    SQL SECURITY INVOKER
 SELECT assigns.order_part, assigns.next_order_part, orders.number, orders.current_route  FROM `assigns` 
 left join orders on orders.id = assigns.order_id
 WHERE assigns.id = `_assign_id`$$
 
 DROP PROCEDURE IF EXISTS `getAssignsByRoads`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `getAssignsByRoads` (IN `_factory` VARCHAR(50), IN `_wc_from` VARCHAR(50), IN `_wc_to` VARCHAR(50))  NO SQL
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `getAssignsByRoads` (IN `_factory` VARCHAR(50), IN `_wc_from` VARCHAR(50), IN `_wc_to` VARCHAR(50))  READS SQL DATA
+    SQL SECURITY INVOKER
 BEGIN
 set @client_id = getClientID(`_factory`);
 SELECT assigns.*, orders.number, orders.state, orders.estimated, orders.deadline, orders.baseline FROM assigns 
@@ -98,7 +106,8 @@ WHERE bucket like  'OUTCOME' and getWorkcenterID(@client_id, `_wc_from`) = workc
 end$$
 
 DROP PROCEDURE IF EXISTS `getAssignsByWorkcenter`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `getAssignsByWorkcenter` (IN `_factory` VARCHAR(50), IN `_wc` VARCHAR(50), IN `_buckets` VARCHAR(250))  NO SQL
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `getAssignsByWorkcenter` (IN `_factory` VARCHAR(50), IN `_wc` VARCHAR(50), IN `_buckets` VARCHAR(250))  READS SQL DATA
+    SQL SECURITY INVOKER
 BEGIN
 set @client_id = getClientID(`_factory`);
 set @wc_id = getWorkcenterID(@client_id, `_wc`);
@@ -106,19 +115,22 @@ call getAssignsByWorkcenterID(@client_id, @wc_id, `_buckets`);
 end$$
 
 DROP PROCEDURE IF EXISTS `getAssignsByWorkcenterID`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `getAssignsByWorkcenterID` (IN `_client_id` BIGINT UNSIGNED, IN `_workcenter_id` BIGINT UNSIGNED, IN `_buckets` VARCHAR(250))  NO SQL
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `getAssignsByWorkcenterID` (IN `_client_id` BIGINT UNSIGNED, IN `_workcenter_id` BIGINT UNSIGNED, IN `_buckets` VARCHAR(250))  READS SQL DATA
+    SQL SECURITY INVOKER
 BEGIN
 select a.*, orders.number, orders.state, orders.estimated, orders.deadline, orders.baseline from (select id, order_id, bucket, order_part, event_time, fullset from assigns where client_id = `_client_id` and workcenter_id = `_workcenter_id` and find_in_set(bucket, `_buckets`) > 0 order by assigns.priority desc, assigns.id asc) as a left join orders on orders.id = a.order_id order by orders.priority desc, orders.deadline asc;
 end$$
 
 DROP PROCEDURE IF EXISTS `getAssignsCount`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `getAssignsCount` (IN `_client_id` BIGINT UNSIGNED, IN `_buckets` VARCHAR(250))  NO SQL
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `getAssignsCount` (IN `_client_id` BIGINT UNSIGNED, IN `_buckets` VARCHAR(250))  READS SQL DATA
+    SQL SECURITY INVOKER
 BEGIN
 select workcenters.name, b.* from (select workcenter_id, operation, count(id) as assings_count from assigns as a where client_id = `_client_id` and find_in_set(bucket, `_buckets`) > 0 group by a.workcenter_id, a.operation) as b left join workcenters on workcenters.id = b.workcenter_id;
 end$$
 
 DROP PROCEDURE IF EXISTS `getMessages`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `getMessages` (IN `_factory` VARCHAR(50), IN `_user` VARCHAR(50), IN `_tags` VARCHAR(250), IN `_types` VARCHAR(50))  NO SQL
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `getMessages` (IN `_factory` VARCHAR(50), IN `_user` VARCHAR(50), IN `_tags` VARCHAR(250), IN `_types` VARCHAR(50))  READS SQL DATA
+    SQL SECURITY INVOKER
 BEGIN
 set @client_id = getClientID(`_factory`);
 set @user_id = getUserID(@client_id, `_user`);
@@ -145,7 +157,8 @@ order by `messages`.`message_time` DESC
 end$$
 
 DROP PROCEDURE IF EXISTS `getOrder`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `getOrder` (IN `_factory` VARCHAR(50), IN `_order_num` VARCHAR(50))  NO SQL
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `getOrder` (IN `_factory` VARCHAR(50), IN `_order_num` VARCHAR(50))  READS SQL DATA
+    SQL SECURITY INVOKER
 BEGIN
 set @client_id = getClientID(`_factory`);
 select * from orders where client_id = @client_id and number like `_order_num`;
@@ -153,7 +166,8 @@ select * from orders where client_id = @client_id and number like `_order_num`;
 END$$
 
 DROP PROCEDURE IF EXISTS `getOrderHistory`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `getOrderHistory` (IN `_order_id` BIGINT UNSIGNED)  NO SQL
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `getOrderHistory` (IN `_order_id` BIGINT UNSIGNED)  READS SQL DATA
+    SQL SECURITY INVOKER
 select assigns.*, workcenters.name as workcenter_name, workcenters.description as workcenter_desc, roads.id as road_id, roads.name as road_name, roads.description as road_desc
 from assigns
 left join workcenters on workcenters.id=assigns.workcenter_id
@@ -162,15 +176,18 @@ where assigns.order_id = `_order_id`
 order by assigns.event_time desc, assigns.id desc$$
 
 DROP PROCEDURE IF EXISTS `getOrderInfo`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `getOrderInfo` (IN `_client_id` BIGINT UNSIGNED, IN `_order_num` VARCHAR(50))  NO SQL
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `getOrderInfo` (IN `_client_id` BIGINT UNSIGNED, IN `_order_num` VARCHAR(50))  READS SQL DATA
+    SQL SECURITY INVOKER
 select * from orders where client_id = `_client_id` and number like `_order_num`$$
 
 DROP PROCEDURE IF EXISTS `getOrders`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `getOrders` (IN `_client_id` BIGINT UNSIGNED ZEROFILL)  NO SQL
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `getOrders` (IN `_client_id` BIGINT UNSIGNED ZEROFILL)  READS SQL DATA
+    SQL SECURITY INVOKER
 select * from orders where client_id = `_client_id` order by orders.priority desc, orders.deadline asc$$
 
 DROP PROCEDURE IF EXISTS `getOutcomeRoad`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `getOutcomeRoad` (IN `_assign_id` BIGINT UNSIGNED)  NO SQL
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `getOutcomeRoad` (IN `_assign_id` BIGINT UNSIGNED)  READS SQL DATA
+    SQL SECURITY INVOKER
 BEGIN
 DECLARE CUSTOM_EXCEPTION CONDITION FOR SQLSTATE '45000';
 select `assigns`.`workcenter_id`, `assigns`.`next_workcenter_id`
@@ -188,7 +205,8 @@ where `roads`.`from_wc`= @from_wc_id and @to_wc_id;
 END$$
 
 DROP PROCEDURE IF EXISTS `getRoadsWorkload`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `getRoadsWorkload` (IN `_factory` VARCHAR(50))  NO SQL
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `getRoadsWorkload` (IN `_factory` VARCHAR(50))  READS SQL DATA
+    SQL SECURITY INVOKER
 BEGIN
 set @client_id = getClientID(`_factory`);
 select `roads`.`name`, count(`assigns`.id) as delivery_count
@@ -200,16 +218,19 @@ group by `roads`.`id`;
 END$$
 
 DROP PROCEDURE IF EXISTS `getUser`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `getUser` (IN `_factory` VARCHAR(50), IN `_user` VARCHAR(50))  NO SQL
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `getUser` (IN `_factory` VARCHAR(50), IN `_user` VARCHAR(50))  READS SQL DATA
+    SQL SECURITY INVOKER
 select * from `users` WHERE `users`.`client_id` = getClientID(`_factory`) and `users`.`name` like `_user`$$
 
 DROP PROCEDURE IF EXISTS `getUsersList`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `getUsersList` (IN `_factory` VARCHAR(50))  NO SQL
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `getUsersList` (IN `_factory` VARCHAR(50))  READS SQL DATA
+    SQL SECURITY INVOKER
 select * 
 from `users`$$
 
 DROP PROCEDURE IF EXISTS `getWorkcentersWorkload`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `getWorkcentersWorkload` (IN `_factory` VARCHAR(50))  NO SQL
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `getWorkcentersWorkload` (IN `_factory` VARCHAR(50))  READS SQL DATA
+    SQL SECURITY INVOKER
 BEGIN
 set @client_id = getClientID(`_factory`);
 select `workcenters`.`name`, `workcenters`.`description`, `assigns`.`operation`
@@ -221,7 +242,8 @@ where `workcenters`.`client_id`=@client_id and find_in_set(`assigns`.`bucket`, '
 END$$
 
 DROP PROCEDURE IF EXISTS `makeMessageRead`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `makeMessageRead` (IN `_message_id` BIGINT UNSIGNED, IN `_user` VARCHAR(50))  NO SQL
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `makeMessageRead` (IN `_message_id` BIGINT UNSIGNED, IN `_user` VARCHAR(50))  MODIFIES SQL DATA
+    SQL SECURITY INVOKER
 BEGIN
 DECLARE CUSTOM_EXCEPTION CONDITION FOR SQLSTATE '45000';
 set @client_id = (select `messages`.`client_id` from `messages` where `messages`.`id`= `_message_id`);
@@ -246,7 +268,8 @@ where `messages`.`id` = `_message_id`;
 END$$
 
 DROP PROCEDURE IF EXISTS `moveAssignToNextBucket`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `moveAssignToNextBucket` (IN `_id` BIGINT UNSIGNED)  NO SQL
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `moveAssignToNextBucket` (IN `_id` BIGINT UNSIGNED)  MODIFIES SQL DATA
+    SQL SECURITY INVOKER
     COMMENT 'moves order part forward and returns new bucket'
 begin
 set @cur_bucket = (select bucket from assigns where id=`_id`);
@@ -264,7 +287,8 @@ SELECT orders.number as order_num, orders.id as order_id, orders.current_route a
 end$$
 
 DROP PROCEDURE IF EXISTS `moveAssignToNextWorkcenter`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `moveAssignToNextWorkcenter` (IN `_assign_id` BIGINT UNSIGNED, IN `_set_count` INT)  NO SQL
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `moveAssignToNextWorkcenter` (IN `_assign_id` BIGINT UNSIGNED, IN `_set_count` INT)  MODIFIES SQL DATA
+    SQL SECURITY INVOKER
 BEGIN
 select client_id, next_workcenter_id, next_order_part, next_operation, order_id, next_consumption
 into @client_id, @next_workcenter_id, @next_order_part, @next_operation, @order_id, @consumption
@@ -291,36 +315,43 @@ COMMIT;
 end$$
 
 DROP PROCEDURE IF EXISTS `updateAssignOrderPart`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `updateAssignOrderPart` (IN `_id` BIGINT UNSIGNED, IN `_new_order_part` VARCHAR(250), IN `_next_wc` VARCHAR(50), IN `_next_order_part` VARCHAR(4096), IN `_next_operation` VARCHAR(250), IN `_next_consumption` DOUBLE)  NO SQL
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `updateAssignOrderPart` (IN `_id` BIGINT UNSIGNED, IN `_new_order_part` VARCHAR(250), IN `_next_wc` VARCHAR(50), IN `_next_order_part` VARCHAR(4096), IN `_next_operation` VARCHAR(250), IN `_next_consumption` DOUBLE)  MODIFIES SQL DATA
+    SQL SECURITY INVOKER
 update assigns set order_part = `_new_order_part`, next_workcenter_id = getWorkcenterID(assigns.client_id, `_next_wc`), next_order_part = `_next_order_part`, next_operation = `_next_operation`, next_consumption= `_next_consumption` where id=`_id`$$
 
 DROP PROCEDURE IF EXISTS `updateBaseline`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `updateBaseline` (IN `_order_id` BIGINT UNSIGNED, IN `_time` DATETIME)  NO SQL
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `updateBaseline` (IN `_order_id` BIGINT UNSIGNED, IN `_time` DATETIME)  MODIFIES SQL DATA
+    SQL SECURITY INVOKER
 update orders set baseline=`_time`, estimated=`_time` where id = `_order_id`$$
 
 DROP PROCEDURE IF EXISTS `updateEstimatedTime`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `updateEstimatedTime` (IN `_order_id` BIGINT UNSIGNED, IN `_time` DATETIME)  NO SQL
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `updateEstimatedTime` (IN `_order_id` BIGINT UNSIGNED, IN `_time` DATETIME)  MODIFIES SQL DATA
+    SQL SECURITY INVOKER
 update orders set estimated=`_time` where id = `_order_id`$$
 
 DROP PROCEDURE IF EXISTS `updateRoadDesc`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `updateRoadDesc` (IN `_client_id` BIGINT UNSIGNED, IN `_road_name` VARCHAR(50), IN `_desc` VARCHAR(250))  NO SQL
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `updateRoadDesc` (IN `_client_id` BIGINT UNSIGNED, IN `_road_name` VARCHAR(50), IN `_desc` VARCHAR(250))  MODIFIES SQL DATA
+    SQL SECURITY INVOKER
 update roads set `description`=`_desc` where client_id=`_client_id` and `name` like `_road_name`$$
 
 DROP PROCEDURE IF EXISTS `updateSubscriptions`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `updateSubscriptions` (IN `_factory` VARCHAR(50), IN `_user` VARCHAR(50), IN `_tags` VARCHAR(2048))  NO SQL
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `updateSubscriptions` (IN `_factory` VARCHAR(50), IN `_user` VARCHAR(50), IN `_tags` VARCHAR(2048))  MODIFIES SQL DATA
+    SQL SECURITY INVOKER
 update `users`
 set `users`.`subscriptions`=`_tags`
 WHERE `users`.`client_id` = getClientID(`_factory`) and `users`.`name` like `_user`$$
 
 DROP PROCEDURE IF EXISTS `updateWorkcenterDesc`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `updateWorkcenterDesc` (IN `_client_id` BIGINT UNSIGNED, IN `_wc_name` VARCHAR(50), IN `_desc` VARCHAR(250))  NO SQL
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `updateWorkcenterDesc` (IN `_client_id` BIGINT UNSIGNED, IN `_wc_name` VARCHAR(50), IN `_desc` VARCHAR(250))  MODIFIES SQL DATA
+    SQL SECURITY INVOKER
 update workcenters set `description`=`_desc` where client_id=`_client_id` and `name` like `_wc_name`$$
 
 --
 -- Functions
 --
 DROP FUNCTION IF EXISTS `addOrder`$$
-CREATE DEFINER=`root`@`localhost` FUNCTION `addOrder` (`_factory` VARCHAR(50), `_number` VARCHAR(50), `_state` VARCHAR(10), `_route_id` INT, `_deadline` DATETIME) RETURNS BIGINT(20) UNSIGNED NO SQL
+CREATE DEFINER=`nppc`@`localhost` FUNCTION `addOrder` (`_factory` VARCHAR(50), `_number` VARCHAR(50), `_state` VARCHAR(10), `_route_id` INT, `_deadline` DATETIME) RETURNS BIGINT(20) UNSIGNED MODIFIES SQL DATA
+    SQL SECURITY INVOKER
     COMMENT 'adds new order and returns uniq ID of order in database'
 begin
 set @client_id = getClientID(`_factory`);
@@ -329,7 +360,8 @@ return (SELECT LAST_INSERT_ID());
 end$$
 
 DROP FUNCTION IF EXISTS `getAssignConsumptionInWorkcenter`$$
-CREATE DEFINER=`root`@`localhost` FUNCTION `getAssignConsumptionInWorkcenter` (`_assign_id` BIGINT UNSIGNED) RETURNS DOUBLE NO SQL
+CREATE DEFINER=`nppc`@`localhost` FUNCTION `getAssignConsumptionInWorkcenter` (`_assign_id` BIGINT UNSIGNED) RETURNS DOUBLE READS SQL DATA
+    SQL SECURITY INVOKER
 BEGIN
 select workcenter_id, priority into @wc_id, @pr
 from assigns where id = `_assign_id`;
@@ -338,11 +370,13 @@ return @r;
 end$$
 
 DROP FUNCTION IF EXISTS `getBuckets`$$
-CREATE DEFINER=`root`@`localhost` FUNCTION `getBuckets` (`_widget` INT) RETURNS VARCHAR(1024) CHARSET utf8 NO SQL
+CREATE DEFINER=`nppc`@`localhost` FUNCTION `getBuckets` (`_widget` INT) RETURNS VARCHAR(1024) CHARSET utf8 READS SQL DATA
+    SQL SECURITY INVOKER
 return (SELECT GROUP_CONCAT(bucket order by orderby SEPARATOR ',') from workcenter_bucket where showit =`_widget`)$$
 
 DROP FUNCTION IF EXISTS `getClientID`$$
-CREATE DEFINER=`root`@`localhost` FUNCTION `getClientID` (`_factoryName` VARCHAR(50)) RETURNS BIGINT(20) UNSIGNED NO SQL
+CREATE DEFINER=`nppc`@`localhost` FUNCTION `getClientID` (`_factoryName` VARCHAR(50)) RETURNS BIGINT(20) UNSIGNED READS SQL DATA
+    SQL SECURITY INVOKER
     COMMENT 'returns client ID by mnemonic name of the factory'
 BEGIN
 DECLARE CUSTOM_EXCEPTION CONDITION FOR SQLSTATE '45000';
@@ -355,19 +389,17 @@ return @client_id;
 END$$
 
 DROP FUNCTION IF EXISTS `getOrderConsumptionInWorkcenter`$$
-CREATE DEFINER=`root`@`localhost` FUNCTION `getOrderConsumptionInWorkcenter` (`_order_id` BIGINT UNSIGNED, `_workcenter` VARCHAR(50)) RETURNS DOUBLE NO SQL
+CREATE DEFINER=`nppc`@`localhost` FUNCTION `getOrderConsumptionInWorkcenter` (`_order_id` BIGINT UNSIGNED, `_workcenter` VARCHAR(50)) RETURNS DOUBLE READS SQL DATA
+    SQL SECURITY INVOKER
 BEGIN
 select client_id, priority into @client_id, @pr from orders where id=`_order_id`;
 set @r = (select sum(consumption_plan) from assigns where workcenter_id = getWorkcenterID(@client_id, `_workcenter`) and (bucket like 'INCOME' or bucket like 'PROCESSING') and priority >= @pr);
 RETURN @r;
 END$$
 
-DROP FUNCTION IF EXISTS `getOrderID`$$
-CREATE DEFINER=`root`@`localhost` FUNCTION `getOrderID` (`_client_id` BIGINT UNSIGNED, `_order_num` VARCHAR(50)) RETURNS BIGINT(20) UNSIGNED NO SQL
-return (select id from orders where orders.number like _order_num and orders.client_id = `_client_id`)$$
-
 DROP FUNCTION IF EXISTS `getUserID`$$
-CREATE DEFINER=`root`@`localhost` FUNCTION `getUserID` (`_client_id` BIGINT UNSIGNED, `_name` VARCHAR(50)) RETURNS BIGINT(20) UNSIGNED NO SQL
+CREATE DEFINER=`nppc`@`localhost` FUNCTION `getUserID` (`_client_id` BIGINT UNSIGNED, `_name` VARCHAR(50)) RETURNS BIGINT(20) UNSIGNED READS SQL DATA
+    SQL SECURITY INVOKER
     COMMENT 'returns iser''s id by mnemonic id of one'
 BEGIN
 DECLARE CUSTOM_EXCEPTION CONDITION FOR SQLSTATE '45000';
@@ -380,7 +412,8 @@ return @user_id;
 END$$
 
 DROP FUNCTION IF EXISTS `getWorkcenterID`$$
-CREATE DEFINER=`root`@`localhost` FUNCTION `getWorkcenterID` (`_client_id` BIGINT UNSIGNED, `_name` VARCHAR(50)) RETURNS BIGINT(20) UNSIGNED NO SQL
+CREATE DEFINER=`nppc`@`localhost` FUNCTION `getWorkcenterID` (`_client_id` BIGINT UNSIGNED, `_name` VARCHAR(50)) RETURNS BIGINT(20) UNSIGNED READS SQL DATA
+    SQL SECURITY INVOKER
     COMMENT 'returns workcenter''s id by mnemonic id of one'
 return (select id from workcenters where client_id = `_client_id` and `name` like `_name`)$$
 
@@ -858,7 +891,7 @@ CREATE TABLE IF NOT EXISTS `messages_read` (
   UNIQUE KEY `message_id_2` (`message_id`,`user_id`),
   KEY `message_id` (`message_id`),
   KEY `user_id` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=36 DEFAULT CHARSET=utf8 COMMENT='Info about read events';
+) ENGINE=InnoDB AUTO_INCREMENT=37 DEFAULT CHARSET=utf8 COMMENT='Info about read events';
 
 --
 -- Dumping data for table `messages_read`
@@ -899,7 +932,8 @@ INSERT INTO `messages_read` (`id`, `message_id`, `user_id`, `read_time`, `flagge
 (32, 132, 1, '2021-04-07 15:53:41', NULL),
 (33, 133, 1, '2021-04-07 15:53:44', NULL),
 (34, 131, 2, '2021-04-08 07:23:48', NULL),
-(35, 128, 2, '2021-04-08 10:38:19', NULL);
+(35, 128, 2, '2021-04-08 10:38:19', NULL),
+(36, 129, 2, '2021-04-08 11:47:34', NULL);
 
 -- --------------------------------------------------------
 

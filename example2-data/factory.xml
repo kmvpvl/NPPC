@@ -2,10 +2,10 @@
 <factory 
 
 name="Wheelpair factory" img="" map="53.3834919,50.1689624;53.3780572,50.1744053">
-	<road id="road8" from="wc2_4" to="wc2_3" reverse="1" capacity="10"></road>
-	<road id="road1" from="wc1_1" to="wc1_3" reverse="1" capacity="10">Warehouse crane</road>
+	<road id="road8" from="wc2_4" to="wc2_3" reverse="1" capacity="30"></road>
+	<road id="road1" from="wc1_1" to="wc1_3" reverse="1" capacity="85">Warehouse crane</road>
 	<road id="road3" from="wc1_3" to="wc2_3" reverse="1" capacity="10" autodelivery="1">Truck 1</road>
-	<road id="road4" from="wc2_1" to="wc2_3" reverse="1" capacity="10">Truck 2</road>
+	<road id="road4" from="wc2_1" to="wc2_3" reverse="1" capacity="40">Truck 2</road>
 	<road id="road7" from="wc2_3" to="wc2_4" reverse="1" capacity="10">QC crane</road>
     <road id="road9" from="wc2_4" to="c2" reverse="1" capacity="10"></road>
 <workcenter id="wc1_1" location="53.38329045938224,50.16929734769231;53.38201886548263,50.17130703384615">

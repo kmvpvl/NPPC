@@ -105,5 +105,5 @@ $("#btnOrderInfo").on('click', function(){
     <income></income>
     <outcome></outcome>
 </orders_in_road>
-<span id="btnOrderInfo">info</span>
-<span id="btnOrderMove">move</span>
+<span id="btnOrderInfo"><i class="fa fa-info" aria-hidden="true"></span>
+<span id="btnOrderMove"><i class="fa fa-arrow-right" aria-hidden="true"></i></span>

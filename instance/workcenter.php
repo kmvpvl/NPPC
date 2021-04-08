@@ -128,5 +128,5 @@ $("#slct-operation").change(function(){
     <processing></processing>
     <outcome></outcome>
 </orders_in_workcenter>
-<span id="btnOrderInfo">info</span>
-<span id="btnOrderMove">move</span>
+<span id="btnOrderInfo"><i class="fa fa-info" aria-hidden="true"></i></span>
+<span id="btnOrderMove"><i class="fa fa-arrow-right" aria-hidden="true"></i></span>
