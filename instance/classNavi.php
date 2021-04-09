@@ -68,7 +68,7 @@ class naviClient {
 		} else throw new Exception ("database settings are absent"); 
 		
 		$this->dblink = new mysqli($host, $user, $password, $database, $port);
-		if ($this->dblink->connect_errno) throw new Exception("Unable connect to database (" . $host . " - " . $database . "): " . $this->dblink->connect_errno . " - " . $this->dblink->connect_error);
+		if ($this->dblink->connect_errno) throw new Exception("Unable connect to database (" . $host . " - " . $database . " - port ".$port."): " . $this->dblink->connect_errno . " - " . $this->dblink->connect_error);
 		$this->dblink->set_charset("utf-8");
 		$this->dblink->query("set names utf8");
 		if (!is_null($this->time_zone)) $this->dblink->query("SET @@session.time_zone='" . ((0 < $this->time_zone)? "+":"") . $this->time_zone . ":00';");
