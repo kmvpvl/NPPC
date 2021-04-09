@@ -681,20 +681,22 @@ class ORMNaviFactory {
 		$this->mdm_xml = simplexml_load_file($this->data_dir . 'mdm.xml');
 		if (!$this->mdm_xml) throw new ORMNaviException ("Wrong dictionary MDM XML: " . $this->data_dir . 'mdm.xml');
         // connecting to database
-        $host = "";
-        $database = "";
+        $host = "localhost";
+        $database = "nppc";
         $dbuser = "";
         $dbpassword = "";
+		$port = "3306";
 		
 		if (array_key_exists("database", $settings)) {
 			if (array_key_exists("host", $settings["database"])) $host = $settings["database"]["host"];
 			if (array_key_exists("database", $settings["database"])) $database = $settings["database"]["database"];
 			if (array_key_exists("user", $settings["database"])) $dbuser = $settings["database"]["user"];
 			if (array_key_exists("password", $settings["database"])) $dbpassword = $settings["database"]["password"];
+			if (array_key_exists("port", $settings["database"])) $port = $settings["database"]["port"];
 		} else throw new ORMNaviException ("database settings are absent"); 
 		
-		$this->dblink = new mysqli($host, $dbuser, $dbpassword, $database);
-		if ($this->dblink->connect_errno) throw new ORMNaviException("Unable connect to database (" . $host . " - " . $database . "): " . $this->dblink->connect_errno . " - " . $this->dblink->connect_error);
+		$this->dblink = new mysqli($host, $dbuser, $dbpassword, $database, $port);
+		if ($this->dblink->connect_errno) throw new ORMNaviException("Unable connect to database (" . $host . " - " . $database . " - ".$port."): " . $this->dblink->connect_errno . " - " . $this->dblink->connect_error);
 		$this->dblink->set_charset("utf-8");
 		$this->dblink->query("set names utf8");
 		if (!is_null($this->time_zone)) $this->dblink->query("SET @@session.time_zone='" . $this->time_zone->getName() . "';");
