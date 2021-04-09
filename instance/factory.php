@@ -24,7 +24,11 @@ function drawFactoryMap() {
 					;
 			}
 		});
-}</script>
+}
+$(window).resize(function(){
+	resizeFactoryMap();
+});
+</script>
 <factory>
 <input type="text" class="form-control" placeholder="Search orders or anything..."></input>
 <div id="factoryMap"></div>
