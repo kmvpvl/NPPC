@@ -7,7 +7,7 @@ $brand = trim($wcInfo);
 <script>
 $(".nav-link.active").removeClass("active");
 $("#menuWorkcenter").addClass("active");
-$(".navbar-brand").text("<?= $factory->description . ": " . $brand ?>");
+$(".navbar-brand").text(NaviFactory.name+ "<?=": " . $brand ?>");
 
 function updateOrders() {
     sendDataToNavi("apiGetWorkcenterOrders", {workcenter: '<?=$workcenter?>'}, 
@@ -32,8 +32,8 @@ function updateOrders() {
                     ot = new ORMNaviOrder(o);
                 }
                 $('order[full="0"]').prepend('<span class="order-bage">partly</span>');
-                if (ORMNaviFactory.current_order)
-                    $('order[number="'+ORMNaviFactory.current_order+'"]').addClass("highlight");
+                if (ORMNaviCurrentOrder)
+                    $('order[number="'+ORMNaviCurrentOrder+'"]').addClass("highlight");
                 $("order[number]").on('click', function() {
                     //debugger;
                     var n = $(this).attr("number");
@@ -72,7 +72,7 @@ updateOrders();
 $("#btnOrderMove").on("click", function(){
     if ($("order[number].selected").length == 1) {
         var a = $("order[number].selected").attr("assign");
-        ORMNaviFactory.current_order = $("order[number].selected").attr("number")
+        ORMNaviCurrentOrder = $("order[number].selected").attr("number")
         sendDataToNavi("apiMoveAssignToNextBucket", {assign: a}, 
         function(data, status) {
             hideLoading();

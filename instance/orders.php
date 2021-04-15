@@ -5,7 +5,7 @@ include "checkORMNavi.php";
 $(".nav-link.active").removeClass("active");
 $(".nav-item.active").removeClass("active");
 $("#menuOrders").addClass("active");
-$(".navbar-brand").text("<?= $factory->description ?>: Orders");
+$(".navbar-brand").text(NaviFactory.name + ": Orders");
 function ordersUpdated(data, status) {
 	hideLoading();
 	$("orders_to_import").html("");
@@ -196,10 +196,10 @@ $("#btn-import-order").click(function(){
 		}
 	});
 });
-if (ORMNaviFactory.users) {
+if (NaviFactory.users) {
 	$("#slct-import-order-owner").html("");
 	$("#slct-import-order-owner").append('<option value="">Nobody</option>');
-	for (var username in ORMNaviFactory.users) {
+	for (var username in NaviFactory.users) {
 		$("#slct-import-order-owner").append('<option value="'+username+'">'+username+'</option>');
 	}
 }

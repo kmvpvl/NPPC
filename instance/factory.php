@@ -1,32 +1,22 @@
 <?php
-include "checkUser.php";
-
+include "checkORMNavi.php";
 ?>
 <script>
 //debugger;
 $(".nav-link.active").removeClass("active");
 $(".nav-item.active").removeClass("active");
 $("#menuFactory").addClass("active");
-$(".navbar-brand").text("<?= $navi->factoryName ?>: Overview");
-drawFactoryMap();
-
-function drawFactoryMap() {
-    $("#factoryMap").html('');
-	sendDataToNavi("drawFactory", undefined,
-		function(data, status) {
-			hideLoading();
-			switch (status) {
-				case "success":
-					$("#factoryMap").html(data);
-					resizeFactoryMap();
-					break;
-				default:
-					;
-			}
-		});
-}
-$(window).resize(function(){
-	resizeFactoryMap();
+$(".navbar-brand").text(NaviFactory.name+": Overview");
+NaviFactory.draw($('#factoryMap'));
+$('[road]').click(function(){
+	road($(this).attr("road"));
+});
+$('[workcenter]').click(function(){
+	workcenter($(this).attr('workcenter'));
+});
+$('instance').resize(function(){
+	debugger;
+	NaviFactory.draw($('#factoryMap'));
 });
 </script>
 <factory>

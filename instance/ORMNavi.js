@@ -1,3 +1,5 @@
+var ORMNaviCurrentMessage = null;
+var ORMNaviCurrentOrder = null;
 /**
  * 
  * @param {string} api 
@@ -82,7 +84,6 @@ function drawDateTimeDiff(d, cd) {
 }
 
 class ORMNaviMessage {
-	static current_message = null;
     el = null;
     constructor (obj) {
         Object.assign(this, obj);
@@ -133,13 +134,12 @@ class ORMNaviMessage {
 			//debugger;
 			switch (status) {
 				case "success":
-					//$("message[message_id='"+ORMNaviMessage.current_message+"']").hide();
 				break;
 				default:
 					showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
 			}
 		});
-		ORMNaviMessage.current_message = this.id;
+		ORMNaviCurrentMessage = this.id;
     }
 	flag() {
         sendDataToNavi('apiFlagMessage', {message_id: this.id, flag: (this.flagged=='1'?0:1)}, 
@@ -148,13 +148,12 @@ class ORMNaviMessage {
 			//debugger;
 			switch (status) {
 				case "success":
-					//$("message[message_id='"+ORMNaviMessage.current_message+"']").hide();
 				break;
 				default:
 					showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
 			}
 		});
-		ORMNaviMessage.current_message = this.id;
+		ORMNaviCurrentMessage = this.id;
 	}
 }
 
@@ -219,26 +218,77 @@ class ORMNaviOrder {
 }
 
 class ORMNaviFactory {
-	static current_order = null;
-	static workloads = null;
-	static user = null;
-	static users = null;
-	static updateFactoryInfo() {
+	constructor () {
+		this.updateFactoryInfo();
+	}
+	updateFactoryInfo() {
 		sendDataToNavi("apiGetFactoryInfo", undefined, function(data, status){
 			hideLoading();
 			switch (status) {
 				case "success":
 					var ls = JSON.parse(data);
-					ORMNaviFactory.workloads = ls.data.workloads;
-					ORMNaviFactory.user = ls.data.user;
-					ORMNaviFactory.users = ls.data.users;
-
-					$('#menu-user').text(ORMNaviFactory.user.name);
+					Object.assign(NaviFactory, ls.data);
+					$('#menu-user').text(NaviFactory.currentUser.name);
 					updateMessages();
+					loadInstance();
 					break;
 				default:
 					showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
 			}
+		});
+	}
+	draw(element) {
+		var map = new nppcMap(NaviFactory.map.bounds, element.innerWidth(), element.innerHeight());
+		if (!NaviFactory.workcenters || !NaviFactory.roads) return;
+		var s = '<svg  width="'+element.innerWidth()+'px" height="'+element.innerHeight()+'px">';
+		for(let [ind, road] of Object.entries(NaviFactory.roads)){
+			var from = NaviFactory.workcenters[road.from];
+			var to = NaviFactory.workcenters[road.to];
+			if (from && to) {
+				var fromLoc = map.parseLeftTopRightBottom(from.location);
+				var toLoc = map.parseLeftTopRightBottom(to.location);
+				var fromcx = map.LAT2X((fromLoc._leftEdge + fromLoc._rightEdge)/2);
+				var fromcy = map.LNG2Y((fromLoc._topEdge + fromLoc._bottomEdge)/2);
+				var tocx = map.LAT2X((toLoc._leftEdge + toLoc._rightEdge)/2);
+				var tocy = map.LNG2Y((toLoc._topEdge + toLoc._bottomEdge)/2);
+				var roadClass = "noduty";
+				if (road.capacity && road.assigns) {
+					var c = road.capacity;
+					var a = road.assigns;
+					var k = a / c;
+					if (k > 1) k = 1.0;
+					k = Math.round(k * 12) - 1;
+					roadClass = "duty-"+k;
+				}
+				s += '<line road="'+ind+'" class="road '+roadClass+'" x1="'+fromcx+'" y1="'+fromcy+'" x2="'+tocx+'" y2="'+tocy+'"/>';
+			}
+		}
+		for (let [ind, wc] of Object.entries(NaviFactory.workcenters)) {
+			var wcloc = map.parseLeftTopRightBottom(wc.location);
+			wcloc._leftEdge = map.LAT2X(wcloc._leftEdge);
+			wcloc._rightEdge = map.LAT2X(wcloc._rightEdge);
+			wcloc._topEdge = map.LNG2Y(wcloc._topEdge);
+			wcloc._bottomEdge = map.LNG2Y(wcloc._bottomEdge);
+			var wcClass = "noduty";
+			var k = 0;
+			var n = 0;
+			for (let [i, op] of Object.entries(wc.capacity)) {
+				k += wc.assigns[i]/op;
+				n++;
+			}
+			k = k /n;	
+			if (k > 1) k = 1.0;
+			k = Math.round(k * 12) - 1;
+			wcClass = "duty-"+k;
+
+			s += '<rect class="workcenter '+wcClass+'" workcenter="'+ind+'" x="'+wcloc._leftEdge+'" y="'+wcloc._topEdge+'" width="'+ (wcloc._rightEdge - wcloc._leftEdge)+'" height="'+(wcloc._bottomEdge - wcloc._topEdge)+'" rx="5" ry="5"/>';
+			s += '<text workcenter="'+ind+'" x="0" y="0" textLength="'+((wcloc._rightEdge - wcloc._leftEdge)* 0.9)+'" >'+wc.name+'</text>';
+		}		
+		s += '</svg>';
+		element.html(s);
+		$('text[workcenter]').each(function(){
+			$(this).attr('x', $('rect[workcenter="'+ $(this).attr('workcenter')+'"]').attr('x')+'px');
+			$(this).attr('y', ($('rect[workcenter="'+ $(this).attr('workcenter')+'"]').attr('y')) + 'px');
 		});
 	}
 }
@@ -265,13 +315,11 @@ function modalOrderInfo(order_number) {
 				$("orderinfo > order-history > event > workcenter").each (function () {
 					var w = $(this).attr("name");
 					var o = $(this).attr("operation");
-					if (w in ORMNaviFactory.workloads.workcenters.capacity && 
-						w in ORMNaviFactory.workloads.workcenters.assigns && 
-						o in ORMNaviFactory.workloads.workcenters.capacity[w] &&
-						o in ORMNaviFactory.workloads.workcenters.assigns[w]) {
+					if (o in NaviFactory.workcenters[w].capacity &&
+						o in NaviFactory.workcenters[w].assigns) {
 						
-						var c = ORMNaviFactory.workloads.workcenters.capacity[w][o];
-						var a = ORMNaviFactory.workloads.workcenters.assigns[w][o];
+						var c = NaviFactory.workcenters[w].capacity[o];
+						var a = NaviFactory.workcenters[w].assigns[o];
 						var k = a / c;
 						if (k > 1) k = 1.0;
 						k = Math.round(k * 12) - 1;
@@ -281,15 +329,15 @@ function modalOrderInfo(order_number) {
 					}
 				});
 				$("orderinfo > order-history > event > workcenter").on ('click', function(){
-					ORMNaviFactory.current_order = $("orderinfo order-header number").text();
+					ORMNaviCurrentOrder = $("orderinfo order-header number").text();
 					workcenter($(this).attr("name"));
 				});
 
 				$("orderinfo > order-history > event > road").each (function () {
 					var r = $(this).attr("name");
-					if (r in ORMNaviFactory.workloads.roads.capacity && r in ORMNaviFactory.workloads.roads.assigns) {
-						var c = ORMNaviFactory.workloads.roads.capacity[r];
-						var a = ORMNaviFactory.workloads.roads.assigns[r];
+					if (NaviFactory.roads[r].capacity && NaviFactory.roads[r].assigns) {
+						var c = NaviFactory.roads[r].capacity;
+						var a = NaviFactory.roads[r].assigns[r];
 						var k = a / c;
 						if (k > 1) k = 1.0;
 						k = Math.round(k * 12) - 1;
@@ -306,9 +354,9 @@ function modalOrderInfo(order_number) {
 						switch (status) {
 							case "success":
 								ls = JSON.parse(data);
-								ORMNaviFactory.user = ls.data;
-								if (ORMNaviFactory.user && 
-								ORMNaviFactory.user.subscriptions.includes("#"+$("orderinfo order-header number").text())) {
+								NaviFactory.currentUser = ls.data;
+								if (NaviFactory.currentUser && 
+									NaviFactory.currentUser.subscriptions.includes("#"+$("orderinfo order-header number").text())) {
 									showInformation("You're subscribed!");
 									$("#btn-subscribe").text("Unsubscribe");
 								} else {
@@ -322,14 +370,14 @@ function modalOrderInfo(order_number) {
 						}
 					});
 				});
-				if (ORMNaviFactory.user && 
-				ORMNaviFactory.user.subscriptions.includes("#"+$("orderinfo order-header number").text())) {
+				if (NaviFactory.currentUser && 
+					NaviFactory.currentUser.subscriptions.includes("#"+$("orderinfo order-header number").text())) {
 					$("#btn-subscribe").text("Unsubscribe");
 				} else {
 					$("#btn-subscribe").text("Subscribe");
 				}
 				$("orderinfo > order-history > event > road").on ('click', function(){
-					ORMNaviFactory.current_order = $("orderinfo order-header number").text();
+					ORMNaviCurrentOrder = $("orderinfo order-header number").text();
 					road($(this).attr("name"));
 				});
 				$("#dlgOrderModal").modal('show');

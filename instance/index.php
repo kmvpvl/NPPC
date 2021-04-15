@@ -42,8 +42,7 @@
 	</ul>
 	</div>
 </nav>
-<instance>
-</instance>
+<instance></instance>
 <messages>
 <messages-toolbar>
 <button type="button" class="ml-2 mb-1 close" messages="collapse">&times;</button>
@@ -201,7 +200,6 @@ function filterMessages(){
 }
 
 function updateMessages() {
-	if (!$("instance").html()) return;
 	sendDataToNavi("apiGetMessages", undefined, 
 	function(data, status) {
 		//debugger;
@@ -229,18 +227,18 @@ function updateMessages() {
 				$("messages messages-container message message-time").prepend('<i class="fa fa-clock-o" aria-hidden="true"></i>');
 				
 				scrollMessages();
-				if (ORMNaviFactory.user && ORMNaviFactory.user.subscriptions) {
+				if (NaviFactory.currentUser && NaviFactory.currentUser.subscriptions) {
 					$("#slct-message-byorder").html("");
 					$("#slct-message-byorder").append('<option value="">All orders</option>');
-					var a = ORMNaviFactory.user.subscriptions.split(';');
+					var a = NaviFactory.currentUser.subscriptions.split(';');
 					a.forEach(element => {
 						$("#slct-message-byorder").append('<option value="'+element+'">'+element+'</option>');
 					});
 				}
-				if (ORMNaviFactory.users) {
+				if (NaviFactory.users) {
 					$("#slct-message-byuser").html("");
 					$("#slct-message-byuser").append('<option value="">All users</option>');
-					for (var username in ORMNaviFactory.users) {
+					for (var username in NaviFactory.users) {
 						if ($("#username").val() != username) {
 							$("#slct-message-byuser").append('<option value="'+username+'">'+username+'</option>');
 						}
@@ -305,6 +303,10 @@ function tryLogin() {
 		showLoginForm();
 		return;
 	}
+	NaviFactory = new ORMNaviFactory();
+}
+function loadInstance() {
+	if ($('instance').html()) return;
 	sendDataToNavi("factory", undefined, 
 	function(data, status){
 		hideLoading();
@@ -312,9 +314,8 @@ function tryLogin() {
 			case "success":
 				$("#loginform").hide();
 				$("instance").html(data);
-				ORMNaviFactory.updateFactoryInfo();
 				setInterval( function () {
-					ORMNaviFactory.updateFactoryInfo();
+					NaviFactory.updateFactoryInfo();
 				}, 60000);
 				break;
 			default:

@@ -1,17 +1,22 @@
 class nppcMap {
 	constructor (lefttoprightbottom, imageWidth, imageHeight) {
+		Object.assign(this, this.parseLeftTopRightBottom(lefttoprightbottom));
+		this._imageWidth = imageWidth;
+		this._imageHeight = imageHeight;
+	}
+	parseLeftTopRightBottom(lefttoprightbottom) {
+		var ret = new Object();
 		var lr = lefttoprightbottom.split(";");
 		if (lr.length != 2) throw "Semicolon was expected as separator of left top & bottom right corners";
 		var l = lr[0].split(",");
 		if (l.length != 2) throw "Comma was expected as separator of LAT & LNG";
-		this._leftEdge = Number(l[0]);
-		this._topEdge = Number(l[1]);
+		ret._leftEdge = Number(l[0]);
+		ret._topEdge = Number(l[1]);
 		var r = lr[1].split(",");
 		if (r.length != 2) throw "Comma was expected as separator of LAT & LNG";
-		this._rightEdge = Number(r[0]);
-		this._bottomEdge = Number(r[1]);
-		this._imageWidth = imageWidth;
-		this._imageHeight = imageHeight;
+		ret._rightEdge = Number(r[0]);
+		ret._bottomEdge = Number(r[1]);
+		return ret;
 	} 
 	get leftEdge() {
 		return this._leftEdge;

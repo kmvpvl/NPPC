@@ -148,7 +148,12 @@ class ORMNaviMessage implements JsonSerializable {
 	protected $flagged;
 	protected function _arrayImport(array $a) {
 		foreach ($a as $key=>$value) {
-			if (is_null($this->$key)) $this->$key = $value;
+			if(is_null($this->$key)) {
+				$d = DateTime::createFromFormat('Y-m-d H:i:s', $value, $this->factory->timezone);
+				if ($d !== false) {
+					$this->$key = $d;
+				} else $this->$key = $value;
+			}
 		}
 	}
 	static public function createFromArray(ORMNaviFactory $factory, array $a) {
@@ -229,14 +234,14 @@ class ORMNaviMessage implements JsonSerializable {
 		}
 	}
     public function jsonSerialize() {
-        return [
+		return [
 			"factory"=>$this->factory->name,
 			"id"=>$this->id,
 			"body"=>$this->body,
 			"type"=>$this->type,
 			"tags"=>$this->tags,
 			"from"=>$this->from,
-			"message_time"=>$this->message_time,
+			"message_time"=>$this->message_time->format(DateTime::RFC1036),
 			"read_time"=>$this->read_time,
 			"thread_id"=>$this->thread_id,
 			"flagged"=>$this->flagged
@@ -258,6 +263,38 @@ abstract class ORMNaviOrderStates {
 	const ASSIGNED = "ASSIGNED";
 	const PAUSED = "PAUSED";
 	const ABANDONED = "ABANDONED";
+}
+class ORMNaviOrderEvent implements JsonSerializable {
+	protected $factory = null;
+	protected function _arrayImport(array $a) {
+		foreach ($a as $key=>$value) {
+			$d = DateTime::createFromFormat('Y-m-d H:i:s', $value, $this->factory->timezone);
+			if ($d !== false) {
+				$this->$key = $d;
+			} else $this->$key = $value;
+		}
+	}
+	function __construct(ORMNaviFactory $factory, array $arr)
+	{
+		$this->factory = $factory;
+		$this->_arrayImport($arr);
+	}
+    public function jsonSerialize() {
+		$ret = [];
+		foreach ($this as $key=>$value) {
+			if (!($value instanceof ORMNaviFactory)) {
+				if ($value instanceof DateTime) {
+					$ret[$key] = $value->format(DateTime::RFC1036);
+				} else {
+					$ret[$key] = $value;
+				}
+			}
+		}
+        return $ret;
+    }
+	function __debugInfo() {
+		return $this->jsonSerialize();
+	}
 }
 class ORMNaviOrder implements JsonSerializable {
 	protected $factory = null;
@@ -377,7 +414,7 @@ class ORMNaviOrder implements JsonSerializable {
         if (!$x) throw new ORMNaviException("Could not get order history info" . "': " . $this->factory->dblink->errno . " - " . $this->factory->dblink->error . "call getOrderHistory(" . $this->id . ")"); 
         $this->history = [];
         while ($y = $x->fetch_assoc()) {
-            $this->history[] = $y;
+            $this->history[] = new ORMNaviOrderEvent($this->factory, $y);
         }
 		$x->free_result();
 		$this->factory->dblink->next_result();
@@ -530,12 +567,12 @@ class ORMNaviOrder implements JsonSerializable {
 			case "operation": 
 			   // looking for order part at workcenter
 			   $found = FALSE;
-			   foreach ($this->history as $wcp) {
-				   if ($wcp["order_part"] == $route_root["ref"]) {
+			   foreach ($this->history as $wcp_key=>$wcp) {
+				   if ($wcp->order_part == $route_root["ref"]) {
 					   $found = TRUE;
-					   $x = $this->factory->dblink->query("select getAssignConsumptionInWorkcenter(" . $wcp["id"] . ") as consumption");
+					   $x = $this->factory->dblink->query("select getAssignConsumptionInWorkcenter(" . $wcp->id . ") as consumption");
 					   
-					   if (!$x) throw new ORMNaviException("Could not get time consumption" . "': " . $this->factory->dblink->errno . " - " . $this->factory->dblink->error . " select getAssignConsumptionInWorkcenter(" . $wcp["id"] . ") as consumption"); 
+					   if (!$x) throw new ORMNaviException("Could not get time consumption" . "': " . $this->factory->dblink->errno . " - " . $this->factory->dblink->error . " select getAssignConsumptionInWorkcenter(" . $wcp->id . ") as consumption"); 
 					   $y = $x->fetch_assoc(); 
 					   $x->free_result();
 					   $this->factory->dblink->next_result();
@@ -628,7 +665,7 @@ class ORMNaviOrder implements JsonSerializable {
 		}
         $this->history = [];
         while ($y = $x->fetch_assoc()) {
-            $this->history[] = $y;
+            $this->history[] = new ORMNaviOrderEvent($this->factory, $y);
         }
 		$x->free_result();
 		$this->factory->dblink->next_result();
@@ -641,7 +678,7 @@ class ORMNaviOrder implements JsonSerializable {
 	    $this->factory->dblink->autocommit(true);
 	}
 }
-class ORMNaviFactory {
+class ORMNaviFactory implements JsonSerializable {
     // factory mnemonic unique ID in this instance
 	private $factory = "";
 	// client ID one-to-one with factory.Filled from database. An ID in database
@@ -742,6 +779,62 @@ class ORMNaviFactory {
 				# code...
 				break;
 		}
+	}
+	public function jsonSerialize(){
+		$ret = [];
+		$ret['currentUser'] = $this->user;
+		$ret['name'] = trim($this->factory_xml['name']);
+		$map = [];
+		$map['image'] = trim($this->factory_xml['img']);
+		$map['bounds'] = trim($this->factory_xml['map']);
+		$ret['map'] = $map;
+		$wcwl = $this->getWorkcentersWorkload();
+		$rdwl = $this->getRoadsWorkload();
+		$workcenters = [];
+		$wx = $this->factory_xml->xpath('workcenter');
+		foreach ($wx as $wcx) {
+			$wc = [];
+			$wcxid = (string)$wcx["id"];
+			$wc['location'] = (string)$wcx['location'];
+			$wc['name'] = trim($wcx);
+			if (array_key_exists($wcxid,$wcwl['capacity'])) {
+				$wc['capacity'] = $wcwl['capacity'][$wcxid];
+			} else {
+				$wc['capacity'] = null;
+			}
+			if (array_key_exists($wcxid,$wcwl['assigns'])) {
+				$wc['assigns'] = $wcwl['assigns'][$wcxid];
+			} else {
+				$wc['assigns'] = null;
+			}
+			$workcenters[$wcxid] = $wc;
+		}
+		$ret['workcenters'] = $workcenters;
+		$roads = [];
+		$rx = $this->factory_xml->xpath('road');
+		foreach ($rx as $rdx) {
+			$rd = [];
+			$rdxid = (string)$rdx["id"];
+			$rd['from'] = (string)$rdx['from'];
+			$rd['to'] = (string)$rdx['to'];
+			$rd['autodelivery'] = (string)$rdx['autodelivery'];
+			$rd['reverse'] = (string)$rdx['reverse'];
+			$rd['name'] = trim($rdx);
+			if (array_key_exists($rdxid,$rdwl['capacity'])) {
+				$rd['capacity'] = $rdwl['capacity'][$rdxid];
+			} else {
+				$rd['capacity'] = null;
+			}
+			if (array_key_exists($rdxid,$rdwl['assigns'])) {
+				$rd['assigns'] = $rdwl['assigns'][$rdxid];
+			} else {
+				$rd['assigns'] = null;
+			}
+			$roads[$rdxid] = $rd;
+		}
+		$ret['roads'] = $roads;
+		$ret['users'] = $this->getUsersList();
+		return $ret;
 	}
 
 	public function getMDMCustomer(string $customer_ref): SimpleXMLElement {
