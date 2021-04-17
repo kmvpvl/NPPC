@@ -14,10 +14,11 @@ $('[road]').click(function(){
 $('[workcenter]').click(function(){
 	workcenter($(this).attr('workcenter'));
 });
-$('instance').resize(function(){
-	debugger;
+function resizeOn(){
+	$('#factoryMap').outerWidth($('instance').width());
+	$('#factoryMap').outerHeight($('instance').height()-$('#factoryMap').position().top);
 	NaviFactory.draw($('#factoryMap'));
-});
+};
 </script>
 <factory>
 <input type="text" class="form-control" placeholder="Search orders or anything..."></input>

@@ -115,7 +115,9 @@ function collapseMessages() {
 }
 $(document).ready (function (){
 	$(window).resize(function() {
-		$('instance').css('height', $(window).height()-$('instance').position().top + "px");
+		$('instance').outerWidth($(window).width());
+		$('instance').outerHeight($(window).height()-$('instance').position().top);
+		if (typeof(resizeOn) == 'function') resizeOn();
 		$("#loadingSpinner").offset({
 			top: ($('body').innerHeight() - $("#loadingSpinner").outerHeight()) / 2, 
 			left: ($('body').innerWidth() - $("#loadingSpinner").outerWidth()) / 2
