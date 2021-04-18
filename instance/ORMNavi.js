@@ -281,14 +281,31 @@ class ORMNaviFactory {
 			k = Math.round(k * 12) - 1;
 			wcClass = "duty-"+k;
 
-			s += '<rect class="workcenter '+wcClass+'" workcenter="'+ind+'" x="'+wcloc._leftEdge+'" y="'+wcloc._topEdge+'" width="'+ (wcloc._rightEdge - wcloc._leftEdge)+'" height="'+(wcloc._bottomEdge - wcloc._topEdge)+'" rx="5" ry="5"/>';
-			s += '<text workcenter="'+ind+'" x="0" y="0" textLength="'+((wcloc._rightEdge - wcloc._leftEdge)* 0.9)+'" >'+wc.name+'</text>';
+			s += '<rect class="workcenter '+wcClass+'" workcenter="'+ind+'" duty="'+k+'" x="'+wcloc._leftEdge+'" y="'+wcloc._topEdge+'" width="'+ (wcloc._rightEdge - wcloc._leftEdge)+'" height="'+(wcloc._bottomEdge - wcloc._topEdge)+'" rx="5" ry="5"/>';
+			s += '<text workcenter="'+ind+'" x="0" y="0" >'+wc.name+'</text>';
 		}		
 		s += '</svg>';
 		element.html(s);
 		$('text[workcenter]').each(function(){
-			$(this).attr('x', $('rect[workcenter="'+ $(this).attr('workcenter')+'"]').attr('x')+'px');
-			$(this).attr('y', ($('rect[workcenter="'+ $(this).attr('workcenter')+'"]').attr('y')) + 'px');
+			var w = Number($('rect[workcenter="'+ $(this).attr('workcenter')+'"]').attr('width'));
+			var h = Number($('rect[workcenter="'+ $(this).attr('workcenter')+'"]').attr('height'));
+			var x = Number($('rect[workcenter="'+ $(this).attr('workcenter')+'"]').attr('x'))+ (w * 0.05);
+			var y = Number($('rect[workcenter="'+ $(this).attr('workcenter')+'"]').attr('y'))+20;
+			$(this).attr('x', x + 'px');
+			$(this).attr('y', y + 'px');
+			if (w > h) {
+				$(this).attr('textLength', w * 0.9);
+			} else {
+				$(this).attr('textLength', h * 0.9);
+				$(this).attr('transform', 'translate('+(x-y+10)+', '+(y+x+h*0.9*0.95)+') rotate(-90)');
+			}
+
+			var d = Number($('rect[workcenter="'+ $(this).attr('workcenter')+'"]').attr('duty'));
+			if (d < 6) {
+				$(this).attr('fill', 'black');
+			} else {
+				$(this).attr('fill', 'white');
+			}
 		});
 	}
 }
