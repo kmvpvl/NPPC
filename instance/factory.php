@@ -15,6 +15,7 @@ $('[workcenter]').click(function(){
 	workcenter($(this).attr('workcenter'));
 });
 function resizeOn(){
+	if(!$('#factoryMap').length) return; 
 	$('#factoryMap').outerWidth($('instance').width());
 	$('#factoryMap').outerHeight($('instance').height()-$('#factoryMap').position().top);
 	NaviFactory.draw($('#factoryMap'));
