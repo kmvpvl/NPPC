@@ -354,7 +354,7 @@ function modalOrderInfo(order_number) {
 					var r = $(this).attr("name");
 					if (NaviFactory.roads[r].capacity && NaviFactory.roads[r].assigns) {
 						var c = NaviFactory.roads[r].capacity;
-						var a = NaviFactory.roads[r].assigns[r];
+						var a = NaviFactory.roads[r].assigns;
 						var k = a / c;
 						if (k > 1) k = 1.0;
 						k = Math.round(k * 12) - 1;
