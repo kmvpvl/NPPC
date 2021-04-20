@@ -7,18 +7,20 @@ $(".nav-link.active").removeClass("active");
 $(".nav-item.active").removeClass("active");
 $("#menuFactory").addClass("active");
 $(".navbar-brand").text(NaviFactory.name+": Overview");
-NaviFactory.draw($('#factoryMap'));
-$('[road]').click(function(){
-	road($(this).attr("road"));
-});
-$('[workcenter]').click(function(){
-	workcenter($(this).attr('workcenter'));
-});
+function redraw() {
+	NaviFactory.draw($('#factoryMap'));
+	$('[road]').click(function(){
+		road($(this).attr("road"));
+	});
+	$('[workcenter]').click(function(){
+		workcenter($(this).attr('workcenter'));
+	});
+}
 function resizeOn(){
 	if(!$('#factoryMap').length) return; 
 	$('#factoryMap').outerWidth($('instance').width());
 	$('#factoryMap').outerHeight($('instance').height()-$('#factoryMap').position().top);
-	NaviFactory.draw($('#factoryMap'));
+	redraw();
 };
 </script>
 <factory>
