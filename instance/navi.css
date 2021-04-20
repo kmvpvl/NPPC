@@ -128,12 +128,7 @@ instance {
     position: absolute;
     display: none;
     color: darkblue;
-    border-radius: 1em;
-    border: darkblue 2px solid;
-    background-color: silver;
     cursor: pointer;
-    width: 3em;
-    height: 2em;
     text-align: center;
     z-index: 1;
     animation: btnContext 3s infinite;
@@ -144,18 +139,25 @@ instance {
 #btnOrderMove {
     position: absolute;
     display: none;
-    color: darkgreen;
-    border-radius: 1em;
-    border: darkgreen 2px solid;
-    background-color: silver;
+    color: goldenrod;
     cursor: pointer;
-    width: 3em;
-    height: 2em;
     text-align: center;
     z-index: 1;
     animation: btnContext 3s infinite;
     margin:auto;
     font-size: x-large;
+}
+
+#btnsPriority {
+    position: absolute;
+    display: none;
+    cursor: pointer;
+    color: darkblue;
+    z-index: 1;
+    animation: btnContext 3s infinite;
+    margin:auto;
+    font-size: x-large;
+    text-align: center;
 }
 #informationMessage{
     z-index: 2;

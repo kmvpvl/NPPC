@@ -34,7 +34,13 @@ function ordersUpdated(data, status) {
 						left: $("order[number].selected").position().left/*+$("order[number].selected").outerWidth()*/+'px',
 						top: $("order[number].selected").position().top+$("order[number].selected").outerHeight()+'px'
 					});
+					$("#btnsPriority").show();
+					$("#btnsPriority").css({
+						left: ($("order[number].selected").position().left+$("#btnOrderInfo").outerWidth())+'px',
+						top: $("order[number].selected").position().top+$("order[number].selected").outerHeight()+'px'
+					});
 				} else {
+					$("#btnsPriority").hide();
 					$("#btnOrderInfo").hide();
 				}
 			})
@@ -127,7 +133,8 @@ $("#btnOrderInfo").on('click', function(){
 	<label for="message-text" class="col-form-label">Message:</label>
 	<textarea class="form-control" id="message-text"></textarea>
 </div>
-<span id="btnOrderInfo"><i class="fa fa-info" aria-hidden="true"></i></span>
+<span id="btnOrderInfo"><i class="fa fa-info-circle" aria-hidden="true"></i></span>
+<span id="btnsPriority"><i class="fa fa-arrow-circle-up" aria-hidden="true"></i><i class="fa fa-arrow-circle-down" aria-hidden="true"></i></span>
 <div class="modal fade" id="dlgImportOrderModal" tabindex="-1" role="dialog" aria-labelledby="dlgOrderImportModalLongTitle" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
