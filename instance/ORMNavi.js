@@ -245,8 +245,8 @@ class ORMNaviFactory {
 			var from = NaviFactory.workcenters[road.from];
 			var to = NaviFactory.workcenters[road.to];
 			if (from && to) {
-				var fromLoc = map.parseLeftTopRightBottom(from.location);
-				var toLoc = map.parseLeftTopRightBottom(to.location);
+				var fromLoc = nppcMap.parseLeftTopRightBottom(from.location);
+				var toLoc = nppcMap.parseLeftTopRightBottom(to.location);
 				var fromcx = map.LAT2X((fromLoc._leftEdge + fromLoc._rightEdge)/2);
 				var fromcy = map.LNG2Y((fromLoc._topEdge + fromLoc._bottomEdge)/2);
 				var tocx = map.LAT2X((toLoc._leftEdge + toLoc._rightEdge)/2);
@@ -264,7 +264,7 @@ class ORMNaviFactory {
 			}
 		}
 		for (let [ind, wc] of Object.entries(NaviFactory.workcenters)) {
-			var wcloc = map.parseLeftTopRightBottom(wc.location);
+			var wcloc = nppcMap.parseLeftTopRightBottom(wc.location);
 			wcloc._leftEdge = map.LAT2X(wcloc._leftEdge);
 			wcloc._rightEdge = map.LAT2X(wcloc._rightEdge);
 			wcloc._topEdge = map.LNG2Y(wcloc._topEdge);

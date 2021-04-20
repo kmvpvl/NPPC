@@ -1,10 +1,10 @@
 class nppcMap {
 	constructor (lefttoprightbottom, imageWidth, imageHeight) {
-		Object.assign(this, this.parseLeftTopRightBottom(lefttoprightbottom));
+		Object.assign(this, nppcMap.parseLeftTopRightBottom(lefttoprightbottom));
 		this._imageWidth = imageWidth;
 		this._imageHeight = imageHeight;
 	}
-	parseLeftTopRightBottom(lefttoprightbottom) {
+	static parseLeftTopRightBottom(lefttoprightbottom) {
 		var ret = new Object();
 		var lr = lefttoprightbottom.split(";");
 		if (lr.length != 2) throw "Semicolon was expected as separator of left top & bottom right corners";
