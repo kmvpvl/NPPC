@@ -128,6 +128,7 @@ instance {
     position: absolute;
     display: none;
     color: darkblue;
+    background-color: white;
     cursor: pointer;
     text-align: center;
     z-index: 1;
@@ -140,6 +141,7 @@ instance {
     position: absolute;
     display: none;
     color: goldenrod;
+    background-color: white;
     cursor: pointer;
     text-align: center;
     z-index: 1;
@@ -150,6 +152,7 @@ instance {
 
 #btnsPriority {
     position: absolute;
+    background-color: white;
     display: none;
     cursor: pointer;
     color: darkblue;
