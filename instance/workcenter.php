@@ -6,7 +6,6 @@ $brand = trim($wcInfo);
 ?>
 <script>
 $(".nav-link.active").removeClass("active");
-$("#menuWorkcenter").addClass("active");
 $(".navbar-brand").text(NaviFactory.name+ "<?=": " . $brand ?>");
 
 function updateOrders() {
