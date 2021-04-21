@@ -2,7 +2,7 @@
 <script src="naviNPPC.js"></script>
 <script src="ORMNavi.js"></script>
 <nav class="navbar navbar-expand-sm navbar-dark bg-dark ml-0">
-	<a class="navbar-brand" href="#">My factory
+	<a class="navbar-brand" href="#">
 	</a>
 	<span id="messages-popup"></span>
 	<!--button type="button" class="btn btn-success">Refresh</button-->
@@ -115,8 +115,8 @@ function collapseMessages() {
 }
 $(document).ready (function (){
 	$(window).resize(function() {
-		$('instance').outerWidth($(window).width());
-		$('instance').outerHeight($(window).height()-$('instance').position().top);
+		//$('instance').outerWidth($(window).width());
+		//$('instance').outerHeight($(window).height()-$('instance').position().top);
 		if (typeof(resizeOn) == 'function') resizeOn();
 		$("#loadingSpinner").offset({
 			top: ($('body').innerHeight() - $("#loadingSpinner").outerHeight()) / 2, 
