@@ -179,6 +179,9 @@ instance {
     z-index: 2;
     display: none;
 }
+.input-group-text {
+    height: auto;
+}
 
 @keyframes order-highlight {
     0%, 100% {
@@ -201,15 +204,15 @@ instance {
     }
 }
 #loginform {
-    display: none;
     position: absolute;
     width: 80%;
-    height: 80%;
+    height: 50%;
     margin: auto;
     top: 0;
     left:0;
     right:0;
     bottom:0;
+    display: none;
 }
 
 messages {
