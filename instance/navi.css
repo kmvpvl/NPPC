@@ -3,16 +3,17 @@
 }
 
 html {
+    height: 100%;
   font-size: 0.8rem;
 }
 body {
-  margin:0;
-  padding:0px;
+    min-height: 100%;
   overflow:hidden;
+  height:100%;
   display: grid;
-  grid-template-rows: auto 1fr 0 0 0;
+  grid-template-rows: auto 1fr;
   grid-template-columns: 1fr;
-  grid-gap: 0.1em;
+  grid-gap: 0.2em;
 }
 a{
     cursor:pointer;
@@ -100,10 +101,23 @@ line.road:hover {
     stroke-width:17;    
 }
 
+tspan[caption] {
+    font-weight:550;
+    font-size: larger;
+}
+tspan[description] {
+    font-size: smaller;
+}
+text.light {
+    fill: white;
+}
+
+text.dark {
+    fill:black;
+}
+
 instance {
-    padding: 0px;
-    margin: 0px;
-    width: 100%;
+    width:100%;
     height:100%;
     overflow-y: hidden;
 }
@@ -122,6 +136,10 @@ instance {
     padding: 0;
     width: 100%;
     height: 100%;
+    min-width: 100%;
+    min-height: 100%;
+    max-width: 100%;
+    max-height: 100%;
 }
 
 #btnOrderInfo {
@@ -164,6 +182,10 @@ instance {
 }
 #informationMessage{
     z-index: 2;
+    display: none;
+}
+.input-group-text {
+    height: auto;
 }
 
 @keyframes order-highlight {
@@ -187,15 +209,15 @@ instance {
     }
 }
 #loginform {
-    display: none;
     position: absolute;
     width: 80%;
-    height: 80%;
+    height: 50%;
     margin: auto;
     top: 0;
     left:0;
     right:0;
     bottom:0;
+    display: none;
 }
 
 messages {

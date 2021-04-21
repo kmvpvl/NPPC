@@ -282,7 +282,11 @@ class ORMNaviFactory {
 			wcClass = "duty-"+k;
 
 			s += '<rect class="workcenter '+wcClass+'" workcenter="'+ind+'" duty="'+k+'" x="'+wcloc._leftEdge+'" y="'+wcloc._topEdge+'" width="'+ (wcloc._rightEdge - wcloc._leftEdge)+'" height="'+(wcloc._bottomEdge - wcloc._topEdge)+'" rx="5" ry="5"/>';
-			s += '<text workcenter="'+ind+'" x="0" y="0" >'+wc.name+'</text>';
+			s += '<text workcenter="'+ind+'" x="0" y="0" ><tspan caption>'+wc.name+'</tspan>';
+			for (let [i, op] of Object.entries(wc.capacity)) {
+				s += '<tspan description>'+i+': cap='+op+', ass='+wc.assigns[i]+'</tspan>';
+			}
+			s += '</text>';
 		}		
 		s += '</svg>';
 		element.html(s);
@@ -293,18 +297,20 @@ class ORMNaviFactory {
 			var y = Number($('rect[workcenter="'+ $(this).attr('workcenter')+'"]').attr('y'))+20;
 			$(this).attr('x', x + 'px');
 			$(this).attr('y', y + 'px');
-			if (w > h) {
-				$(this).attr('textLength', w * 0.9);
+			$(this).find('tspan:gt(0)').attr('x', x + 'px');
+			$(this).find('tspan:gt(0)').attr('dy', '1.2em');
+		if (w > h) {
+				$(this).find('tspan:gt(0)').attr('textLength', w * 0.9);
 			} else {
-				$(this).attr('textLength', h * 0.9);
-				$(this).attr('transform', 'translate('+(x-y+10)+', '+(y+x+h*0.9*0.95)+') rotate(-90)');
+				$(this).find('tspan:gt(0)').attr('textLength', h * 0.9);
+				$(this).attr('transform', 'translate('+(x-y+10)+', '+(y+x+h*0.9)+') rotate(-90)');
 			}
 
 			var d = Number($('rect[workcenter="'+ $(this).attr('workcenter')+'"]').attr('duty'));
 			if (d < 6) {
-				$(this).attr('fill', 'black');
+				$(this).addClass('dark');
 			} else {
-				$(this).attr('fill', 'white');
+				$(this).addClass('light');
 			}
 		});
 	}

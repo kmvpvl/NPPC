@@ -2,7 +2,7 @@
 <script src="naviNPPC.js"></script>
 <script src="ORMNavi.js"></script>
 <nav class="navbar navbar-expand-sm navbar-dark bg-dark ml-0">
-	<a class="navbar-brand" href="#">My factory
+	<a class="navbar-brand" href="#">
 	</a>
 	<span id="messages-popup"></span>
 	<!--button type="button" class="btn btn-success">Refresh</button-->
@@ -36,7 +36,7 @@
 			<div class="dropdown-menu" aria-labelledby="menu-user">
 				<a class="dropdown-item" href="#">My settings</a>
 				<a class="dropdown-item" href="#">My subscriptions</a>
-				<a class="dropdown-item" id="menu-logout">Logout</a>
+				<a class="dropdown-item" id="menu-logout" data-toggle="collapse" data-target=".navbar-collapse.show">Logout</a>
 			</div>
 		</li>
 	</ul>
@@ -53,7 +53,7 @@
 <message-template>
 <div class="input-group">
   <div class="input-group-prepend">
-  <span class="input-group-text">Text</span>
+  <span class="input-group-text"></span>
   <span id="txt-new-message-thread" class="input-group-text"></span>
   <select class="custom-select" id="message_type">
 		<option value="INFO">info</option>
@@ -63,7 +63,7 @@
   </div>
   <textarea id="text-new-message" class="form-control" aria-label="With textarea" rows="1"></textarea>
   <div class="input-group-append">
-	  <button id="btn-send-message" class="btn btn-outline-secondary" type="button">Send</button>
+	  <button id="btn-send-message" class="btn btn-outline-primary" type="button">Send</button>
   </div>
 </div>
 </message-template>    
@@ -79,27 +79,41 @@
 </messages-navigator>
 </messages>
 <div id="loginform">
-	<div class="container">
-		<label for="username">User name</label>
-		<input type="text" placeholder="Enter Username" id="username" name="username" required value="">
-		<label for="password">Password</label>
-		<input type="password" placeholder="Enter Password" id="password" required value=""></input>
-		<label for="factory">Factory</label>
-		<input type="text" placeholder="Enter factory" id="factory" required value=""></input>
-		<label for="timezone">Timezone</label>
-		<select id="timezone" type="select"><option value="+0300" default="default">Moscow</option><option value="+0400">Samara</option></select>
-		<label for="language">Language</label>
-		<select id="language" type="select"><option value="en" default="default">EN</option><option value="ru">RU</option></select>
-		
-		<button id="submitLogin">Login</button>
-		<label>
-		<input type="checkbox" checked="checked" name="remember"> Remember me</input>
-		</label>
+<div class="input-group">
+	<div class="input-group-prepend">
+	<span class="input-group-text">User name</span>
 	</div>
-	
-	<div class="container" style="background-color:#f1f1f1">
-		<span class="psw">Forgot <a href="">password?</a></span>
+	<input class="form-control" type="text" placeholder="Enter Username" id="username" name="username" required value="">
+</div>
+<div class="input-group">
+	<div class="input-group-prepend">
+	<span class="input-group-text">Password</span>
 	</div>
+	<input class="form-control" type="password" placeholder="Enter Password" id="password" required value=""></input>
+	<div class="input-group-append">
+	<button class="form-control btn btn-success" id="submitLogin">Login</button>
+	</div>
+</div>
+<div class="input-group">
+	<div class="input-group-prepend">
+	<span class="input-group-text">Factory</span>
+	</div>
+	<input class="form-control" type="text" placeholder="Enter factory" id="factory" required value=""></input>
+</div>
+<div class="input-group">
+	<div class="input-group-prepend">
+	<span class="input-group-text">Timezone</span>
+	</div>
+	<select class="form-control" id="timezone" type="select"><option value="+0300" default="default">Moscow</option><option value="+0400">Samara</option></select>
+	<div class="input-group-prepend">
+	<span class="input-group-text">Language</span>
+	</div>
+	<select class="form-control" id="language" type="select"><option value="en" default="default">EN</option><option value="ru">RU</option></select>
+</div>
+<div class="container" style="background-color:#f1f1f1">
+	<!--input class="form-control custom-control-input" type="checkbox" checked="checked" name="remember"> Remember me</input-->
+	<span class="psw">Forgot <a href="">password?</a></span>
+</div>
 </div>
 <div id="errorLoadingMessage" class="alert alert-danger alert-dismissible">
     <button type="button" class="close" data-dismiss="alert">&times;</button>
@@ -115,8 +129,8 @@ function collapseMessages() {
 }
 $(document).ready (function (){
 	$(window).resize(function() {
-		$('instance').outerWidth($(window).width());
-		$('instance').outerHeight($(window).height()-$('instance').position().top);
+		//$('instance').outerWidth($(window).width());
+		//$('instance').outerHeight($(window).height()-$('instance').position().top);
 		if (typeof(resizeOn) == 'function') resizeOn();
 		$("#loadingSpinner").offset({
 			top: ($('body').innerHeight() - $("#loadingSpinner").outerHeight()) / 2, 

@@ -18,13 +18,11 @@ function redraw() {
 }
 function resizeOn(){
 	if(!$('#factoryMap').length) return; 
-	$('#factoryMap').outerWidth($('instance').width());
-	$('#factoryMap').outerHeight($('instance').height()-$('#factoryMap').position().top);
 	redraw();
 };
 redraw();
 </script>
 <factory>
 <input type="text" class="form-control" placeholder="Search orders or anything..."></input>
-<div id="factoryMap"></div>
+<span id="factoryMap"></span>
 </factory>
