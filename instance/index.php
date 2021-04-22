@@ -130,7 +130,9 @@ function collapseMessages() {
 $(document).ready (function (){
 	$(window).resize(function() {
 		//$('instance').outerWidth($(window).width());
-		//$('instance').outerHeight($(window).height()-$('instance').position().top);
+		// bug Safari Bug 26559
+		$('instance').outerHeight($('body').height()-$('instance').position().top);
+
 		if (typeof(resizeOn) == 'function') resizeOn();
 		$("#loadingSpinner").offset({
 			top: ($('body').innerHeight() - $("#loadingSpinner").outerHeight()) / 2, 

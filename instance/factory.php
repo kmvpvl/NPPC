@@ -18,6 +18,8 @@ function redraw() {
 }
 function resizeOn(){
 	if(!$('#factoryMap').length) return; 
+	// bug Safari Bug 26559
+	$('#factoryMap').outerHeight($('factory').height()-$('factory').position().top);
 	redraw();
 };
 redraw();
