@@ -175,8 +175,17 @@ class ORMNaviOrder {
 		var cd = new Date();
 		
 		var tmp = '<order-header>';
+		if (this.priority && this.priority !=0) {
+			if (this.priority > 0) {
+				tmp += '<order-priority>'+this.priority+'<i class="fa fa-long-arrow-up" aria-hidden="true"></i>'+"</order-priority>"
+			} else {
+				tmp += '<order-priority>'+'<i class="fa fa-long-arrow-down" aria-hidden="true"></i>'+Math.abs(this.priority)+"</order-priority>"
+			}
+		} else {
+			//tmp += '<order-priority>'+'<i class="fa fa-square" aria-hidden="true"></i>'+"</order-priority>"
+		}
 		tmp += '<order-caption>ORDER #</order-caption>';
-		tmp += '<number>'+this.number+"</number>"
+		tmp += '<order-number>'+this.number+"</order-number>"
 		tmp += "<order-customer>"+this.customer.name+"</order-customer>"
 		tmp += "<order-products>";
 		for (ind in this.products) tmp += "<order-product>"+this.products[ind].name+"</order-product>"
@@ -352,7 +361,7 @@ function modalOrderInfo(order_number) {
 					}
 				});
 				$("orderinfo > order-history > event > workcenter").on ('click', function(){
-					ORMNaviCurrentOrder = $("orderinfo order-header number").text();
+					ORMNaviCurrentOrder = $("orderinfo order-header order-number").text();
 					workcenter($(this).attr("name"));
 				});
 
@@ -370,7 +379,7 @@ function modalOrderInfo(order_number) {
 					}
 				});
 				$("#btn-subscribe").click(function(){
-					sendDataToNavi("apiSubscribe", {tag: "#"+$("orderinfo order-header number").text()},
+					sendDataToNavi("apiSubscribe", {tag: "#"+$("orderinfo order-header order-number").text()},
 					function(data, status){
 						hideLoading();
 						//debugger;
@@ -379,7 +388,7 @@ function modalOrderInfo(order_number) {
 								ls = JSON.parse(data);
 								NaviFactory.currentUser = ls.data;
 								if (NaviFactory.currentUser && 
-									NaviFactory.currentUser.subscriptions.includes("#"+$("orderinfo order-header number").text())) {
+									NaviFactory.currentUser.subscriptions.includes("#"+$("orderinfo order-header order-number").text())) {
 									showInformation("You're subscribed!");
 									$("#btn-subscribe").text("Unsubscribe");
 								} else {
@@ -394,13 +403,13 @@ function modalOrderInfo(order_number) {
 					});
 				});
 				if (NaviFactory.currentUser && 
-					NaviFactory.currentUser.subscriptions.includes("#"+$("orderinfo order-header number").text())) {
+					NaviFactory.currentUser.subscriptions.includes("#"+$("orderinfo order-header order-number").text())) {
 					$("#btn-subscribe").text("Unsubscribe");
 				} else {
 					$("#btn-subscribe").text("Subscribe");
 				}
 				$("orderinfo > order-history > event > road").on ('click', function(){
-					ORMNaviCurrentOrder = $("orderinfo order-header number").text();
+					ORMNaviCurrentOrder = $("orderinfo order-header order-number").text();
 					road($(this).attr("name"));
 				});
 				$("#dlgOrderModal").modal('show');

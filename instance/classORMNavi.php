@@ -623,7 +623,15 @@ class ORMNaviOrder implements JsonSerializable {
 		}
         $this->factory->dblink->next_result();
 	}
-
+	public function incPriority (int $delta) {
+		$sql = "call incOrderPriority(" . $this->id . ", ".$delta.");";
+		$this->factory->dblink->query($sql);
+		if ($this->factory->dblink->errno) {
+		    throw new ORMNaviException("Unexpected error while change order priority" . "': " . $this->factory->dblink->errno . " - " . $this->factory->dblink->error . $sql);
+		}
+		$this->priority += $delta;
+        $this->factory->dblink->next_result();
+	}
 	protected function _assignOrderRouteRecur(SimpleXMLElement $routeEl) {
 	    if (count($routeEl->children()) == 0 && $routeEl->getName() == "operation" ) {
 			$sql = "call assignWorkcenterToRoutePart('" . $this->factory->name . "', '" . $this->id . "', '" . $routeEl["ref"] . "', '" . $routeEl["refref"] . "', '" . $routeEl["workcenter"] . "', 'INCOME', " . $routeEl["consumption"] . ")";
