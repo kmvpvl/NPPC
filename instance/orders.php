@@ -134,7 +134,7 @@ $("#btnOrderInfo").on('click', function(){
 	<textarea class="form-control" id="message-text"></textarea>
 </div>
 <span id="btnOrderInfo"><i class="fa fa-info-circle" aria-hidden="true"></i></span>
-<span id="btnsPriority"><i class="fa fa-arrow-circle-up" aria-hidden="true"></i><i class="fa fa-arrow-circle-down" aria-hidden="true"></i></span>
+<span id="btnsPriority"><i id="btnPriorityUp" class="fa fa-arrow-circle-up" aria-hidden="true"></i><i id="btnPriorityDown" class="fa fa-arrow-circle-down" aria-hidden="true"></i></span>
 <div class="modal fade" id="dlgImportOrderModal" tabindex="-1" role="dialog" aria-labelledby="dlgOrderImportModalLongTitle" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
@@ -202,6 +202,38 @@ $("#btn-import-order").click(function(){
 				;
 		}
 	});
+});
+$('#btnPriorityUp').click(function(){
+    if ($("order[number].selected").length == 1) {
+        var order = $("order[number].selected").attr("number");
+		sendDataToNavi('apiIncOrderPriority', {order: order, delta: 1}, function(data, status){
+			hideLoading();
+			switch (status) {
+				case "success":
+					updateAllOrders();
+					showInformation("Priority was changed!");
+					break;
+				default:
+					;
+			}
+		});
+    }
+});
+$('#btnPriorityDown').click(function(){
+    if ($("order[number].selected").length == 1) {
+        var order = $("order[number].selected").attr("number");
+		sendDataToNavi('apiIncOrderPriority', {order: order, delta: -1}, function(data, status){
+			hideLoading();
+			switch (status) {
+				case "success":
+					updateAllOrders();
+					showInformation("Priority was changed!");
+					break;
+				default:
+					;
+			}
+		});
+    }
 });
 if (NaviFactory.users) {
 	$("#slct-import-order-owner").html("");
