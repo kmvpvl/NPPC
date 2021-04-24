@@ -38,14 +38,14 @@ function recieveDataFromNavi(data, status) {
 			try {
 				ls = JSON.parse(data);
 				if (ls.result == 'FAIL') {
-					showLoadingError("Error: " + " - " + ls.description);
+					showLoadingError("Error on server: " + ls.description);
 				} 
 			} catch(e) {
-				showLoadingError("Error on server: " + e + " - " + data);
+				showLoadingError("Wrong data from server: " + e + " - " + data);
 			}
 			break;
 		default:
-			showLoadingError("Error on server: " + " - " + data);
+			showLoadingError("Unsuccessful request: " + " - " + data);
 	}
 	return ls;
 }

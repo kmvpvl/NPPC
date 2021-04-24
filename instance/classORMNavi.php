@@ -689,6 +689,7 @@ class ORMNaviOrder implements JsonSerializable {
         $this->factory->dblink->next_result();
 	}
 	public function incPriority (int $delta) {
+		if (!$this->factory->user->hasRole("CHANGE_ORDERS_PRIORITY")) throw new ORMNaviException("User has no rights");
 		$sql = "call incOrderPriority(" . $this->id . ", ".$delta.");";
 		$this->factory->dblink->query($sql);
 		if ($this->factory->dblink->errno) {
