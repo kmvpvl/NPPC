@@ -273,7 +273,7 @@ function updateMessages() {
 				$('message button[message="reply"]').click(function(){
 					$("#txt-new-message-thread").text($(this).parent()[0].ORMNaviMessage.id);
 					var q = "";
-					if ($(this).parent()[0].ORMNaviMessage.from.indexOf(" ")) q = '"';
+					if ($(this).parent()[0].ORMNaviMessage.from.indexOf(" ")>=0) q = '"';
 					$("#text-new-message").val("@"+q+$(this).parent()[0].ORMNaviMessage.from + q+" " +$("#text-new-message").val());
 					$("#text-new-message").focus();					
 				});

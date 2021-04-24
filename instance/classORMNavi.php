@@ -21,6 +21,17 @@ class ORMNaviRole implements JsonSerializable {
 	public function addContext(array $context) {
 		$this->context = $context;
 	}
+	function __get($name){
+		switch ($name) {
+			case 'description':
+				return $this->description;
+				break;
+			
+			default:
+				# code...
+				break;
+		}
+	}
 }
 
 class ORMNaviRoles implements JsonSerializable {
@@ -31,7 +42,6 @@ class ORMNaviRoles implements JsonSerializable {
 		$this->roles = [
 			"SUPER_USER"=>new ORMNaviRole("SUPER_USER", "The user can do everything"),
 			"IMPORT_ORDER"=>new ORMNaviRole("IMPORT_ORDER", "The user can import order for other users and for himself"),
-			"TAKE_ORDER"=>new ORMNaviRole("TAKE_ORDER", "The user can import order for himself"),
 			"MOVE_ORDER_WC"=>new ORMNaviRole("MOVE_ORDER_WC", "The user can move order from a bucket to a bucket in workcenter"),
 			"MOVE_ORDER_ROAD"=>new ORMNaviRole("MOVE_ORDER_ROAD", "The user can move order from a workcenter to another in road"),
 			"USER_MANAGEMENT"=>new ORMNaviRole("USER_MANAGEMENT", "The user can add new user, grant or deny permissions, and block the user, subscribe or unsubscribe others"),
@@ -62,6 +72,9 @@ class ORMNaviRoles implements JsonSerializable {
 	}
 	function jsonSerialize() {
 		return $this->roles;
+	}
+	function __get($name) {
+		return $this->roles[$name];
 	}
 }
 class ORMNaviTag implements JsonSerializable {
@@ -127,7 +140,6 @@ class ORMNaviUser implements JsonSerializable {
 	}
 
 	public function hasRole(string $role, ?string $context= null):bool {
-		$rr = new ORMNaviRoles($this->factory);
 		if (in_array("SUPER_USER", $this->roles)) return true;
 		if (!is_null($context)) {
 			return in_array([$role, $context], $this->roles);
@@ -705,6 +717,7 @@ class ORMNaviOrder implements JsonSerializable {
 	    }
 	}
 	function assignOrderRoute(int $route_id) {
+		if (!$this->factory->user->hasRole("IMPORT_ORDER")) throw new ORMNaviException("User has no rights");
 	    $this->factory->dblink->autocommit(false);
 		$sql = "select addOrder('" . $this->factory->name . "', '" . $this->number . "', 'ASSIGNED', " . $route_id . ", '" . $this->deadline->format('Y-m-d H:i:s') . "') as order_id;";
         $x = $this->factory->dblink->query($sql);
@@ -806,7 +819,6 @@ class ORMNaviFactory implements JsonSerializable {
 	}
 	function __destruct() {
 		$this->dblink->close();
-
 	}
 	function __get($name) {
 		switch ($name) {
@@ -1212,6 +1224,7 @@ class ORMNaviFactory implements JsonSerializable {
 		$x = $this->dblink->next_result();
 	}
 	function saveUser(?int $id, ?string $user_name, ?bool $ban, ?string $roles, ?string $subscriptions):array{
+		if (!$this->user->hasRole("USER_MANAGEMENT")) throw new ORMNaviException("User has no rights");
 		/* id, factory, user_name, ban, roles, suscriptions */
 		$sql = "call saveUser(".($id?$id:"null").", '".$this->name."', ".($user_name?"'".$user_name."'":"null").", ".($ban?1:0).", ".($roles?"'".$roles."'":"null").", ".($subscriptions?"'".$subscriptions."'":"null").");";
 		$x = $this->dblink->query($sql);
@@ -1219,6 +1232,16 @@ class ORMNaviFactory implements JsonSerializable {
 		$y = $x->fetch_assoc();
 		$x = $this->dblink->next_result();
 		return $y;
+	}
+	function hasRoleOrDie(array $roles) {
+		$rr = new ORMNaviRoles($this);
+		$q = false;
+		$s = "";
+		foreach ($roles as $r) {
+			$q = $q || $this->user->hasRole($r);
+			$s .= ($s?"' or '":"'").$rr->$r->description;
+		}
+		$q || die("User has no rights. Request administrator to grant you: ".$s."'");
 	}
 }
 ?>

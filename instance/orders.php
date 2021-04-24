@@ -1,5 +1,6 @@
 <?php
 include "checkORMNavi.php";
+$factory->hasRoleOrDie(["IMPORT_ORDER"]);
 ?>
 <script>
 $(".nav-link.active").removeClass("active");
@@ -192,15 +193,11 @@ $("#btn-import-order").click(function(){
 		subscribe_user: $("#slct-import-order-owner").val()?$("#slct-import-order-owner").val():undefined,
 		message_text: $("#text-import-order-text").val()
 	}, function (data, status) {
-		hideLoading();
-		switch (status) {
-			case "success":
-				updateAllOrders();
-				showInformation("Orders were imported");
-				break;
-			default:
-				;
-		}
+        var ls = recieveDataFromNavi(data, status);
+        if (ls && ls.result=='OK') {
+			updateAllOrders();
+			showInformation("Orders were imported");
+        }
 	});
 });
 $('#btnPriorityUp').click(function(){

@@ -1,6 +1,8 @@
 <?php
 include "checkORMNavi.php";
-try{
+echo '{"result":';
+$res = '"OK"';
+try {
     $orders = $_POST["data"]["orders"];
     $routes = $_POST["data"]["routes"];
     foreach ($orders as $k=>$o) {
@@ -14,8 +16,12 @@ try{
             $factory->subscribeUser($_POST["data"]["subscribe_user"], "#".$o);
         }
     }
+
+    $ls = json_encode([], JSON_HEX_APOS | JSON_HEX_QUOT);
+    $res .= ', "data" : ';
+    $res .= $ls;
 } catch (ORMNaviException | Exception $e) {
-	http_response_code(400);
-    echo 'Caught exception: ',  $e->getMessage(), "\n";
+    $res = '"FAIL", "description" : "' . $e->getMessage() . '"';  
 }
+echo $res . '}';
 ?>

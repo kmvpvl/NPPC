@@ -1,5 +1,6 @@
 <?php
 include "checkORMNavi.php";
+$factory->hasRoleOrDie(["USER_MANAGEMENT"]);
 ?>
 <script>
 //debugger;
