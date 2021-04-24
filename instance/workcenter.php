@@ -1,6 +1,7 @@
 <?php
 include "checkORMNavi.php";
 $workcenter = $_POST["data"]["workcenter"];
+$factory->hasRoleOrDie(["MOVE_ORDER_WC%".$workcenter]);
 $wcInfo = $factory->getWorkcenterInfo($workcenter);
 $brand = trim($wcInfo);
 ?>
@@ -11,60 +12,53 @@ $(".navbar-brand").text(NaviFactory.name+ "<?=": " . $brand ?>");
 function updateOrders() {
     sendDataToNavi("apiGetWorkcenterOrders", {workcenter: '<?=$workcenter?>'}, 
     function(data, status){
-		hideLoading();
-		switch (status) {
-			case "success":
-                $("income").html("");
-                $("processing").html("");
-                $("outcome").html("");
+        ls = recieveDataFromNavi(data, status);
+        $("income").html("");
+        $("processing").html("");
+        $("outcome").html("");
+        $("#btnOrderMove").hide();
+        $("#btnOrderInfo").hide();
+        for (ind in ls.data) {
+            o = ls.data[ind];
+            //debugger;
+            var b = ORMNaviOrder.getBucket(o, '<?=$workcenter?>');
+            if (b) {
+                $(b.bucket).append('<order class="brief" number="'+o.number+'" assign="'+b.assign+'" full="'+(b.fullset=='1'?"1":"0")+'" operation="'+b.operation+'"/>');
+            } else {
+            }
+            ot = new ORMNaviOrder(o);
+        }
+        $('order[full="0"]').prepend('<span class="order-bage">partly</span>');
+        if (ORMNaviCurrentOrder)
+            $('order[number="'+ORMNaviCurrentOrder+'"]').addClass("highlight");
+        $("order[number]").on('click', function() {
+            //debugger;
+            var n = $(this).attr("number");
+            $("order[number]").removeClass("selected");
+            if ($('order[number="'+n+'"]').hasClass("selected")) $('order[number="'+n+'"]').removeClass("selected");
+            else $('order[number="'+n+'"]').addClass("selected");
+            if ( ($("income > order[number].selected").length == 1 ||
+            $("processing > order[number].selected").length == 1) &&
+            $("order[number].selected").attr("full")=="1") {
+                $("#btnOrderMove").show();
+                $("#btnOrderMove").css({
+                    left: $("order[number].selected").position().left+$("#btnOrderInfo").outerWidth()+'px',
+                    top: $("order[number].selected").position().top+$("order[number].selected").outerHeight()+'px'
+                });
+            } else {
                 $("#btnOrderMove").hide();
+            }
+            if ($("order[number].selected").length == 1) {
+                //debugger;
+                $("#btnOrderInfo").show();
+                $("#btnOrderInfo").css({
+                    left: $("order[number].selected").position().left/*+$("order[number].selected").outerWidth()*/+'px',
+                    top: $("order[number].selected").position().top+$("order[number].selected").outerHeight()+'px'
+                });
+            } else {
                 $("#btnOrderInfo").hide();
-                ls = JSON.parse(data);
-                for (ind in ls.data) {
-                    o = ls.data[ind];
-                    //debugger;
-                    var b = ORMNaviOrder.getBucket(o, '<?=$workcenter?>');
-                    if (b) {
-                        $(b.bucket).append('<order class="brief" number="'+o.number+'" assign="'+b.assign+'" full="'+(b.fullset=='1'?"1":"0")+'" operation="'+b.operation+'"/>');
-                    } else {
-                    }
-                    ot = new ORMNaviOrder(o);
-                }
-                $('order[full="0"]').prepend('<span class="order-bage">partly</span>');
-                if (ORMNaviCurrentOrder)
-                    $('order[number="'+ORMNaviCurrentOrder+'"]').addClass("highlight");
-                $("order[number]").on('click', function() {
-                    //debugger;
-                    var n = $(this).attr("number");
-                    $("order[number]").removeClass("selected");
-                    if ($('order[number="'+n+'"]').hasClass("selected")) $('order[number="'+n+'"]').removeClass("selected");
-                    else $('order[number="'+n+'"]').addClass("selected");
-                    if ( ($("income > order[number].selected").length == 1 ||
-                    $("processing > order[number].selected").length == 1) &&
-                    $("order[number].selected").attr("full")=="1") {
-                        $("#btnOrderMove").show();
-                        $("#btnOrderMove").css({
-                            left: $("order[number].selected").position().left+$("#btnOrderInfo").outerWidth()+'px',
-    						top: $("order[number].selected").position().top+$("order[number].selected").outerHeight()+'px'
-                        });
-                    } else {
-                        $("#btnOrderMove").hide();
-                    }
-                    if ($("order[number].selected").length == 1) {
-                        //debugger;
-                        $("#btnOrderInfo").show();
-                        $("#btnOrderInfo").css({
-                            left: $("order[number].selected").position().left/*+$("order[number].selected").outerWidth()*/+'px',
-    						top: $("order[number].selected").position().top+$("order[number].selected").outerHeight()+'px'
-                        });
-                    } else {
-                        $("#btnOrderInfo").hide();
-                    }
-                })
-                break;
-			default:
-				;
-		}
+            }
+        })
     });
 }
 updateOrders();

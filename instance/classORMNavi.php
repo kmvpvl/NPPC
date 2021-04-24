@@ -142,7 +142,7 @@ class ORMNaviUser implements JsonSerializable {
 	public function hasRole(string $role, ?string $context= null):bool {
 		if (in_array("SUPER_USER", $this->roles)) return true;
 		if (!is_null($context)) {
-			return in_array([$role, $context], $this->roles);
+			return in_array($role, $this->roles) || in_array([$role, $context], $this->roles);
 		} else {
 			return in_array($role, $this->roles);
 		}
@@ -1073,6 +1073,13 @@ class ORMNaviFactory implements JsonSerializable {
 		return $found[0];
 	}
 	function moveAssignToNextBucket($assign_id) {
+		$sql = "call getWorkcenterByAssignID(".$assign_id.");";
+	    $x = $this->dblink->query($sql);
+		if (!$x) throw new ORMNaviException("Could not get workcenter" . "': " . $this->dblink->errno . " - " . $this->dblink->error . $sql); 	    
+		$y = $x->fetch_assoc();
+	    $this->dblink->next_result();
+
+		if (!$this->user->hasRole("MOVE_ORDER_WC", $y["name"])) throw new ORMNaviException("User has no rights");
 	    $this->dblink->autocommit(false);
 		$sql = "call moveAssignToNextBucket(" . $assign_id . ");";
 		$x = $this->dblink->query($sql);
@@ -1237,9 +1244,17 @@ class ORMNaviFactory implements JsonSerializable {
 		$rr = new ORMNaviRoles($this);
 		$q = false;
 		$s = "";
-		foreach ($roles as $r) {
-			$q = $q || $this->user->hasRole($r);
-			$s .= ($s?"' or '":"'").$rr->$r->description;
+		foreach ($roles as $role) {
+			if (strpos($role, "%")) {
+				$r = explode("%", $role);
+				$k = $r[0];
+				$q = $q || $this->user->hasRole($r[0], $r[1]);
+				$s .= ($s?"' or '":"'").$rr->$k->description." for ".$r[1];
+			} else {
+				$q = $q || $this->user->hasRole($role);
+				$s .= ($s?"' or '":"'").$rr->$role->description;
+			}
+
 		}
 		$q || die("User has no rights. Request administrator to grant you: ".$s."'");
 	}
