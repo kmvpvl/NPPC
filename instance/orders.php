@@ -8,46 +8,41 @@ $(".nav-item.active").removeClass("active");
 $("#menuOrders").addClass("active");
 $(".navbar-brand").text(NaviFactory.name + ": Orders");
 function ordersUpdated(data, status) {
-	hideLoading();
 	$("orders_to_import").html("");
 	$("orders_inprocess").html("");
-	switch (status) {
-		case "success":
-			ls = JSON.parse(data);
-			for (ind in ls.data) {
-				o = ls.data[ind];
-				if (o.id) {
-					$("orders_inprocess").append('<order class="brief" number="'+o.number+'"/>');
-				} else {
-					$("orders_to_import").append('<order class="brief" number="'+o.number+'"/>');
-				}
-				ot = new ORMNaviOrder(o);
+	var ls = recieveDataFromNavi(data, status);
+	if (ls && ls.result=='OK') {
+		for (ind in ls.data) {
+			o = ls.data[ind];
+			if (o.id) {
+				$("orders_inprocess").append('<order class="brief" number="'+o.number+'"/>');
+			} else {
+				$("orders_to_import").append('<order class="brief" number="'+o.number+'"/>');
 			}
-			$("order[number]").on('click', function() {
+			ot = new ORMNaviOrder(o);
+		}
+		$("order[number]").on('click', function() {
+			//debugger;
+			var n = $(this).attr("number");
+			if ($('order[number="'+n+'"]').hasClass("selected")) $('order[number="'+n+'"]').removeClass("selected");
+			else $('order[number="'+n+'"]').addClass("selected");
+			if ($("order[number].selected").length == 1) {
 				//debugger;
-				var n = $(this).attr("number");
-				if ($('order[number="'+n+'"]').hasClass("selected")) $('order[number="'+n+'"]').removeClass("selected");
-				else $('order[number="'+n+'"]').addClass("selected");
-				if ($("order[number].selected").length == 1) {
-					//debugger;
-					$("#btnOrderInfo").show();
-					$("#btnOrderInfo").css({
-						left: $("order[number].selected").position().left/*+$("order[number].selected").outerWidth()*/+'px',
-						top: $("order[number].selected").position().top+$("order[number].selected").outerHeight()+'px'
-					});
-					$("#btnsPriority").show();
-					$("#btnsPriority").css({
-						left: ($("order[number].selected").position().left+$("#btnOrderInfo").outerWidth())+'px',
-						top: $("order[number].selected").position().top+$("order[number].selected").outerHeight()+'px'
-					});
-				} else {
-					$("#btnsPriority").hide();
-					$("#btnOrderInfo").hide();
-				}
-			})
-			break;
-		default:
-			;
+				$("#btnOrderInfo").show();
+				$("#btnOrderInfo").css({
+					left: $("order[number].selected").position().left/*+$("order[number].selected").outerWidth()*/+'px',
+					top: $("order[number].selected").position().top+$("order[number].selected").outerHeight()+'px'
+				});
+				$("#btnsPriority").show();
+				$("#btnsPriority").css({
+					left: ($("order[number].selected").position().left+$("#btnOrderInfo").outerWidth())+'px',
+					top: $("order[number].selected").position().top+$("order[number].selected").outerHeight()+'px'
+				});
+			} else {
+				$("#btnsPriority").hide();
+				$("#btnOrderInfo").hide();
+			}
+		});
 	}
 }
 function updateAllOrders() {
@@ -78,14 +73,10 @@ $("#btnImportOrders").on('click', function() {
 	$("#dlgImportOrderModal").modal('show');
 })
 function estimatedUpdated(data, status) {
-	hideLoading();
-	switch (status) {
-		case "success":
-			updateAllOrders();
-			showInformation("Estimated dates were updated!");
-			break;
-		default:
-			;
+	var ls = recieveDataFromNavi(data, status);
+	if (ls && ls.result=='OK') {
+		updateAllOrders();
+		showInformation("Estimated dates were updated!");
 	}
 }
 $("#btnInprocessSelectAll").on('click', function(){
@@ -204,14 +195,10 @@ $('#btnPriorityUp').click(function(){
     if ($("order[number].selected").length == 1) {
         var order = $("order[number].selected").attr("number");
 		sendDataToNavi('apiIncOrderPriority', {order: order, delta: 1}, function(data, status){
-			hideLoading();
-			switch (status) {
-				case "success":
-					updateAllOrders();
-					showInformation("Priority was changed!");
-					break;
-				default:
-					;
+			var ls = recieveDataFromNavi(data, status);
+			if (ls && ls.result=='OK') {
+				updateAllOrders();
+				showInformation("Priority was changed!");
 			}
 		});
     }
@@ -220,14 +207,10 @@ $('#btnPriorityDown').click(function(){
     if ($("order[number].selected").length == 1) {
         var order = $("order[number].selected").attr("number");
 		sendDataToNavi('apiIncOrderPriority', {order: order, delta: -1}, function(data, status){
-			hideLoading();
-			switch (status) {
-				case "success":
-					updateAllOrders();
-					showInformation("Priority was changed!");
-					break;
-				default:
-					;
+			var ls = recieveDataFromNavi(data, status);
+			if (ls && ls.result=='OK') {
+				updateAllOrders();
+				showInformation("Priority was changed!");
 			}
 		});
     }

@@ -220,84 +220,78 @@ function filterMessages(){
 function updateMessages() {
 	sendDataToNavi("apiGetMessages", undefined, 
 	function(data, status) {
-		//debugger;
 		$("messages messages-container").html('');
-		hideLoading();
-		switch (status) {
-			case "success":
-				ls = JSON.parse(data);
-				var unread_count = 0;
-				for (ind in ls.data) {
-					if (!(ls.data[ind].read_time || ls.data[ind].from == $("#username").val())) unread_count++;
-					$("messages messages-container").prepend('<message message_id="'+ls.data[ind].id+'" read="'+(ls.data[ind].read_time || ls.data[ind].from == $("#username").val()?"1":"0")+'" in="'+(ls.data[ind].from != $("#username").val()?"1":"0")+'" flagged="'+(ls.data[ind].flagged?ls.data[ind].flagged:'0')+'"/>');
-					m = new ORMNaviMessage(ls.data[ind]);
-					if (!(ls.data[ind].read_time || ls.data[ind].from == $("#username").val())) {
-						if ($("messages messages-container unread-separator").length) $("messages messages-container unread-separator").remove();
-						$("messages messages-container").prepend('<unread-separator>Unread messages</unread-separator>');	
+		var ls = recieveDataFromNavi(data, status);
+		if (ls && ls.result=='OK') {
+			var unread_count = 0;
+			for (ind in ls.data) {
+				if (!(ls.data[ind].read_time || ls.data[ind].from == $("#username").val())) unread_count++;
+				$("messages messages-container").prepend('<message message_id="'+ls.data[ind].id+'" read="'+(ls.data[ind].read_time || ls.data[ind].from == $("#username").val()?"1":"0")+'" in="'+(ls.data[ind].from != $("#username").val()?"1":"0")+'" flagged="'+(ls.data[ind].flagged?ls.data[ind].flagged:'0')+'"/>');
+				m = new ORMNaviMessage(ls.data[ind]);
+				if (!(ls.data[ind].read_time || ls.data[ind].from == $("#username").val())) {
+					if ($("messages messages-container unread-separator").length) $("messages messages-container unread-separator").remove();
+					$("messages messages-container").prepend('<unread-separator>Unread messages</unread-separator>');	
+				}
+			}
+			if (unread_count)	{
+				$("#messages-popup").html(unread_count+" sms");
+			} else {
+				$("#messages-popup").html("All read");
+			}
+			$("messages messages-container message message-from").prepend('<i class="fa fa-user-circle" aria-hidden="true"></i>');
+			$("messages messages-container message message-time").prepend('<i class="fa fa-clock-o" aria-hidden="true"></i>');
+			
+			scrollMessages();
+			if (NaviFactory.currentUser && NaviFactory.currentUser.subscriptions) {
+				$("#slct-message-byorder").html("");
+				$("#slct-message-byorder").append('<option value="">All orders</option>');
+				var a = NaviFactory.currentUser.subscriptions.split(';');
+				a.forEach(element => {
+					$("#slct-message-byorder").append('<option value="'+element+'">'+element+'</option>');
+				});
+			}
+			if (NaviFactory.users) {
+				$("#slct-message-byuser").html("");
+				$("#slct-message-byuser").append('<option value="">All users</option>');
+				for (var username in NaviFactory.users) {
+					if ($("#username").val() != username) {
+						$("#slct-message-byuser").append('<option value="'+username+'">'+username+'</option>');
 					}
 				}
-				if (unread_count)	{
-					$("#messages-popup").html(unread_count+" sms");
-				} else {
-					$("#messages-popup").html("All read");
-				}
-				$("messages messages-container message message-from").prepend('<i class="fa fa-user-circle" aria-hidden="true"></i>');
-				$("messages messages-container message message-time").prepend('<i class="fa fa-clock-o" aria-hidden="true"></i>');
-				
-				scrollMessages();
-				if (NaviFactory.currentUser && NaviFactory.currentUser.subscriptions) {
-					$("#slct-message-byorder").html("");
-					$("#slct-message-byorder").append('<option value="">All orders</option>');
-					var a = NaviFactory.currentUser.subscriptions.split(';');
-					a.forEach(element => {
-						$("#slct-message-byorder").append('<option value="'+element+'">'+element+'</option>');
-					});
-				}
-				if (NaviFactory.users) {
-					$("#slct-message-byuser").html("");
-					$("#slct-message-byuser").append('<option value="">All users</option>');
-					for (var username in NaviFactory.users) {
-						if ($("#username").val() != username) {
-							$("#slct-message-byuser").append('<option value="'+username+'">'+username+'</option>');
-						}
-					}
-				}
+			}
 
-				$('messages messages-container message[in="1"]').prepend('<button type="button" class="ml-2 mb-1 close" message="reply"><i class="fa fa-reply" aria-hidden="true"></i></button>');				
-				
-				$('messages messages-container message[flagged="0"][in="0"]').prepend('<button type="button" class="ml-2 mb-1 close" message="flag"><i class="fa fa-flag-o" aria-hidden="true"></i></button>');				
-				$('messages messages-container message[flagged="1"]').prepend('<button type="button" class="ml-2 mb-1 close" message="flag"><i class="fa fa-flag" style="color:red" aria-hidden="true"></i></button>');				
-				$('messages messages-container message[read="0"]').prepend('<button type="button" class="ml-2 mb-1 close" message="collapse"><i class="fa fa-envelope-open-o" aria-hidden="true"></i></button>');
-				//$('messages messages-container message[read="1"]').prepend('<button type="button" class="ml-2 mb-1 close" message="reply"><i class="fa fa-envelope-o" aria-hidden="true"></i></button>');
+			$('messages messages-container message[in="1"]').prepend('<button type="button" class="ml-2 mb-1 close" message="reply"><i class="fa fa-reply" aria-hidden="true"></i></button>');				
+			
+			$('messages messages-container message[flagged="0"][in="0"]').prepend('<button type="button" class="ml-2 mb-1 close" message="flag"><i class="fa fa-flag-o" aria-hidden="true"></i></button>');				
+			$('messages messages-container message[flagged="1"]').prepend('<button type="button" class="ml-2 mb-1 close" message="flag"><i class="fa fa-flag" style="color:red" aria-hidden="true"></i></button>');				
+			$('messages messages-container message[read="0"]').prepend('<button type="button" class="ml-2 mb-1 close" message="collapse"><i class="fa fa-envelope-open-o" aria-hidden="true"></i></button>');
+			//$('messages messages-container message[read="1"]').prepend('<button type="button" class="ml-2 mb-1 close" message="reply"><i class="fa fa-envelope-o" aria-hidden="true"></i></button>');
 
-				$('message button[message="reply"]').click(function(){
-					$("#txt-new-message-thread").text($(this).parent()[0].ORMNaviMessage.id);
-					var q = "";
-					if ($(this).parent()[0].ORMNaviMessage.from.indexOf(" ")>=0) q = '"';
-					$("#text-new-message").val("@"+q+$(this).parent()[0].ORMNaviMessage.from + q+" " +$("#text-new-message").val());
-					$("#text-new-message").focus();					
-				});
+			$('message button[message="reply"]').click(function(){
+				$("#txt-new-message-thread").text($(this).parent()[0].ORMNaviMessage.id);
+				var q = "";
+				if ($(this).parent()[0].ORMNaviMessage.from.indexOf(" ")>=0) q = '"';
+				$("#text-new-message").val("@"+q+$(this).parent()[0].ORMNaviMessage.from + q+" " +$("#text-new-message").val());
+				$("#text-new-message").focus();					
+			});
 
-				$("#edt-message-search").change(function(){
-					filterMessages();
-				});
-				$("#slct-message-byuser").change(function(){
-					filterMessages();
-				});
-				$("#slct-message-byorder").change(function(){
-					filterMessages();
-				});
-				$('message button[message="collapse"]').on ('click', function (event) {
-					$(this).parent()[0].ORMNaviMessage.dismiss();
-					updateMessages();
-				})
-				$('message button[message="flag"]').on ('click', function (event) {
-					$(this).parent()[0].ORMNaviMessage.flag();
-					updateMessages();
-				})
-				break;
-			default:
-				;
+			$("#edt-message-search").change(function(){
+				filterMessages();
+			});
+			$("#slct-message-byuser").change(function(){
+				filterMessages();
+			});
+			$("#slct-message-byorder").change(function(){
+				filterMessages();
+			});
+			$('message button[message="collapse"]').on ('click', function (event) {
+				$(this).parent()[0].ORMNaviMessage.dismiss();
+				updateMessages();
+			})
+			$('message button[message="flag"]').on ('click', function (event) {
+				$(this).parent()[0].ORMNaviMessage.flag();
+				updateMessages();
+			})
 		}
 	});
 }
@@ -327,19 +321,11 @@ function loadInstance() {
 	if ($('instance').html()) return;
 	sendDataToNavi("factory", undefined, 
 	function(data, status){
-		hideLoading();
-		switch (status) {
-			case "success":
-				$("#loginform").hide();
-				$("instance").html(data);
-				setInterval( function () {
-					NaviFactory.updateFactoryInfo();
-				}, 60000);
-				break;
-			default:
-				clearInstance();
-				showLoginForm();
-		}
+		$("#loginform").hide();
+		$("instance").html(receiveHtmlFromNavi(data, status));
+		setInterval( function () {
+			NaviFactory.updateFactoryInfo();
+		}, 60000);
 	});
 }
 
@@ -353,30 +339,14 @@ $("a[instance]").on ('click', function (event) {
 function workcenter(id) {
 	sendDataToNavi("workcenter", {workcenter:id},
 	function(data, status){
-		hideLoading();
-		switch (status) {
-			case "success":
-				$("instance").html(data);
-				break;
-			default:
-				clearInstance();
-				showLoginForm();
-		}
+		$("instance").html(receiveHtmlFromNavi(data, status));
 	});
 }
 
 function road(id) {
 	sendDataToNavi("road", {road:id},
 	function(data, status){
-		hideLoading();
-		switch (status) {
-			case "success":
-				$("instance").html(data);
-				break;
-			default:
-				clearInstance();
-				showLoginForm();
-		}
+		$("instance").html(receiveHtmlFromNavi(data, status));
 	});
 }
 </script>

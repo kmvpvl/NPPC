@@ -12,53 +12,55 @@ $(".navbar-brand").text(NaviFactory.name+ "<?=": " . $brand ?>");
 function updateOrders() {
     sendDataToNavi("apiGetWorkcenterOrders", {workcenter: '<?=$workcenter?>'}, 
     function(data, status){
-        ls = recieveDataFromNavi(data, status);
-        $("income").html("");
-        $("processing").html("");
-        $("outcome").html("");
-        $("#btnOrderMove").hide();
-        $("#btnOrderInfo").hide();
-        for (ind in ls.data) {
-            o = ls.data[ind];
-            //debugger;
-            var b = ORMNaviOrder.getBucket(o, '<?=$workcenter?>');
-            if (b) {
-                $(b.bucket).append('<order class="brief" number="'+o.number+'" assign="'+b.assign+'" full="'+(b.fullset=='1'?"1":"0")+'" operation="'+b.operation+'"/>');
-            } else {
-            }
-            ot = new ORMNaviOrder(o);
-        }
-        $('order[full="0"]').prepend('<span class="order-bage">partly</span>');
-        if (ORMNaviCurrentOrder)
-            $('order[number="'+ORMNaviCurrentOrder+'"]').addClass("highlight");
-        $("order[number]").on('click', function() {
-            //debugger;
-            var n = $(this).attr("number");
-            $("order[number]").removeClass("selected");
-            if ($('order[number="'+n+'"]').hasClass("selected")) $('order[number="'+n+'"]').removeClass("selected");
-            else $('order[number="'+n+'"]').addClass("selected");
-            if ( ($("income > order[number].selected").length == 1 ||
-            $("processing > order[number].selected").length == 1) &&
-            $("order[number].selected").attr("full")=="1") {
-                $("#btnOrderMove").show();
-                $("#btnOrderMove").css({
-                    left: $("order[number].selected").position().left+$("#btnOrderInfo").outerWidth()+'px',
-                    top: $("order[number].selected").position().top+$("order[number].selected").outerHeight()+'px'
-                });
-            } else {
-                $("#btnOrderMove").hide();
-            }
-            if ($("order[number].selected").length == 1) {
+        var ls = recieveDataFromNavi(data, status);
+        if (ls && ls.result=='OK') {
+            $("income").html("");
+            $("processing").html("");
+            $("outcome").html("");
+            $("#btnOrderMove").hide();
+            $("#btnOrderInfo").hide();
+            for (ind in ls.data) {
+                o = ls.data[ind];
                 //debugger;
-                $("#btnOrderInfo").show();
-                $("#btnOrderInfo").css({
-                    left: $("order[number].selected").position().left/*+$("order[number].selected").outerWidth()*/+'px',
-                    top: $("order[number].selected").position().top+$("order[number].selected").outerHeight()+'px'
-                });
-            } else {
-                $("#btnOrderInfo").hide();
+                var b = ORMNaviOrder.getBucket(o, '<?=$workcenter?>');
+                if (b) {
+                    $(b.bucket).append('<order class="brief" number="'+o.number+'" assign="'+b.assign+'" full="'+(b.fullset=='1'?"1":"0")+'" operation="'+b.operation+'"/>');
+                } else {
+                }
+                ot = new ORMNaviOrder(o);
             }
-        })
+            $('order[full="0"]').prepend('<span class="order-bage">partly</span>');
+            if (ORMNaviCurrentOrder)
+                $('order[number="'+ORMNaviCurrentOrder+'"]').addClass("highlight");
+            $("order[number]").on('click', function() {
+                //debugger;
+                var n = $(this).attr("number");
+                $("order[number]").removeClass("selected");
+                if ($('order[number="'+n+'"]').hasClass("selected")) $('order[number="'+n+'"]').removeClass("selected");
+                else $('order[number="'+n+'"]').addClass("selected");
+                if ( ($("income > order[number].selected").length == 1 ||
+                $("processing > order[number].selected").length == 1) &&
+                $("order[number].selected").attr("full")=="1") {
+                    $("#btnOrderMove").show();
+                    $("#btnOrderMove").css({
+                        left: $("order[number].selected").position().left+$("#btnOrderInfo").outerWidth()+'px',
+                        top: $("order[number].selected").position().top+$("order[number].selected").outerHeight()+'px'
+                    });
+                } else {
+                    $("#btnOrderMove").hide();
+                }
+                if ($("order[number].selected").length == 1) {
+                    //debugger;
+                    $("#btnOrderInfo").show();
+                    $("#btnOrderInfo").css({
+                        left: $("order[number].selected").position().left/*+$("order[number].selected").outerWidth()*/+'px',
+                        top: $("order[number].selected").position().top+$("order[number].selected").outerHeight()+'px'
+                    });
+                } else {
+                    $("#btnOrderInfo").hide();
+                }
+            });
+        }
     });
 }
 updateOrders();
@@ -68,14 +70,9 @@ $("#btnOrderMove").on("click", function(){
         ORMNaviCurrentOrder = $("order[number].selected").attr("number")
         sendDataToNavi("apiMoveAssignToNextBucket", {assign: a}, 
         function(data, status) {
-            hideLoading();
-            //debugger;
-            switch (status) {
-                case "success":
-                    updateOrders();
-                    break;
-                default:
-                    ;
+            var ls = recieveDataFromNavi(data, status);
+            if (ls && ls.result=='OK') {
+                updateOrders();
             }
         });
     }

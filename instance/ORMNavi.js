@@ -129,17 +129,12 @@ class ORMNaviMessage {
 	static send(body, type, thread) {
 		sendDataToNavi('apiSendMessage', {body: body, type:type, thread:thread==""?undefined:thread}, 
 		function(data, status) {
-			hideLoading();
-			//debugger;
-			switch (status) {
-				case "success":
-					showInformation("Message sent");
-					$("#text-new-message").val("");
-					$("#txt-new-message-thread").text("");
-					updateMessages();
-				break;
-				default:
-					showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
+            var ls = recieveDataFromNavi(data, status);
+            if (ls && ls.result=='OK') {
+				showInformation("Message sent");
+				$("#text-new-message").val("");
+				$("#txt-new-message-thread").text("");
+				updateMessages();
 			}
 		});
     }
@@ -162,28 +157,20 @@ class ORMNaviMessage {
     dismiss(){
         sendDataToNavi('apiMakeMessageRead', {message_id: this.id}, 
 		function(data, status) {
-			hideLoading();
-			//debugger;
-			switch (status) {
-				case "success":
-				break;
-				default:
-					showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-			}
+            var ls = recieveDataFromNavi(data, status);
+            if (ls && ls.result=='OK') {
+				updateMessages();
+            }
 		});
 		ORMNaviCurrentMessage = this.id;
     }
 	flag() {
         sendDataToNavi('apiFlagMessage', {message_id: this.id, flag: (this.flagged=='1'?0:1)}, 
 		function(data, status) {
-			hideLoading();
-			//debugger;
-			switch (status) {
-				case "success":
-				break;
-				default:
-					showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-			}
+            var ls = recieveDataFromNavi(data, status);
+            if (ls && ls.result=='OK') {
+				updateMessages();
+            }
 		});
 		ORMNaviCurrentMessage = this.id;
 	}
@@ -365,84 +352,72 @@ function modalOrderInfo(order_number) {
 	$("#dlgOrderModalBody").html("<orderinfo/>");
 	sendDataToNavi("apiGetOrderInfo", {order_number:order_number},
 	function (data, status) {
-        hideLoading();
-		//debugger;
-		switch (status) {
-			case "success":
-				var ls = JSON.parse(data);
-				var temp = new ORMNaviOrder(ls.data, $("orderinfo"));
-				$("orderinfo > order-history > event > workcenter").each (function () {
-					var w = $(this).attr("name");
-					var o = $(this).attr("operation");
-					if (o in NaviFactory.workcenters[w].capacity &&
-						o in NaviFactory.workcenters[w].assigns) {
-						
-						var c = NaviFactory.workcenters[w].capacity[o];
-						var a = NaviFactory.workcenters[w].assigns[o];
-						var k = a / c;
-						if (k > 1) k = 1.0;
-						k = Math.round(k * 12) - 1;
-						$(this).addClass("duty-"+k);
-					} else {
-						$(this).addClass("noduty");
-					}
-				});
-				$("orderinfo > order-history > event > workcenter").on ('click', function(){
-					ORMNaviCurrentOrder = $("orderinfo order-header order-number").text();
-					workcenter($(this).attr("name"));
-				});
-
-				$("orderinfo > order-history > event > road").each (function () {
-					var r = $(this).attr("name");
-					if (NaviFactory.roads[r].capacity && NaviFactory.roads[r].assigns) {
-						var c = NaviFactory.roads[r].capacity;
-						var a = NaviFactory.roads[r].assigns;
-						var k = a / c;
-						if (k > 1) k = 1.0;
-						k = Math.round(k * 12) - 1;
-						$(this).addClass("duty-"+k);
-					} else {
-						$(this).addClass("noduty");
-					}
-				});
-				$("#btn-subscribe").click(function(){
-					sendDataToNavi("apiSubscribe", {tag: "#"+$("orderinfo order-header order-number").text()},
-					function(data, status){
-						hideLoading();
-						//debugger;
-						switch (status) {
-							case "success":
-								ls = JSON.parse(data);
-								NaviFactory.currentUser = ls.data;
-								if (NaviFactory.currentUser && 
-									NaviFactory.currentUser.subscriptions.includes("#"+$("orderinfo order-header order-number").text())) {
-									showInformation("You're subscribed!");
-									$("#btn-subscribe").text("Unsubscribe");
-								} else {
-									showInformation("You're unsubscribed!");
-									$("#btn-subscribe").text("Subscribe");
-								}
-								updateMessages();
-							break;
-							default:
-								showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
-						}
-					});
-				});
-				if (NaviFactory.currentUser && 
-					NaviFactory.currentUser.subscriptions.includes("#"+$("orderinfo order-header order-number").text())) {
-					$("#btn-subscribe").text("Unsubscribe");
+		var ls = recieveDataFromNavi(data, status);
+		if (ls && ls.result=='OK') {
+			var temp = new ORMNaviOrder(ls.data, $("orderinfo"));
+			$("orderinfo > order-history > event > workcenter").each (function () {
+				var w = $(this).attr("name");
+				var o = $(this).attr("operation");
+				if (o in NaviFactory.workcenters[w].capacity &&
+					o in NaviFactory.workcenters[w].assigns) {
+					
+					var c = NaviFactory.workcenters[w].capacity[o];
+					var a = NaviFactory.workcenters[w].assigns[o];
+					var k = a / c;
+					if (k > 1) k = 1.0;
+					k = Math.round(k * 12) - 1;
+					$(this).addClass("duty-"+k);
 				} else {
-					$("#btn-subscribe").text("Subscribe");
+					$(this).addClass("noduty");
 				}
-				$("orderinfo > order-history > event > road").on ('click', function(){
-					ORMNaviCurrentOrder = $("orderinfo order-header order-number").text();
-					road($(this).attr("name"));
+			});
+			$("orderinfo > order-history > event > workcenter").on ('click', function(){
+				ORMNaviCurrentOrder = $("orderinfo order-header order-number").text();
+				workcenter($(this).attr("name"));
+			});
+
+			$("orderinfo > order-history > event > road").each (function () {
+				var r = $(this).attr("name");
+				if (NaviFactory.roads[r].capacity && NaviFactory.roads[r].assigns) {
+					var c = NaviFactory.roads[r].capacity;
+					var a = NaviFactory.roads[r].assigns;
+					var k = a / c;
+					if (k > 1) k = 1.0;
+					k = Math.round(k * 12) - 1;
+					$(this).addClass("duty-"+k);
+				} else {
+					$(this).addClass("noduty");
+				}
+			});
+			$("#btn-subscribe").click(function(){
+				sendDataToNavi("apiSubscribe", {tag: "#"+$("orderinfo order-header order-number").text()},
+				function(data, status){
+					var ls = recieveDataFromNavi(data, status);
+					if (ls && ls.result=='OK') {
+						NaviFactory.currentUser = ls.data;
+						if (NaviFactory.currentUser && 
+							NaviFactory.currentUser.subscriptions.includes("#"+$("orderinfo order-header order-number").text())) {
+							showInformation("You're subscribed!");
+							$("#btn-subscribe").text("Unsubscribe");
+						} else {
+							showInformation("You're unsubscribed!");
+							$("#btn-subscribe").text("Subscribe");
+						}
+						updateMessages();
+					}
 				});
-				$("#dlgOrderModal").modal('show');
-				break;
-			default:
-				showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
+			});
+			if (NaviFactory.currentUser && 
+				NaviFactory.currentUser.subscriptions.includes("#"+$("orderinfo order-header order-number").text())) {
+				$("#btn-subscribe").text("Unsubscribe");
+			} else {
+				$("#btn-subscribe").text("Subscribe");
+			}
+			$("orderinfo > order-history > event > road").on ('click', function(){
+				ORMNaviCurrentOrder = $("orderinfo order-header order-number").text();
+				road($(this).attr("name"));
+			});
+			$("#dlgOrderModal").modal('show');
 		}
 	});
 }

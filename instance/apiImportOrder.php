@@ -1,8 +1,6 @@
 <?php
 include "checkORMNavi.php";
-echo '{"result":';
-$res = '"OK"';
-try {
+printNaviData(function($factory){
     $orders = $_POST["data"]["orders"];
     $routes = $_POST["data"]["routes"];
     foreach ($orders as $k=>$o) {
@@ -16,12 +14,6 @@ try {
             $factory->subscribeUser($_POST["data"]["subscribe_user"], "#".$o);
         }
     }
-
-    $ls = json_encode('', JSON_HEX_APOS | JSON_HEX_QUOT);
-    $res .= ', "data" : ';
-    $res .= $ls;
-} catch (ORMNaviException | Exception $e) {
-    $res = '"FAIL", "description" : "' . $e->getMessage() . '"';  
-}
-echo $res . '}';
+    return null;
+});
 ?>
