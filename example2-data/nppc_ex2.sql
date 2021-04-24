@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Apr 24, 2021 at 01:02 PM
+-- Generation Time: Apr 24, 2021 at 04:17 PM
 -- Server version: 10.5.8-MariaDB
 -- PHP Version: 7.4.15
 
@@ -90,7 +90,7 @@ SELECT `tag`, count(`tag`) as c FROM `temp` group by `tag` order by c desc;
 END$$
 
 DROP PROCEDURE IF EXISTS `getAssignInfo`$$
-CREATE DEFINER=`nppc`@`localhost` PROCEDURE `getAssignInfo` (IN `_assign_id` INT)  READS SQL DATA
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `getAssignInfo` (IN `_assign_id` INT UNSIGNED)  READS SQL DATA
     SQL SECURITY INVOKER
 SELECT assigns.order_part, assigns.next_order_part, orders.number, orders.current_route  FROM `assigns` 
 left join orders on orders.id = assigns.order_id
@@ -205,6 +205,16 @@ from `roads`
 where `roads`.`from_wc`= @from_wc_id and @to_wc_id;
 END$$
 
+DROP PROCEDURE IF EXISTS `getRoadByAssignID`$$
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `getRoadByAssignID` (IN `_assign_id` BIGINT UNSIGNED)  NO SQL
+    SQL SECURITY INVOKER
+BEGIN
+select `assigns`.`workcenter_id`, `assigns`.`next_workcenter_id` into @wc, @nwc from `assigns` where `assigns`.`id`=`_assign_id`;
+select * 
+from `roads`
+where `roads`.`from_wc`=@wc and `roads`.`to_wc`=@nwc;
+END$$
+
 DROP PROCEDURE IF EXISTS `getRoadsWorkload`$$
 CREATE DEFINER=`nppc`@`localhost` PROCEDURE `getRoadsWorkload` (IN `_factory` VARCHAR(50))  READS SQL DATA
     SQL SECURITY INVOKER
@@ -239,7 +249,7 @@ select *
 from `users`$$
 
 DROP PROCEDURE IF EXISTS `getWorkcenterByAssignID`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `getWorkcenterByAssignID` (IN `_assign_id` BIGINT UNSIGNED)  NO SQL
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `getWorkcenterByAssignID` (IN `_assign_id` BIGINT UNSIGNED)  NO SQL
     SQL SECURITY INVOKER
 BEGIN
 set @wc_id = (select `assigns`.`workcenter_id` from `assigns` where `assigns`.`id` = `_assign_id`);
@@ -499,7 +509,7 @@ CREATE TABLE IF NOT EXISTS `assigns` (
   KEY `workcenter_id` (`workcenter_id`),
   KEY `bucket` (`bucket`),
   KEY `operation` (`operation`)
-) ENGINE=InnoDB AUTO_INCREMENT=247 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=250 DEFAULT CHARSET=utf8;
 
 --
 -- Dumping data for table `assigns`
@@ -661,7 +671,7 @@ INSERT INTO `assigns` (`id`, `client_id`, `order_id`, `workcenter_id`, `bucket`,
 (153, 1, 55, 5, 'PROCESSING', 'o-228.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 11:42:11', NULL, NULL, 0),
 (154, 1, 56, 1, 'OUTCOME', 'o-229.1.wheelpair.1.1.shaft.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, 4, 'o-229.1.wheelpair.1.1.shaft.1', 'blankprocessing', '2021-04-07 09:22:05', 480, NULL, 0),
 (155, 1, 56, 5, 'PROCESSING', 'o-229.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 11:41:53', NULL, NULL, 0),
-(156, 1, 57, 1, 'OUTCOME', 'o-231.1.wheelpair.1.1.shaft.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, 4, 'o-231.1.wheelpair.1.1.shaft.1', 'blankprocessing', '2021-04-07 09:21:48', 480, NULL, 0),
+(156, 1, 57, 1, NULL, 'o-231.1.wheelpair.1.1.shaft.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, 4, 'o-231.1.wheelpair.1.1.shaft.1', 'blankprocessing', '2021-04-24 16:15:07', 480, 247, 0),
 (157, 1, 57, 5, 'OUTCOME', 'o-231.1.wheelpair.1.1.wheel', 'supplywheel', 150, NULL, 1, NULL, 3, 'o-231.1.wheelpair.1.1', 'wheelpairassemble', '2021-04-07 09:03:03', 45, NULL, 0),
 (158, 1, 58, 1, 'OUTCOME', 'o-233.1.wheelpair.1.1.shaft.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, 4, 'o-233.1.wheelpair.1.1.shaft.1', 'blankprocessing', '2021-04-07 09:23:13', 480, NULL, 0),
 (159, 1, 58, 5, 'PROCESSING', 'o-233.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 11:42:09', NULL, NULL, 0),
@@ -713,8 +723,8 @@ INSERT INTO `assigns` (`id`, `client_id`, `order_id`, `workcenter_id`, `bucket`,
 (205, 1, 69, 5, 'PROCESSING', 'o-255.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 11:41:56', NULL, NULL, 0),
 (206, 1, 70, 1, 'PROCESSING', 'o-256.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-24 12:24:25', NULL, NULL, 0),
 (207, 1, 70, 5, 'INCOME', 'o-256.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 08:46:18', NULL, NULL, 0),
-(208, 1, 71, 1, 'OUTCOME', 'o-257.1.wheelpair.1.1.shaft.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, 4, 'o-257.1.wheelpair.1.1.shaft.1', 'blankprocessing', '2021-04-07 09:21:53', 480, NULL, 0),
-(209, 1, 71, 5, 'OUTCOME', 'o-257.1.wheelpair.1.1.wheel', 'supplywheel', 150, NULL, 1, NULL, 3, 'o-257.1.wheelpair.1.1', 'wheelpairassemble', '2021-04-07 09:03:08', 45, NULL, 0),
+(208, 1, 71, 1, NULL, 'o-257.1.wheelpair.1.1.shaft.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, 4, 'o-257.1.wheelpair.1.1.shaft.1', 'blankprocessing', '2021-04-24 16:15:10', 480, 248, 0),
+(209, 1, 71, 5, NULL, 'o-257.1.wheelpair.1.1.wheel', 'supplywheel', 150, NULL, 1, NULL, 3, 'o-257.1.wheelpair.1.1', 'wheelpairassemble', '2021-04-24 16:15:27', 45, 249, 0),
 (212, 1, 73, 1, 'PROCESSING', 'o-26.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 09:23:07', NULL, NULL, 0),
 (213, 1, 73, 5, 'INCOME', 'o-26.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 08:58:19', NULL, NULL, 0),
 (214, 1, 74, 1, NULL, 'o-260.1.wheelpair.1.1.shaft.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, 4, 'o-260.1.wheelpair.1.1.shaft.1', 'blankprocessing', '2021-04-07 15:50:44', 480, 231, 0),
@@ -747,7 +757,10 @@ INSERT INTO `assigns` (`id`, `client_id`, `order_id`, `workcenter_id`, `bucket`,
 (243, 1, 87, 1, 'INCOME', 'o-272.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-24 12:34:51', NULL, NULL, 0),
 (244, 1, 87, 5, 'INCOME', 'o-272.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-24 12:34:51', NULL, NULL, 0),
 (245, 1, 88, 1, 'INCOME', 'o-274.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-24 12:37:07', NULL, NULL, 0),
-(246, 1, 88, 5, 'INCOME', 'o-274.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-24 12:37:07', NULL, NULL, 0);
+(246, 1, 88, 5, 'INCOME', 'o-274.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-24 12:37:07', NULL, NULL, 0),
+(247, 1, 57, 4, 'INCOME', 'o-231.1.wheelpair.1.1.shaft.1', 'blankprocessing', 480, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-24 16:15:07', NULL, NULL, 0),
+(248, 1, 71, 4, 'PROCESSING', 'o-257.1.wheelpair.1.1.shaft.1', 'blankprocessing', 480, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-24 16:15:41', NULL, NULL, 0),
+(249, 1, 71, 3, 'INCOME', 'o-257.1.wheelpair.1.1', 'wheelpairassemble', 45, NULL, NULL, NULL, NULL, NULL, NULL, '2021-04-24 16:15:27', NULL, NULL, 0);
 
 -- --------------------------------------------------------
 
@@ -1220,8 +1233,8 @@ CREATE TABLE IF NOT EXISTS `users` (
 
 INSERT INTO `users` (`id`, `client_id`, `name`, `ban`, `hash`, `roles`, `subscriptions`) VALUES
 (1, 1, 'David Rhuxel', 0, '27f02d4e066a8bbe8c055ec420dad009', 'SUPER_USER', ';#o-25;#o-253;#o-255;#o-256;#o-257;#o-26;#o-260;#o-262;#o-263;#o-264;#o-265;#o-267;#o-268;#o-269'),
-(2, 1, 'pavel', 0, '53e6074ce8ba130220b13613bedca72b', 'SUPER_USER;MOVE_ORDER_WC%wc1_3;SEND_MESSAGES', '#o-252;#o-253;#o-217;#o-266;#o-254;#o-220;#o-25;#o-251;#o-264;#o-265;#o-267;#o-268;#o-269;#o-260;#o-212;#o-213'),
-(3, 1, 'test', 0, '5a105e8b9d40e1329780d62ea2265d8a', 'IMPORT_ORDER;MOVE_ORDER_WC%wc2_3;USER_MANAGEMENT', ';#o-27;#o-270;#o-271;#o-272;#o-274'),
+(2, 1, 'pavel', 0, '53e6074ce8ba130220b13613bedca72b', 'MOVE_ORDER_WC%wc1_3;USER_MANAGEMENT', '#o-252;#o-253;#o-217;#o-266;#o-254;#o-220;#o-25;#o-251;#o-264;#o-265;#o-267;#o-268;#o-269;#o-260;#o-212;#o-213'),
+(3, 1, 'test', 0, '5a105e8b9d40e1329780d62ea2265d8a', 'IMPORT_ORDER;MOVE_ORDER_WC;MOVE_ORDER_ROAD;USER_MANAGEMENT', ';#o-27;#o-270;#o-271;#o-272;#o-274'),
 (4, 1, 'test1', 0, NULL, 'MOVE_ORDER_WC%wc1_1', ''),
 (5, 1, 'test2', NULL, NULL, '', '');
 

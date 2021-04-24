@@ -2,6 +2,7 @@
 include "checkORMNavi.php";
 $road_name = $_POST["data"]["road"];
 $road = $factory->getRoadInfo($road_name);
+$factory->hasRoleOrDie(["MOVE_ORDER_ROAD%".$road_name]);
 $brand = trim($road);
 $wc_from = (string)$road["from"];
 $wc_to = (string)$road["to"];

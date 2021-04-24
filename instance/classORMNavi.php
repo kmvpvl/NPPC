@@ -45,8 +45,6 @@ class ORMNaviRoles implements JsonSerializable {
 			"MOVE_ORDER_WC"=>new ORMNaviRole("MOVE_ORDER_WC", "The user can move order from a bucket to a bucket in workcenter"),
 			"MOVE_ORDER_ROAD"=>new ORMNaviRole("MOVE_ORDER_ROAD", "The user can move order from a workcenter to another in road"),
 			"USER_MANAGEMENT"=>new ORMNaviRole("USER_MANAGEMENT", "The user can add new user, grant or deny permissions, and block the user, subscribe or unsubscribe others"),
-			"SEND_MESSAGES"=>new ORMNaviRole("SEND_MESSAGES", "The user can send messages"),
-			"VIEW_ALL_ORDERS"=>new ORMNaviRole("VIEW_ALL_ORDERS", "The use can view all orders"),
 			"CHANGE_ORDERS_PRIORITY"=>new ORMNaviRole("CHANGE_ORDERS_PRIORITY", "The user can change orders' priority"),
 			"CHANGE_ASSIGN_PRIORITY"=>new ORMNaviRole("CHANGE_ASSIGN_PRIORITY", "The user can change orders' assigns priority"),
 			"UPDATE_ESTIMATED"=>new ORMNaviRole("UPDATE_ESTIMATED", "The user can update estimated time of order"),
@@ -1157,6 +1155,13 @@ class ORMNaviFactory implements JsonSerializable {
 	}
 
 	function moveAssignToNextWorkcenter($assign_id) {
+		$sql = "call getRoadByAssignID(".$assign_id.");";
+	    $x = $this->dblink->query($sql);
+		if (!$x) throw new ORMNaviException("Could not get road" . "': " . $this->dblink->errno . " - " . $this->dblink->error . $sql); 	    
+		$y = $x->fetch_assoc();
+	    $this->dblink->next_result();
+		if (!$this->user->hasRole("MOVE_ORDER_ROAD", $y["name"])) throw new ORMNaviException("User has no rights");
+
 		$sql = "call getAssignInfo(" . $assign_id . ");";
 	    $x = $this->dblink->query($sql);
 		if (!$x) throw new ORMNaviException("Could not get assign info" . "': " . $this->dblink->errno . " - " . $this->dblink->error . $sql);
