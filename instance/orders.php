@@ -115,8 +115,18 @@ $("#btnOrderInfo").on('click', function(){
 	</div>
 	<div>
 		<button id="btnInprocessSelectAll">Select All</button>
+<?php
+if ($factory->user->hasRole("UPDATE_ESTIMATED")) {
+?>
 		<button id="btnUpdateEstimated">Update est.</button>
+<?php
+}
+if ($factory->user->hasRole("UPDATE_BASELINE")) {
+?>
 		<button id="btnUpdateBaseline">Update plan</button>
+<?php
+}
+?>
 	</div>
 </orders>
 <div id="dlg-orderImport" style="display:none;">
