@@ -18,7 +18,7 @@ class ORMNaviRole implements JsonSerializable {
 			'context'=>($this->context?$this->context:null)
 		];
 	}
-	public function addContext(mixed $context) {
+	public function addContext(array $context) {
 		$this->context = $context;
 	}
 }

@@ -67,9 +67,11 @@ $('#btn-save-user').click(function(){
 
     sendDataToNavi("apiSaveUser", {id: user_id, name: user_name, roles: s, ban: null, subscriptions: null}, function(data, status){
         var ls = recieveDataFromNavi(data, status);
-        if (ls && ls.result=='OK') showInformation("User saved successfully...");
-        NaviFactory.users[user_name] = ls.data;
-        redraw();
+        if (ls && ls.result=='OK') {
+          showInformation("User saved successfully...");
+          NaviFactory.users[user_name] = ls.data;
+          redraw();
+        }
     });
 });
 $('#btn-new-user').click(function(){

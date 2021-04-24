@@ -264,17 +264,12 @@ class ORMNaviFactory {
 	}
 	updateFactoryInfo() {
 		sendDataToNavi("apiGetFactoryInfo", undefined, function(data, status){
-			hideLoading();
-			switch (status) {
-				case "success":
-					var ls = JSON.parse(data);
-					Object.assign(NaviFactory, ls.data);
-					$('#menu-user').text(NaviFactory.currentUser.name);
-					updateMessages();
-					loadInstance();
-					break;
-				default:
-					showLoadingError(data.status + ": " + data.statusText + ". " + data.responseText);
+			var ls = recieveDataFromNavi(data, status);
+			if (ls && ls.result=='OK') {
+				Object.assign(NaviFactory, ls.data);
+				$('#menu-user').text(NaviFactory.currentUser.name);
+				updateMessages();
+				loadInstance();
 			}
 		});
 	}
