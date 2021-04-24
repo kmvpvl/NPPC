@@ -628,3 +628,43 @@ orders-to-import-list::before {
 select {
     border: white 0px solid;
 }
+factory-user {
+    display:block;
+    margin: 5px;
+    padding: 5px;
+    border-radius: 2px;
+    border: darkgray 1px solid;
+    cursor: pointer;
+}
+factory-user.selected {
+    color: white;
+    background-color: navy;
+}
+factory-user > user-name {
+    font-size: larger;
+    display: block;
+}
+factory-user > user-roles,
+factory-user > user-subscriptions
+{
+    font-size: smaller;
+    display: block;
+}
+factory-user > user-roles::before {
+    content: "Roles: ";
+    font-weight: bold;
+}
+factory-user > user-subscriptions::before{
+    content: "Subscriptions: ";
+    font-weight: bold;
+}
+factory-user > user-controls {
+    cursor: pointer;
+    font-size: x-large;
+}
+.role-context {
+    padding-left: 2em;
+}
+#btn-new-user {
+    cursor: pointer;
+}

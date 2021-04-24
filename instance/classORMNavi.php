@@ -3,12 +3,66 @@ class ORMNaviException extends Exception {
 
 }
 
-abstract class ORMNaviRoles {
-	const SUPER_USER = "SUPER_USER";
-	const IMPORT_ORDER = "IMPORT_ORDER";
-	const TAKE_ORDER = "TAKE_ORDER";
-	const PROCESS_ORDER_WC = "PROCESS_ORDER_WC";
-	const PROCESS_ORDER_ROAD = "PROCESS_ORDER_ROAD";
+class ORMNaviRole implements JsonSerializable {
+	protected $name;
+	protected $context=null;
+	protected $description;
+	function __construct(string $name, string $description) {
+		$this->name = $name;
+		$this->description = $description;
+	}
+	public function jsonSerialize() {
+		return [
+			'name'=>$this->name,
+			'description'=>$this->description,
+			'context'=>($this->context?$this->context:null)
+		];
+	}
+	public function addContext(mixed $context) {
+		$this->context = $context;
+	}
+}
+
+class ORMNaviRoles implements JsonSerializable {
+	protected $factory;
+	protected $roles = [];
+	function __construct(ORMNaviFactory $factory) {
+		$this->factory = $factory;
+		$this->roles = [
+			"SUPER_USER"=>new ORMNaviRole("SUPER_USER", "The user can do everything"),
+			"IMPORT_ORDER"=>new ORMNaviRole("IMPORT_ORDER", "The user can import order for other users and for himself"),
+			"TAKE_ORDER"=>new ORMNaviRole("TAKE_ORDER", "The user can import order for himself"),
+			"MOVE_ORDER_WC"=>new ORMNaviRole("MOVE_ORDER_WC", "The user can move order from a bucket to a bucket in workcenter"),
+			"MOVE_ORDER_ROAD"=>new ORMNaviRole("MOVE_ORDER_ROAD", "The user can move order from a workcenter to another in road"),
+			"USER_MANAGEMENT"=>new ORMNaviRole("USER_MANAGEMENT", "The user can add new user, grant or deny permissions, and block the user, subscribe or unsubscribe others"),
+			"SEND_MESSAGES"=>new ORMNaviRole("SEND_MESSAGES", "The user can send messages"),
+			"VIEW_ALL_ORDERS"=>new ORMNaviRole("VIEW_ALL_ORDERS", "The use can view all orders"),
+			"CHANGE_ORDERS_PRIORITY"=>new ORMNaviRole("CHANGE_ORDERS_PRIORITY", "The user can change orders' priority"),
+			"CHANGE_ASSIGN_PRIORITY"=>new ORMNaviRole("CHANGE_ASSIGN_PRIORITY", "The user can change orders' assigns priority"),
+			"UPDATE_ESTIMATED"=>new ORMNaviRole("UPDATE_ESTIMATED", "The user can update estimated time of order"),
+			"UPDATE_BASELINE"=>new ORMNaviRole("UPDATE_BASELINE", "The user can update baseline and estimated time for order")
+		];
+		$wc = [];
+		$wx = $this->factory->getWorkcentersList();
+		foreach ($wx as $wcx) {
+			$wcxid = (string)$wcx["id"];
+			$wcname = trim($wcx);
+			$wc[$wcxid] = $wcname;
+		}
+		$this->roles["MOVE_ORDER_WC"]->addContext($wc);
+
+		$roads = [];
+		$rx = $this->factory->getRoadsList();
+		foreach ($rx as $rdx) {
+			$rdxid = (string)$rdx["id"];
+			$rdname = trim($rdx);
+			$roads[$rdxid] = $rdname;
+		}
+		$this->roles["MOVE_ORDER_ROAD"]->addContext($roads);
+	}
+	function jsonSerialize() {
+		return $this->roles;
+	}
 }
 class ORMNaviTag implements JsonSerializable {
 	protected $factory; 
@@ -52,7 +106,7 @@ class ORMNaviUser implements JsonSerializable {
 		$this->hash = md5($user_name . $password);
 	}
 	protected function getUserByName() {
-		$sql = "call getUser('".$this->factory->name."', '".$this->user_name."');";
+		$sql = "call getUser('".$this->factory->name."', '".$this->user_name."', '".$this->hash."');";
 		$x = $this->factory->dblink->query($sql);
 		if (!$x) throw new ORMNaviException("User '" . $this->user_name . "' not found in factory '" . $this->factory->name. "': " . $this->factory->dblink->errno . " - " . $this->factory->dblink->error);
 		$y = $x->fetch_assoc();
@@ -72,8 +126,9 @@ class ORMNaviUser implements JsonSerializable {
 		$this->subscriptions = $user["subscriptions"];
 	}
 
-	public function hasRole(string $role, ?string $context= null) {
-		if (in_array(ORMNaviRoles::SUPER_USER, $this->roles)) return true;
+	public function hasRole(string $role, ?string $context= null):bool {
+		$rr = new ORMNaviRoles($this->factory);
+		if (in_array("SUPER_USER", $this->roles)) return true;
 		if (!is_null($context)) {
 			return in_array([$role, $context], $this->roles);
 		} else {
@@ -788,6 +843,12 @@ class ORMNaviFactory implements JsonSerializable {
 				break;
 		}
 	}
+	function getWorkcentersList() {
+		return $this->factory_xml->xpath('workcenter');
+	}
+	function getRoadsList() {
+		return $this->factory_xml->xpath('road');
+	}
 	public function jsonSerialize(){
 		$ret = [];
 		$ret['currentUser'] = $this->user;
@@ -799,7 +860,7 @@ class ORMNaviFactory implements JsonSerializable {
 		$wcwl = $this->getWorkcentersWorkload();
 		$rdwl = $this->getRoadsWorkload();
 		$workcenters = [];
-		$wx = $this->factory_xml->xpath('workcenter');
+		$wx = $this->getWorkcentersList();
 		foreach ($wx as $wcx) {
 			$wc = [];
 			$wcxid = (string)$wcx["id"];
@@ -819,7 +880,7 @@ class ORMNaviFactory implements JsonSerializable {
 		}
 		$ret['workcenters'] = $workcenters;
 		$roads = [];
-		$rx = $this->factory_xml->xpath('road');
+		$rx = $this->getRoadsList();
 		foreach ($rx as $rdx) {
 			$rd = [];
 			$rdxid = (string)$rdx["id"];
@@ -842,6 +903,7 @@ class ORMNaviFactory implements JsonSerializable {
 		}
 		$ret['roads'] = $roads;
 		$ret['users'] = $this->getUsersList();
+		$ret['roles'] = new ORMNaviRoles($this);
 		return $ret;
 	}
 
@@ -1125,7 +1187,7 @@ class ORMNaviFactory implements JsonSerializable {
 		return $ret;
 	}
 	function subscribeUser(string $user_name, string $tag) {
-		$sql = "call getUser('".$this->name."', '".$user_name."');";
+		$sql = "call getUser('".$this->name."', '".$user_name."', null);";
 		$x = $this->dblink->query($sql);
 		if (!$x) throw new ORMNaviException("User '" . $user_name . "' not found in factory '" . $this->name. "': " . $this->dblink->errno . " - " . $this->dblink->error);
 		$y = $x->fetch_assoc();
@@ -1148,6 +1210,15 @@ class ORMNaviFactory implements JsonSerializable {
 		$x = $this->dblink->query($sql);
 		if (!$x) throw new ORMNaviException("Could not set flag label to message': " . $this->dblink->errno . " - " . $this->dblink->error);
 		$x = $this->dblink->next_result();
+	}
+	function saveUser(?int $id, ?string $user_name, ?bool $ban, ?string $roles, ?string $subscriptions):array{
+		/* id, factory, user_name, ban, roles, suscriptions */
+		$sql = "call saveUser(".($id?$id:"null").", '".$this->name."', ".($user_name?"'".$user_name."'":"null").", ".($ban?1:0).", ".($roles?"'".$roles."'":"null").", ".($subscriptions?"'".$subscriptions."'":"null").");";
+		$x = $this->dblink->query($sql);
+		if (!$x) throw new ORMNaviException("Could not set flag label to message': " . $this->dblink->errno . " - " . $this->dblink->error);
+		$y = $x->fetch_assoc();
+		$x = $this->dblink->next_result();
+		return $y;
 	}
 }
 ?>

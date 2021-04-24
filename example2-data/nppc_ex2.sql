@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 22, 2021 at 10:04 PM
+-- Generation Time: Apr 24, 2021 at 09:33 AM
 -- Server version: 10.4.17-MariaDB
 -- PHP Version: 8.0.0
 
@@ -219,9 +219,18 @@ group by `roads`.`id`;
 END$$
 
 DROP PROCEDURE IF EXISTS `getUser`$$
-CREATE DEFINER=`nppc`@`localhost` PROCEDURE `getUser` (IN `_factory` VARCHAR(50), IN `_user` VARCHAR(50))  READS SQL DATA
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `getUser` (IN `_factory` VARCHAR(50), IN `_user` VARCHAR(50), IN `_hash` VARCHAR(36))  READS SQL DATA
     SQL SECURITY INVOKER
-select * from `users` WHERE `users`.`client_id` = getClientID(`_factory`) and `users`.`name` like `_user`$$
+BEGIN
+set @client_id = getClientID(`_factory`);
+if (`_hash` IS NOT NULL) THEN
+set @hash = (select `users`.`hash` from `users` where  `users`.`client_id` = @client_id and `users`.`name` like `_user`);
+if (@hash IS NULL) THEN
+	update `users` set `users`.`hash`=`_hash` WHERE `users`.`client_id` = @client_id and `users`.`name` like `_user`;
+end if;
+end if;
+select * from `users` WHERE `users`.`client_id` = @client_id and `users`.`name` like `_user`;
+END$$
 
 DROP PROCEDURE IF EXISTS `getUsersList`$$
 CREATE DEFINER=`nppc`@`localhost` PROCEDURE `getUsersList` (IN `_factory` VARCHAR(50))  READS SQL DATA
@@ -323,6 +332,25 @@ end if;
 update assigns set bucket = null, next_id = @id_next WHERE id = `_assign_id`;
 COMMIT;
 end$$
+
+DROP PROCEDURE IF EXISTS `saveUser`$$
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `saveUser` (IN `_id` BIGINT UNSIGNED, IN `_factory` VARCHAR(50), IN `_name` VARCHAR(50), IN `_ban` BOOLEAN, IN `_roles` VARCHAR(2048), IN `_subscriptions` VARCHAR(4096))  NO SQL
+    SQL SECURITY INVOKER
+BEGIN
+set @id =`_id`;
+if (`_id` IS NOT NULL) THEN
+update `users` 
+set `users`.`ban` = IFNULL(`_ban`, `users`.`ban`) 
+, `users`.`roles` = IFNULL(`_roles`, `users`.`roles`)
+, `users`.`subscriptions` = IFNULL(`_subscriptions`, `users`.`subscriptions`)
+where `users`.`id`=`_id`;
+ELSE
+set @client_id = getClientID(`_factory`);
+insert into `users` (`client_id`, `name`, `roles`, `subscriptions`) values(@client_id, `_name`, IFNULL(`_roles`,''), IFNULL(`_subscriptions`,'') );
+set @id = LAST_INSERT_ID();
+end IF;
+select * from `users` where `users`.`id`=@id;
+END$$
 
 DROP PROCEDURE IF EXISTS `updateAssignOrderPart`$$
 CREATE DEFINER=`nppc`@`localhost` PROCEDURE `updateAssignOrderPart` (IN `_id` BIGINT UNSIGNED, IN `_new_order_part` VARCHAR(250), IN `_next_wc` VARCHAR(50), IN `_next_order_part` VARCHAR(4096), IN `_next_operation` VARCHAR(250), IN `_next_consumption` DOUBLE)  MODIFIES SQL DATA
@@ -461,7 +489,7 @@ CREATE TABLE IF NOT EXISTS `assigns` (
   KEY `workcenter_id` (`workcenter_id`),
   KEY `bucket` (`bucket`),
   KEY `operation` (`operation`)
-) ENGINE=InnoDB AUTO_INCREMENT=234 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=235 DEFAULT CHARSET=utf8;
 
 --
 -- Dumping data for table `assigns`
@@ -580,8 +608,8 @@ INSERT INTO `assigns` (`id`, `client_id`, `order_id`, `workcenter_id`, `bucket`,
 (110, 1, 44, 5, 'INCOME', 'o-14.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-03-18 15:32:26', NULL, NULL, 0),
 (111, 1, 45, 1, 'INCOME', 'o-15.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-03-18 15:36:34', NULL, NULL, 0),
 (112, 1, 45, 5, 'INCOME', 'o-15.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-03-18 15:36:34', NULL, NULL, 0),
-(113, 1, 46, 1, 'INCOME', 'o-16.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-03-18 15:40:47', NULL, NULL, 0),
-(114, 1, 46, 5, 'INCOME', 'o-16.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-03-18 15:40:47', NULL, NULL, 0),
+(113, 1, 46, 1, NULL, 'o-16.1.wheelpair.1.1.shaft.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, 4, 'o-16.1.wheelpair.1.1.shaft.1', 'blankprocessing', '2021-04-22 20:06:55', 480, 234, 1),
+(114, 1, 46, 5, 'INCOME', 'o-16.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-22 20:06:02', NULL, NULL, 1),
 (115, 1, 47, 1, 'INCOME', 'o-17.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-03-18 15:42:21', NULL, NULL, 0),
 (116, 1, 47, 5, 'INCOME', 'o-17.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-03-18 15:42:21', NULL, NULL, 0),
 (117, 1, 48, 1, 'INCOME', 'o-18.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-03-18 15:42:54', NULL, NULL, 0),
@@ -698,7 +726,8 @@ INSERT INTO `assigns` (`id`, `client_id`, `order_id`, `workcenter_id`, `bucket`,
 (230, 1, 81, 5, 'INCOME', 'o-269.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 12:18:55', NULL, NULL, 0),
 (231, 1, 74, 4, NULL, 'o-260.1.wheelpair.1.1.shaft', 'blankprocessing', 480, NULL, 1, NULL, 3, 'o-260.1.wheelpair.1.1', 'wheelpairassemble', '2021-04-07 15:51:19', 45, 232, 0),
 (232, 1, 74, 3, 'PROCESSING', 'o-260.1.wheelpair.1.1', 'wheelpairassemble', 45, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 15:52:59', NULL, NULL, 0),
-(233, 1, 64, 4, 'INCOME', 'o-243.1.wheelpair.1.1.shaft.1', 'blankprocessing', 480, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-21 04:20:31', NULL, NULL, 0);
+(233, 1, 64, 4, 'INCOME', 'o-243.1.wheelpair.1.1.shaft.1', 'blankprocessing', 480, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-21 04:20:31', NULL, NULL, 0),
+(234, 1, 46, 4, 'INCOME', 'o-16.1.wheelpair.1.1.shaft.1', 'blankprocessing', 480, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-22 20:06:55', NULL, NULL, 1);
 
 -- --------------------------------------------------------
 
@@ -744,7 +773,7 @@ CREATE TABLE IF NOT EXISTS `messages` (
   KEY `message_type` (`message_type`),
   KEY `client_id` (`client_id`),
   KEY `thread_id` (`thread_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=138 DEFAULT CHARSET=utf8 COMMENT='Messages of users';
+) ENGINE=InnoDB AUTO_INCREMENT=139 DEFAULT CHARSET=utf8 COMMENT='Messages of users';
 
 --
 -- Dumping data for table `messages`
@@ -885,7 +914,8 @@ INSERT INTO `messages` (`id`, `message_time`, `client_id`, `message_from`, `mess
 (134, '2021-04-08 09:10:50', 1, 2, 'INFO', '@\"David Rhuxel\" answer to 129', '@\"David Rhuxel\"', NULL, 0),
 (135, '2021-04-08 09:11:35', 1, 1, 'INFO', '@\"pavel\" test passed', '@\"pavel\"', NULL, NULL),
 (136, '2021-04-19 08:18:19', 1, 2, 'INFO', '@\"David Rhuxel\" again', '@\"David Rhuxel\"', NULL, 0),
-(137, '2021-04-21 10:29:59', 1, 1, 'INFO', '@\"pavel\"  test passed again', '@\"pavel\"', NULL, NULL);
+(137, '2021-04-21 10:29:59', 1, 1, 'INFO', '@\"pavel\"  test passed again', '@\"pavel\"', NULL, NULL),
+(138, '2021-04-22 20:06:38', 1, 1, 'INFO', 'Order #o-16 processed \'o-16.1.wheelpair.1.1.shaft.1.1\' and ready to @\"Blank processing\"', '#o-16', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -1048,7 +1078,7 @@ INSERT INTO `orders` (`id`, `number`, `client_id`, `state`, `current_route`, `de
 (41, 'o-232', 1, 'ASSIGNED', 1, '2020-11-24 19:48:21', '2021-04-25 08:06:34', '2021-04-25 07:26:55', NULL, NULL, '2021-04-22 11:41:55', '2020-11-14 13:43:39', 0),
 (44, 'o-14', 1, 'ASSIGNED', 1, '2021-03-16 19:47:03', '2021-04-30 17:36:34', '2021-04-30 12:56:55', NULL, NULL, '2021-04-22 11:41:55', '2021-03-18 15:32:15', 0),
 (45, 'o-15', 1, 'ASSIGNED', 1, '2021-06-08 19:47:03', '2021-04-30 20:06:34', '2021-04-30 15:26:55', NULL, NULL, '2021-04-22 11:41:55', '2021-03-18 15:36:34', 0),
-(46, 'o-16', 1, 'ASSIGNED', 1, '2021-04-23 19:47:03', '2021-04-30 22:36:34', '2021-04-30 17:56:55', NULL, NULL, '2021-04-22 11:41:55', '2021-03-18 15:40:33', 0),
+(46, 'o-16', 1, 'ASSIGNED', 1, '2021-04-23 19:47:03', '2021-04-30 22:36:34', '2021-04-30 17:56:55', NULL, NULL, '2021-04-22 20:06:02', '2021-03-18 15:40:33', 1),
 (47, 'o-17', 1, 'ASSIGNED', 1, '2021-03-23 19:47:03', '2021-05-01 01:06:34', '2021-04-30 20:26:55', NULL, NULL, '2021-04-22 11:41:55', '2021-03-18 15:42:21', 0),
 (48, 'o-18', 1, 'ASSIGNED', 1, '2021-04-08 19:47:03', '2021-05-01 03:36:34', '2021-04-30 22:56:55', NULL, NULL, '2021-04-22 11:41:55', '2021-03-18 15:42:54', 0),
 (49, 'o-19', 1, 'ASSIGNED', 1, '2021-05-27 19:47:03', '2021-05-01 06:06:34', '2021-05-01 01:26:55', NULL, NULL, '2021-04-22 11:41:55', '2021-03-18 15:42:54', 0),
@@ -1148,21 +1178,24 @@ CREATE TABLE IF NOT EXISTS `users` (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   `client_id` bigint(20) UNSIGNED NOT NULL,
   `name` varchar(50) NOT NULL,
-  `hash` varchar(36) NOT NULL,
+  `ban` tinyint(1) DEFAULT NULL,
+  `hash` varchar(36) DEFAULT NULL,
   `roles` varchar(2048) NOT NULL,
   `subscriptions` varchar(4096) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `name` (`name`,`client_id`) USING BTREE,
   KEY `client_id` (`client_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COMMENT='users table referenced to factory xml';
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8 COMMENT='users table referenced to factory xml';
 
 --
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `client_id`, `name`, `hash`, `roles`, `subscriptions`) VALUES
-(1, 1, 'David Rhuxel', '27f02d4e066a8bbe8c055ec420dad009', '', ';#o-25;#o-253;#o-255;#o-256;#o-257;#o-26;#o-260;#o-262;#o-263;#o-264;#o-265;#o-267;#o-268;#o-269'),
-(2, 1, 'pavel', '53e6074ce8ba130220b13613bedca72b', '', '#o-252;#o-253;#o-217;#o-266;#o-254;#o-220;#o-25;#o-251;#o-264;#o-265;#o-267;#o-268;#o-269;#o-260;#o-212;#o-213');
+INSERT INTO `users` (`id`, `client_id`, `name`, `ban`, `hash`, `roles`, `subscriptions`) VALUES
+(1, 1, 'David Rhuxel', 0, '27f02d4e066a8bbe8c055ec420dad009', 'SUPER_USER', ';#o-25;#o-253;#o-255;#o-256;#o-257;#o-26;#o-260;#o-262;#o-263;#o-264;#o-265;#o-267;#o-268;#o-269'),
+(2, 1, 'pavel', 0, '53e6074ce8ba130220b13613bedca72b', 'MOVE_ORDER_WC%wc1_3;SEND_MESSAGES', '#o-252;#o-253;#o-217;#o-266;#o-254;#o-220;#o-25;#o-251;#o-264;#o-265;#o-267;#o-268;#o-269;#o-260;#o-212;#o-213'),
+(3, 1, 'test', 0, '5a105e8b9d40e1329780d62ea2265d8a', 'TAKE_ORDER', ''),
+(4, 1, 'test1', 0, NULL, 'MOVE_ORDER_WC%wc1_1', '');
 
 -- --------------------------------------------------------
 

@@ -30,6 +30,38 @@ function sendDataToNavi(api, data, callback) {
 	});
 }
 
+function recieveDataFromNavi(data, status) {
+	hideLoading();
+	var ls = null;
+	switch (status) {
+		case "success":
+			try {
+				ls = JSON.parse(data);
+				if (ls.result == 'FAIL') {
+					showLoadingError("Error: " + " - " + ls.description);
+				} 
+			} catch(e) {
+				showLoadingError("Error on server: " + e + " - " + data);
+			}
+			break;
+		default:
+			showLoadingError("Error on server: " + " - " + data);
+	}
+	return ls;
+}
+
+function receiveHtmlFromNavi(data, status) {
+	hideLoading();
+	switch (status) {
+		case "success":
+			return data;
+			break;
+		default:
+			clearInstance();
+	}
+	return null;
+}
+
 function drawDateTime(d) {
 	var options_date = {
 		year: "2-digit",

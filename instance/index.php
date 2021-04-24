@@ -25,7 +25,7 @@
 				<a class="dropdown-item" href="#">Customers</a>
 				<a class="dropdown-item" href="#">Suppliers</a>
 				<div class="dropdown-divider"></div>
-				<a class="dropdown-item" href="#">Users</a>
+				<a class="dropdown-item" instance="users" id="menuUsers" data-toggle="collapse" data-target=".navbar-collapse.show">Users</a>
 				<a class="dropdown-item" href="#">Settings</a>
 			</div>
 		</li>
@@ -237,9 +237,9 @@ function updateMessages() {
 					}
 				}
 				if (unread_count)	{
-					$("#messages-popup").html(unread_count+" messages");
+					$("#messages-popup").html(unread_count+" sms");
 				} else {
-					$("#messages-popup").html("No new messages");
+					$("#messages-popup").html("All read");
 				}
 				$("messages messages-container message message-from").prepend('<i class="fa fa-user-circle" aria-hidden="true"></i>');
 				$("messages messages-container message message-time").prepend('<i class="fa fa-clock-o" aria-hidden="true"></i>');
@@ -346,16 +346,7 @@ function loadInstance() {
 $("a[instance]").on ('click', function (event) {
 	sendDataToNavi($(this).attr("instance"), undefined,
 	function(data, status){
-		hideLoading();
-		switch (status) {
-			case "success":
-				$("instance").html(data);
-				break;
-			default:
-				clearInstance();
-		hideLoading();
-				showLoginForm();
-		}
+		$("instance").html(receiveHtmlFromNavi(data, status));
 	});
 })
 
