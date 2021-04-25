@@ -83,15 +83,29 @@ $('#btn-new-user').click(function(){
     drawRoles();
     $('#dlgUserModal').modal('show');
 });
+function searchUsers(){
+  if ($('#txt-serach-user').val()==''){
+    $('factory-user').show();
+  } else {
+    $('factory-user').hide();
+    $('factory-user:contains('+$('#txt-serach-user').val()+')').show();
+  }
+}
+$('#txt-search-user').change(function(){
+  searchUsers();
+});
+$('#btn-search-user').click(function(){
+  searchUsers();
+});
 </script>
 <users>
 <div class="input-group">
   <div class="input-group-prepend">
   <span class="input-group-text" id="btn-new-user"><i class="fa fa-plus-square" aria-hidden="true"></i></span>
   </div>
-  <input type="text" class="form-control" placeholder="Search user..."></input>
+  <input id="txt-search-user" type="text" class="form-control" placeholder="Search user..."></input>
   <div class="input-group-append">
-	  <button id="" class="btn btn-outline-secondary" type="button">Search</button>
+	  <button id="btn-search-user" class="btn btn-outline-secondary" type="button">Search</button>
   </div>
 </div>
 
