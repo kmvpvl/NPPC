@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Apr 08, 2021 at 12:21 PM
+-- Generation Time: Apr 24, 2021 at 04:17 PM
 -- Server version: 10.5.8-MariaDB
 -- PHP Version: 7.4.15
 
@@ -52,7 +52,8 @@ CREATE DEFINER=`nppc`@`localhost` PROCEDURE `assignWorkcenterToRoutePart` (IN `_
     SQL SECURITY INVOKER
 BEGIN
 set @client_id = getClientID(`_factory`);
-insert into assigns  (client_id, order_id, order_part, operation, workcenter_id, bucket, fullset, consumption_plan) VALUES(@client_id, `_order_id`, `_order_part`, `_operation`, getWorkcenterID(@client_id, `_wc`), `_bucket`, 1, `_consumption_plan`);
+set @priority = (select `orders`.`priority` from `orders` where `orders`.`id` = `_order_id`);
+insert into assigns  (client_id, order_id, order_part, operation, workcenter_id, bucket, fullset, consumption_plan, priority) VALUES(@client_id, `_order_id`, `_order_part`, `_operation`, getWorkcenterID(@client_id, `_wc`), `_bucket`, 1, `_consumption_plan`, @priority);
 END$$
 
 DROP PROCEDURE IF EXISTS `deleteOrder`$$
@@ -89,7 +90,7 @@ SELECT `tag`, count(`tag`) as c FROM `temp` group by `tag` order by c desc;
 END$$
 
 DROP PROCEDURE IF EXISTS `getAssignInfo`$$
-CREATE DEFINER=`nppc`@`localhost` PROCEDURE `getAssignInfo` (IN `_assign_id` INT)  READS SQL DATA
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `getAssignInfo` (IN `_assign_id` INT UNSIGNED)  READS SQL DATA
     SQL SECURITY INVOKER
 SELECT assigns.order_part, assigns.next_order_part, orders.number, orders.current_route  FROM `assigns` 
 left join orders on orders.id = assigns.order_id
@@ -204,6 +205,16 @@ from `roads`
 where `roads`.`from_wc`= @from_wc_id and @to_wc_id;
 END$$
 
+DROP PROCEDURE IF EXISTS `getRoadByAssignID`$$
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `getRoadByAssignID` (IN `_assign_id` BIGINT UNSIGNED)  NO SQL
+    SQL SECURITY INVOKER
+BEGIN
+select `assigns`.`workcenter_id`, `assigns`.`next_workcenter_id` into @wc, @nwc from `assigns` where `assigns`.`id`=`_assign_id`;
+select * 
+from `roads`
+where `roads`.`from_wc`=@wc and `roads`.`to_wc`=@nwc;
+END$$
+
 DROP PROCEDURE IF EXISTS `getRoadsWorkload`$$
 CREATE DEFINER=`nppc`@`localhost` PROCEDURE `getRoadsWorkload` (IN `_factory` VARCHAR(50))  READS SQL DATA
     SQL SECURITY INVOKER
@@ -218,15 +229,34 @@ group by `roads`.`id`;
 END$$
 
 DROP PROCEDURE IF EXISTS `getUser`$$
-CREATE DEFINER=`nppc`@`localhost` PROCEDURE `getUser` (IN `_factory` VARCHAR(50), IN `_user` VARCHAR(50))  READS SQL DATA
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `getUser` (IN `_factory` VARCHAR(50), IN `_user` VARCHAR(50), IN `_hash` VARCHAR(36))  READS SQL DATA
     SQL SECURITY INVOKER
-select * from `users` WHERE `users`.`client_id` = getClientID(`_factory`) and `users`.`name` like `_user`$$
+BEGIN
+set @client_id = getClientID(`_factory`);
+if (`_hash` IS NOT NULL) THEN
+set @hash = (select `users`.`hash` from `users` where  `users`.`client_id` = @client_id and `users`.`name` like `_user`);
+if (@hash IS NULL) THEN
+	update `users` set `users`.`hash`=`_hash` WHERE `users`.`client_id` = @client_id and `users`.`name` like `_user`;
+end if;
+end if;
+select * from `users` WHERE `users`.`client_id` = @client_id and `users`.`name` like `_user`;
+END$$
 
 DROP PROCEDURE IF EXISTS `getUsersList`$$
 CREATE DEFINER=`nppc`@`localhost` PROCEDURE `getUsersList` (IN `_factory` VARCHAR(50))  READS SQL DATA
     SQL SECURITY INVOKER
 select * 
 from `users`$$
+
+DROP PROCEDURE IF EXISTS `getWorkcenterByAssignID`$$
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `getWorkcenterByAssignID` (IN `_assign_id` BIGINT UNSIGNED)  NO SQL
+    SQL SECURITY INVOKER
+BEGIN
+set @wc_id = (select `assigns`.`workcenter_id` from `assigns` where `assigns`.`id` = `_assign_id`);
+select `workcenters`.*
+from `workcenters`
+where `workcenters`.`id` = @wc_id;
+END$$
 
 DROP PROCEDURE IF EXISTS `getWorkcentersWorkload`$$
 CREATE DEFINER=`nppc`@`localhost` PROCEDURE `getWorkcentersWorkload` (IN `_factory` VARCHAR(50))  READS SQL DATA
@@ -239,6 +269,15 @@ from `workcenters`
 left JOIN `assigns` on `assigns`.`workcenter_id`=`workcenters`.`id`
 where `workcenters`.`client_id`=@client_id and find_in_set(`assigns`.`bucket`, 'INCOME,PROCESSING')
  group by `workcenters`.`id`, `assigns`.`operation`;
+END$$
+
+DROP PROCEDURE IF EXISTS `incOrderPriority`$$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `incOrderPriority` (IN `_order_id` BIGINT UNSIGNED, IN `_delta` INT)  NO SQL
+BEGIN
+update `orders` set `orders`.`priority` = `orders`.`priority` + `_delta`
+where `orders`.`id` = `_order_id`;
+update `assigns` set `assigns`.`priority` = `assigns`.`priority` + `_delta`
+where `assigns`.`order_id` = `_order_id` and `assigns`.`bucket` is NOT null;
 END$$
 
 DROP PROCEDURE IF EXISTS `makeMessageRead`$$
@@ -313,6 +352,25 @@ end if;
 update assigns set bucket = null, next_id = @id_next WHERE id = `_assign_id`;
 COMMIT;
 end$$
+
+DROP PROCEDURE IF EXISTS `saveUser`$$
+CREATE DEFINER=`nppc`@`localhost` PROCEDURE `saveUser` (IN `_id` BIGINT UNSIGNED, IN `_factory` VARCHAR(50), IN `_name` VARCHAR(50), IN `_ban` BOOLEAN, IN `_roles` VARCHAR(2048), IN `_subscriptions` VARCHAR(4096))  NO SQL
+    SQL SECURITY INVOKER
+BEGIN
+set @id =`_id`;
+if (`_id` IS NOT NULL) THEN
+update `users` 
+set `users`.`ban` = IFNULL(`_ban`, `users`.`ban`) 
+, `users`.`roles` = IFNULL(`_roles`, `users`.`roles`)
+, `users`.`subscriptions` = IFNULL(`_subscriptions`, `users`.`subscriptions`)
+where `users`.`id`=`_id`;
+ELSE
+set @client_id = getClientID(`_factory`);
+insert into `users` (`client_id`, `name`, `roles`, `subscriptions`) values(@client_id, `_name`, IFNULL(`_roles`,''), IFNULL(`_subscriptions`,'') );
+set @id = LAST_INSERT_ID();
+end IF;
+select * from `users` where `users`.`id`=@id;
+END$$
 
 DROP PROCEDURE IF EXISTS `updateAssignOrderPart`$$
 CREATE DEFINER=`nppc`@`localhost` PROCEDURE `updateAssignOrderPart` (IN `_id` BIGINT UNSIGNED, IN `_new_order_part` VARCHAR(250), IN `_next_wc` VARCHAR(50), IN `_next_order_part` VARCHAR(4096), IN `_next_operation` VARCHAR(250), IN `_next_consumption` DOUBLE)  MODIFIES SQL DATA
@@ -451,7 +509,7 @@ CREATE TABLE IF NOT EXISTS `assigns` (
   KEY `workcenter_id` (`workcenter_id`),
   KEY `bucket` (`bucket`),
   KEY `operation` (`operation`)
-) ENGINE=InnoDB AUTO_INCREMENT=233 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=250 DEFAULT CHARSET=utf8;
 
 --
 -- Dumping data for table `assigns`
@@ -537,8 +595,8 @@ INSERT INTO `assigns` (`id`, `client_id`, `order_id`, `workcenter_id`, `bucket`,
 (77, 1, 1, 4, NULL, 'o-212.1.wheelpair.1.1.shaft', 'blankprocessing', 480, NULL, 1, NULL, 3, 'o-212.1.wheelpair.1.1', 'wheelpairassemble', '2020-11-13 08:23:57', 45, 75, 0),
 (78, 1, 3, 3, NULL, 'o-213.1.wheelpair.1', 'wheelpairassemble', 45, NULL, 1, NULL, 2, 'o-213.1.wheelpair.1', 'qualitycheck', '2021-04-03 17:45:17', 240, 178, 0),
 (79, 1, 18, 3, 'OUTCOME', 'o-13.1.wheelpair.1', 'wheelpairassemble', 45, NULL, 1, NULL, 2, 'o-13.1.wheelpair.1', 'qualitycheck', '2021-04-03 16:51:56', 240, NULL, 0),
-(80, 1, 6, 2, 'PROCESSING', 'o-216.1.wheelpair.1', 'qualitycheck', 240, NULL, 1, NULL, NULL, NULL, NULL, '2020-11-13 08:39:15', NULL, NULL, 0),
-(81, 1, 1, 2, 'PROCESSING', 'o-212.1.wheelpair.1', 'qualitycheck', 240, NULL, 1, NULL, NULL, NULL, NULL, '2021-03-26 10:39:54', NULL, NULL, 0),
+(80, 1, 6, 2, 'PROCESSING', 'o-216.1.wheelpair.1', 'qualitycheck', 240, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-22 11:39:03', NULL, NULL, -1),
+(81, 1, 1, 2, 'PROCESSING', 'o-212.1.wheelpair.1', 'qualitycheck', 240, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-22 11:38:30', NULL, NULL, 1),
 (82, 1, 33, 1, 'OUTCOME', 'o-226.1.wheelpair.1.1.shaft.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, 4, 'o-226.1.wheelpair.1.1.shaft.1', 'blankprocessing', '2021-04-07 09:21:50', 480, NULL, 0),
 (83, 1, 33, 5, 'OUTCOME', 'o-226.1.wheelpair.1.1.wheel', 'supplywheel', 150, NULL, 1, NULL, 3, 'o-226.1.wheelpair.1.1', 'wheelpairassemble', '2021-04-07 09:03:22', 45, NULL, 0),
 (84, 1, 34, 1, NULL, 'o-259.1.wheelpair.1.1.shaft.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, 4, 'o-259.1.wheelpair.1.1.shaft.1', 'blankprocessing', '2020-11-13 10:53:16', 480, 97, 0),
@@ -570,8 +628,8 @@ INSERT INTO `assigns` (`id`, `client_id`, `order_id`, `workcenter_id`, `bucket`,
 (110, 1, 44, 5, 'INCOME', 'o-14.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-03-18 15:32:26', NULL, NULL, 0),
 (111, 1, 45, 1, 'INCOME', 'o-15.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-03-18 15:36:34', NULL, NULL, 0),
 (112, 1, 45, 5, 'INCOME', 'o-15.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-03-18 15:36:34', NULL, NULL, 0),
-(113, 1, 46, 1, 'INCOME', 'o-16.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-03-18 15:40:47', NULL, NULL, 0),
-(114, 1, 46, 5, 'INCOME', 'o-16.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-03-18 15:40:47', NULL, NULL, 0),
+(113, 1, 46, 1, NULL, 'o-16.1.wheelpair.1.1.shaft.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, 4, 'o-16.1.wheelpair.1.1.shaft.1', 'blankprocessing', '2021-04-22 20:06:55', 480, 234, 1),
+(114, 1, 46, 5, 'INCOME', 'o-16.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-22 20:06:02', NULL, NULL, 1),
 (115, 1, 47, 1, 'INCOME', 'o-17.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-03-18 15:42:21', NULL, NULL, 0),
 (116, 1, 47, 5, 'INCOME', 'o-17.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-03-18 15:42:21', NULL, NULL, 0),
 (117, 1, 48, 1, 'INCOME', 'o-18.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-03-18 15:42:54', NULL, NULL, 0),
@@ -605,7 +663,7 @@ INSERT INTO `assigns` (`id`, `client_id`, `order_id`, `workcenter_id`, `bucket`,
 (145, 1, 39, 3, NULL, 'o-241.1.wheelpair.1', 'wheelpairassemble', 45, NULL, 1, NULL, 2, 'o-241.1.wheelpair.1', 'qualitycheck', '2021-04-03 19:03:15', 240, 186, 0),
 (146, 1, 19, 2, 'INCOME', 'o-225.1.wheelpair.1', 'qualitycheck', 240, NULL, 1, NULL, NULL, NULL, NULL, '2021-03-28 16:12:35', NULL, NULL, 0),
 (147, 1, 20, 2, 'INCOME', 'o-230.1.wheelpair.1', 'qualitycheck', 240, NULL, 1, NULL, NULL, NULL, NULL, '2021-03-28 16:12:38', NULL, NULL, 0),
-(148, 1, 21, 2, 'INCOME', 'o-236.1.wheelpair.1', 'qualitycheck', 240, NULL, 1, NULL, NULL, NULL, NULL, '2021-03-28 16:12:40', NULL, NULL, 0),
+(148, 1, 21, 2, 'INCOME', 'o-236.1.wheelpair.1', 'qualitycheck', 240, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-22 11:40:26', NULL, NULL, 1),
 (149, 1, 13, 2, 'INCOME', 'o-223.1.wheelpair.1', 'qualitycheck', 240, NULL, 1, NULL, NULL, NULL, NULL, '2021-03-28 16:12:43', NULL, NULL, 0),
 (150, 1, 54, 1, 'OUTCOME', 'o-227.1.wheelpair.1.1.shaft.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, 4, 'o-227.1.wheelpair.1.1.shaft.1', 'blankprocessing', '2021-04-07 09:22:10', 480, NULL, 0),
 (151, 1, 54, 5, 'PROCESSING', 'o-227.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 11:42:02', NULL, NULL, 0),
@@ -613,7 +671,7 @@ INSERT INTO `assigns` (`id`, `client_id`, `order_id`, `workcenter_id`, `bucket`,
 (153, 1, 55, 5, 'PROCESSING', 'o-228.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 11:42:11', NULL, NULL, 0),
 (154, 1, 56, 1, 'OUTCOME', 'o-229.1.wheelpair.1.1.shaft.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, 4, 'o-229.1.wheelpair.1.1.shaft.1', 'blankprocessing', '2021-04-07 09:22:05', 480, NULL, 0),
 (155, 1, 56, 5, 'PROCESSING', 'o-229.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 11:41:53', NULL, NULL, 0),
-(156, 1, 57, 1, 'OUTCOME', 'o-231.1.wheelpair.1.1.shaft.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, 4, 'o-231.1.wheelpair.1.1.shaft.1', 'blankprocessing', '2021-04-07 09:21:48', 480, NULL, 0),
+(156, 1, 57, 1, NULL, 'o-231.1.wheelpair.1.1.shaft.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, 4, 'o-231.1.wheelpair.1.1.shaft.1', 'blankprocessing', '2021-04-24 16:15:07', 480, 247, 0),
 (157, 1, 57, 5, 'OUTCOME', 'o-231.1.wheelpair.1.1.wheel', 'supplywheel', 150, NULL, 1, NULL, 3, 'o-231.1.wheelpair.1.1', 'wheelpairassemble', '2021-04-07 09:03:03', 45, NULL, 0),
 (158, 1, 58, 1, 'OUTCOME', 'o-233.1.wheelpair.1.1.shaft.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, 4, 'o-233.1.wheelpair.1.1.shaft.1', 'blankprocessing', '2021-04-07 09:23:13', 480, NULL, 0),
 (159, 1, 58, 5, 'PROCESSING', 'o-233.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 11:42:09', NULL, NULL, 0),
@@ -629,7 +687,7 @@ INSERT INTO `assigns` (`id`, `client_id`, `order_id`, `workcenter_id`, `bucket`,
 (169, 1, 59, 3, 'OUTCOME', 'o-234.1.wheelpair.1', 'wheelpairassemble', 45, NULL, 1, NULL, 2, 'o-234.1.wheelpair.1', 'qualitycheck', '2021-04-06 04:20:33', 240, NULL, 0),
 (170, 1, 41, 3, 'OUTCOME', 'o-232.1.wheelpair.1', 'wheelpairassemble', 45, NULL, 1, NULL, 2, 'o-232.1.wheelpair.1', 'qualitycheck', '2021-04-03 17:45:29', 240, NULL, 0),
 (171, 1, 24, 3, 'OUTCOME', 'o-244.1.wheelpair.1', 'wheelpairassemble', 45, NULL, 1, NULL, 2, 'o-244.1.wheelpair.1', 'qualitycheck', '2021-04-03 18:48:24', 240, NULL, 0),
-(172, 1, 26, 3, 'INCOME', 'o-237.1.wheelpair.1.1', 'wheelpairassemble', 45, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 12:15:55', NULL, NULL, 0),
+(172, 1, 26, 3, 'PROCESSING', 'o-237.1.wheelpair.1.1', 'wheelpairassemble', 45, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-24 12:39:49', NULL, NULL, 0),
 (173, 1, 23, 3, 'PROCESSING', 'o-247.1.wheelpair.1.1', 'wheelpairassemble', 45, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 11:49:07', NULL, NULL, 0),
 (174, 1, 11, 3, NULL, 'o-221.1.wheelpair.1', 'wheelpairassemble', 45, NULL, 1, NULL, 2, 'o-221.1.wheelpair.1', 'qualitycheck', '2021-04-03 17:45:19', 240, 179, 0),
 (175, 1, 15, 4, NULL, 'o-10.1.wheelpair.1.1.shaft', 'blankprocessing', 480, NULL, 1, NULL, 3, 'o-10.1.wheelpair.1.1', 'wheelpairassemble', '2021-04-03 16:51:47', 45, 176, 0),
@@ -644,14 +702,14 @@ INSERT INTO `assigns` (`id`, `client_id`, `order_id`, `workcenter_id`, `bucket`,
 (184, 1, 38, 2, 'INCOME', 'o-252.1.wheelpair.1', 'qualitycheck', 240, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-03 19:03:07', NULL, NULL, 0),
 (185, 1, 30, 2, 'INCOME', 'o-246.1.wheelpair.1', 'qualitycheck', 240, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-03 19:03:13', NULL, NULL, 0),
 (186, 1, 39, 2, 'INCOME', 'o-241.1.wheelpair.1', 'qualitycheck', 240, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-03 19:03:15', NULL, NULL, 0),
-(187, 1, 7, 3, 'PROCESSING', 'o-217.1.wheelpair.1.1', 'wheelpairassemble', 45, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 12:15:29', NULL, NULL, 0),
+(187, 1, 7, 3, 'OUTCOME', 'o-217.1.wheelpair.1', 'wheelpairassemble', 45, NULL, 1, NULL, 2, 'o-217.1.wheelpair.1', 'qualitycheck', '2021-04-24 13:01:52', 240, NULL, 0),
 (188, 1, 61, 1, 'INCOME', 'o-24.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 06:59:47', NULL, NULL, 0),
 (189, 1, 61, 5, 'INCOME', 'o-24.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 06:59:47', NULL, NULL, 0),
 (190, 1, 62, 1, 'PROCESSING', 'o-23.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 09:23:09', NULL, NULL, 0),
 (191, 1, 62, 5, 'INCOME', 'o-23.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 08:14:04', NULL, NULL, 0),
 (192, 1, 63, 1, 'OUTCOME', 'o-242.1.wheelpair.1.1.shaft.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, 4, 'o-242.1.wheelpair.1.1.shaft.1', 'blankprocessing', '2021-04-07 09:22:11', 480, NULL, 0),
 (193, 1, 63, 5, 'PROCESSING', 'o-242.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 11:42:06', NULL, NULL, 0),
-(194, 1, 64, 1, 'OUTCOME', 'o-243.1.wheelpair.1.1.shaft.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, 4, 'o-243.1.wheelpair.1.1.shaft.1', 'blankprocessing', '2021-04-07 09:21:46', 480, NULL, 0),
+(194, 1, 64, 1, NULL, 'o-243.1.wheelpair.1.1.shaft.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, 4, 'o-243.1.wheelpair.1.1.shaft.1', 'blankprocessing', '2021-04-21 04:20:31', 480, 233, 0),
 (195, 1, 64, 5, 'OUTCOME', 'o-243.1.wheelpair.1.1.wheel', 'supplywheel', 150, NULL, 1, NULL, 3, 'o-243.1.wheelpair.1.1', 'wheelpairassemble', '2021-04-07 09:03:01', 45, NULL, 0),
 (196, 1, 65, 1, 'PROCESSING', 'o-245.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 09:22:26', NULL, NULL, 0),
 (197, 1, 65, 5, 'INCOME', 'o-245.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 08:16:11', NULL, NULL, 0),
@@ -663,10 +721,10 @@ INSERT INTO `assigns` (`id`, `client_id`, `order_id`, `workcenter_id`, `bucket`,
 (203, 1, 68, 5, 'PROCESSING', 'o-253.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 11:42:13', NULL, NULL, 0),
 (204, 1, 69, 1, 'OUTCOME', 'o-255.1.wheelpair.1.1.shaft.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, 4, 'o-255.1.wheelpair.1.1.shaft.1', 'blankprocessing', '2021-04-07 09:22:06', 480, NULL, 0),
 (205, 1, 69, 5, 'PROCESSING', 'o-255.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 11:41:56', NULL, NULL, 0),
-(206, 1, 70, 1, 'INCOME', 'o-256.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 08:46:18', NULL, NULL, 0),
+(206, 1, 70, 1, 'PROCESSING', 'o-256.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-24 12:24:25', NULL, NULL, 0),
 (207, 1, 70, 5, 'INCOME', 'o-256.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 08:46:18', NULL, NULL, 0),
-(208, 1, 71, 1, 'OUTCOME', 'o-257.1.wheelpair.1.1.shaft.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, 4, 'o-257.1.wheelpair.1.1.shaft.1', 'blankprocessing', '2021-04-07 09:21:53', 480, NULL, 0),
-(209, 1, 71, 5, 'OUTCOME', 'o-257.1.wheelpair.1.1.wheel', 'supplywheel', 150, NULL, 1, NULL, 3, 'o-257.1.wheelpair.1.1', 'wheelpairassemble', '2021-04-07 09:03:08', 45, NULL, 0),
+(208, 1, 71, 1, NULL, 'o-257.1.wheelpair.1.1.shaft.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, 4, 'o-257.1.wheelpair.1.1.shaft.1', 'blankprocessing', '2021-04-24 16:15:10', 480, 248, 0),
+(209, 1, 71, 5, NULL, 'o-257.1.wheelpair.1.1.wheel', 'supplywheel', 150, NULL, 1, NULL, 3, 'o-257.1.wheelpair.1.1', 'wheelpairassemble', '2021-04-24 16:15:27', 45, 249, 0),
 (212, 1, 73, 1, 'PROCESSING', 'o-26.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 09:23:07', NULL, NULL, 0),
 (213, 1, 73, 5, 'INCOME', 'o-26.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 08:58:19', NULL, NULL, 0),
 (214, 1, 74, 1, NULL, 'o-260.1.wheelpair.1.1.shaft.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, 4, 'o-260.1.wheelpair.1.1.shaft.1', 'blankprocessing', '2021-04-07 15:50:44', 480, 231, 0),
@@ -677,8 +735,8 @@ INSERT INTO `assigns` (`id`, `client_id`, `order_id`, `workcenter_id`, `bucket`,
 (219, 1, 76, 5, 'OUTCOME', 'o-263.1.wheelpair.1.1.wheel', 'supplywheel', 150, NULL, 1, NULL, 3, 'o-263.1.wheelpair.1.1', 'wheelpairassemble', '2021-04-07 11:33:29', 45, NULL, 0),
 (220, 1, 77, 1, 'OUTCOME', 'o-264.1.wheelpair.1.1.shaft.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, 4, 'o-264.1.wheelpair.1.1.shaft.1', 'blankprocessing', '2021-04-07 09:22:29', 480, NULL, 0),
 (221, 1, 77, 5, 'INCOME', 'o-264.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 09:17:40', NULL, NULL, 0),
-(222, 1, 78, 1, 'INCOME', 'o-265.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 09:19:13', NULL, NULL, 0),
-(223, 1, 78, 5, 'INCOME', 'o-265.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 09:19:13', NULL, NULL, 0),
+(222, 1, 78, 1, 'PROCESSING', 'o-265.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-24 12:31:06', NULL, NULL, 1),
+(223, 1, 78, 5, 'INCOME', 'o-265.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-22 11:41:40', NULL, NULL, 1),
 (224, 1, 79, 1, 'OUTCOME', 'o-267.1.wheelpair.1.1.shaft.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, 4, 'o-267.1.wheelpair.1.1.shaft.1', 'blankprocessing', '2021-04-07 09:21:58', 480, NULL, 0),
 (225, 1, 79, 5, 'OUTCOME', 'o-267.1.wheelpair.1.1.wheel', 'supplywheel', 150, NULL, 1, NULL, 3, 'o-267.1.wheelpair.1.1', 'wheelpairassemble', '2021-04-07 11:42:23', 45, NULL, 0),
 (226, 1, 25, 4, 'INCOME', 'o-250.1.wheelpair.1.1.shaft.1', 'blankprocessing', 480, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 11:47:30', NULL, NULL, 0),
@@ -687,7 +745,22 @@ INSERT INTO `assigns` (`id`, `client_id`, `order_id`, `workcenter_id`, `bucket`,
 (229, 1, 81, 1, 'INCOME', 'o-269.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 12:18:55', NULL, NULL, 0),
 (230, 1, 81, 5, 'INCOME', 'o-269.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 12:18:55', NULL, NULL, 0),
 (231, 1, 74, 4, NULL, 'o-260.1.wheelpair.1.1.shaft', 'blankprocessing', 480, NULL, 1, NULL, 3, 'o-260.1.wheelpair.1.1', 'wheelpairassemble', '2021-04-07 15:51:19', 45, 232, 0),
-(232, 1, 74, 3, 'PROCESSING', 'o-260.1.wheelpair.1.1', 'wheelpairassemble', 45, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 15:52:59', NULL, NULL, 0);
+(232, 1, 74, 3, 'PROCESSING', 'o-260.1.wheelpair.1.1', 'wheelpairassemble', 45, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-07 15:52:59', NULL, NULL, 0),
+(233, 1, 64, 4, 'INCOME', 'o-243.1.wheelpair.1.1.shaft.1', 'blankprocessing', 480, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-21 04:20:31', NULL, NULL, 0),
+(234, 1, 46, 4, 'INCOME', 'o-16.1.wheelpair.1.1.shaft.1', 'blankprocessing', 480, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-22 20:06:55', NULL, NULL, 1),
+(237, 1, 84, 1, 'PROCESSING', 'o-27.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-24 12:30:52', NULL, NULL, 0),
+(238, 1, 84, 5, 'INCOME', 'o-27.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-24 12:29:06', NULL, NULL, 0),
+(239, 1, 85, 1, 'INCOME', 'o-270.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-24 12:32:16', NULL, NULL, 0),
+(240, 1, 85, 5, 'INCOME', 'o-270.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-24 12:32:16', NULL, NULL, 0),
+(241, 1, 86, 1, 'INCOME', 'o-271.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-24 12:33:43', NULL, NULL, 0),
+(242, 1, 86, 5, 'INCOME', 'o-271.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-24 12:33:43', NULL, NULL, 0),
+(243, 1, 87, 1, 'INCOME', 'o-272.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-24 12:34:51', NULL, NULL, 0),
+(244, 1, 87, 5, 'INCOME', 'o-272.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-24 12:34:51', NULL, NULL, 0),
+(245, 1, 88, 1, 'INCOME', 'o-274.1.wheelpair.1.1.shaft.1.1.1', 'supplyblankshaft', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-24 12:37:07', NULL, NULL, 0),
+(246, 1, 88, 5, 'INCOME', 'o-274.1.wheelpair.1.1.wheel.1', 'supplywheel', 150, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-24 12:37:07', NULL, NULL, 0),
+(247, 1, 57, 4, 'INCOME', 'o-231.1.wheelpair.1.1.shaft.1', 'blankprocessing', 480, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-24 16:15:07', NULL, NULL, 0),
+(248, 1, 71, 4, 'PROCESSING', 'o-257.1.wheelpair.1.1.shaft.1', 'blankprocessing', 480, NULL, 1, NULL, NULL, NULL, NULL, '2021-04-24 16:15:41', NULL, NULL, 0),
+(249, 1, 71, 3, 'INCOME', 'o-257.1.wheelpair.1.1', 'wheelpairassemble', 45, NULL, NULL, NULL, NULL, NULL, NULL, '2021-04-24 16:15:27', NULL, NULL, 0);
 
 -- --------------------------------------------------------
 
@@ -733,7 +806,7 @@ CREATE TABLE IF NOT EXISTS `messages` (
   KEY `message_type` (`message_type`),
   KEY `client_id` (`client_id`),
   KEY `thread_id` (`thread_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=136 DEFAULT CHARSET=utf8 COMMENT='Messages of users';
+) ENGINE=InnoDB AUTO_INCREMENT=141 DEFAULT CHARSET=utf8 COMMENT='Messages of users';
 
 --
 -- Dumping data for table `messages`
@@ -838,7 +911,7 @@ INSERT INTO `messages` (`id`, `message_time`, `client_id`, `message_from`, `mess
 (98, '2021-04-07 09:17:40', 1, 1, 'WARNING', 'The order #o-264 started. The owner of order is @pavel - urge', '#o-264;@pavel', NULL, NULL),
 (99, '2021-04-07 09:19:13', 1, 1, 'WARNING', 'The order #o-265 started. The owner of order is @pavel - urge', '#o-265;@pavel', NULL, NULL),
 (100, '2021-04-07 09:19:45', 1, 1, 'WARNING', 'The order #o-267 started. The owner of order is @pavel - urg', '#o-267;@pavel', NULL, NULL),
-(101, '2021-04-07 09:21:46', 1, 2, 'INFO', 'Order #o-243 processed \'\' and ready to next workcenter \'wc1_3\'', '#o-243', NULL, NULL),
+(101, '2021-04-07 09:21:46', 1, 2, 'INFO', 'Order #o-243 processed \'\' and ready to next workcenter \'wc1_3\'', '#o-243', NULL, 1),
 (102, '2021-04-07 09:21:48', 1, 2, 'INFO', 'Order #o-231 processed \'\' and ready to next workcenter \'wc1_3\'', '#o-231', NULL, NULL),
 (103, '2021-04-07 09:21:50', 1, 2, 'INFO', 'Order #o-226 processed \'\' and ready to next workcenter \'wc1_3\'', '#o-226', NULL, NULL),
 (104, '2021-04-07 09:21:52', 1, 2, 'INFO', 'Order #o-251 processed \'\' and ready to next workcenter \'wc1_3\'', '#o-251', NULL, NULL),
@@ -866,13 +939,18 @@ INSERT INTO `messages` (`id`, `message_time`, `client_id`, `message_from`, `mess
 (126, '2021-04-07 11:48:42', 1, 2, 'INFO', 'Order #o-247 processed \'o-247.1.wheelpair.1.1.wheel\' and ready to @\"Wheel pair assembly\"', '#o-247', NULL, NULL),
 (127, '2021-04-07 12:15:43', 1, 1, 'INFO', 'Order #o-237 processed \'o-237.1.wheelpair.1.1.wheel\' and ready to @\"Wheel pair assembly\"', '#o-237', NULL, 1),
 (128, '2021-04-07 12:18:51', 1, 1, 'WARNING', 'The order #o-268 started. The owner of order is @pavel - ', '#o-268;@pavel', NULL, 1),
-(129, '2021-04-07 12:18:55', 1, 1, 'WARNING', 'The order #o-269 started. The owner of order is @pavel - ', '#o-269;@pavel', NULL, 1),
-(130, '2021-04-07 15:46:56', 1, 2, 'INFO', '@\"David Rhuxel\" supply #o-260', '@\"David Rhuxel\";#o-260', NULL, NULL),
+(129, '2021-04-07 12:18:55', 1, 1, 'WARNING', 'The order #o-269 started. The owner of order is @pavel - ', '#o-269;@pavel', NULL, 0),
+(130, '2021-04-07 15:46:56', 1, 2, 'INFO', '@\"David Rhuxel\" supply #o-260', '@\"David Rhuxel\";#o-260', NULL, 0),
 (131, '2021-04-07 15:48:24', 1, 1, 'INFO', 'Order #o-260 processed \'o-260.1.wheelpair.1.1.shaft.1.1\' and ready to @\"Blank processing\"', '#o-260', NULL, 0),
 (132, '2021-04-07 15:51:20', 1, 2, 'INFO', 'Order #o-260 processed \'o-260.1.wheelpair.1.1.shaft\' and ready to @\"Wheel pair assembly\"', '#o-260', NULL, NULL),
-(133, '2021-04-07 15:51:59', 1, 2, 'INFO', 'Order #o-260 processed \'o-260.1.wheelpair.1.1.wheel\' and ready to @\"Wheel pair assembly\"', '#o-260', NULL, 1),
-(134, '2021-04-08 09:10:50', 1, 2, 'INFO', '@\"David Rhuxel\" answer to 129', '@\"David Rhuxel\"', NULL, NULL),
-(135, '2021-04-08 09:11:35', 1, 1, 'INFO', '@\"pavel\" test passed', '@\"pavel\"', NULL, NULL);
+(133, '2021-04-07 15:51:59', 1, 2, 'INFO', 'Order #o-260 processed \'o-260.1.wheelpair.1.1.wheel\' and ready to @\"Wheel pair assembly\"', '#o-260', NULL, 0),
+(134, '2021-04-08 09:10:50', 1, 2, 'INFO', '@\"David Rhuxel\" answer to 129', '@\"David Rhuxel\"', NULL, 0),
+(135, '2021-04-08 09:11:35', 1, 1, 'INFO', '@\"pavel\" test passed', '@\"pavel\"', NULL, NULL),
+(136, '2021-04-19 08:18:19', 1, 2, 'INFO', '@\"David Rhuxel\" again', '@\"David Rhuxel\"', NULL, 0),
+(137, '2021-04-21 10:29:59', 1, 1, 'INFO', '@\"pavel\"  test passed again', '@\"pavel\"', NULL, NULL),
+(138, '2021-04-22 20:06:38', 1, 1, 'INFO', 'Order #o-16 processed \'o-16.1.wheelpair.1.1.shaft.1.1\' and ready to @\"Blank processing\"', '#o-16', NULL, NULL),
+(139, '2021-04-24 12:29:06', 1, 3, 'WARNING', 'The order #o-27 started. The owner of order is @test - on time 2', '#o-27;@test', NULL, NULL),
+(140, '2021-04-24 13:01:52', 1, 3, 'INFO', 'Order #o-217 processed \'o-217.1.wheelpair.1\' and ready to @\"Quality check\"', '#o-217', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -891,7 +969,7 @@ CREATE TABLE IF NOT EXISTS `messages_read` (
   UNIQUE KEY `message_id_2` (`message_id`,`user_id`),
   KEY `message_id` (`message_id`),
   KEY `user_id` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=37 DEFAULT CHARSET=utf8 COMMENT='Info about read events';
+) ENGINE=InnoDB AUTO_INCREMENT=41 DEFAULT CHARSET=utf8 COMMENT='Info about read events';
 
 --
 -- Dumping data for table `messages_read`
@@ -933,7 +1011,11 @@ INSERT INTO `messages_read` (`id`, `message_id`, `user_id`, `read_time`, `flagge
 (33, 133, 1, '2021-04-07 15:53:44', NULL),
 (34, 131, 2, '2021-04-08 07:23:48', NULL),
 (35, 128, 2, '2021-04-08 10:38:19', NULL),
-(36, 129, 2, '2021-04-08 11:47:34', NULL);
+(36, 129, 2, '2021-04-08 11:47:34', NULL),
+(37, 32, 2, '2021-04-19 06:56:43', NULL),
+(38, 45, 2, '2021-04-19 06:56:51', NULL),
+(39, 136, 1, '2021-04-21 10:32:23', NULL),
+(40, 134, 1, '2021-04-22 11:07:07', NULL);
 
 -- --------------------------------------------------------
 
@@ -982,90 +1064,95 @@ CREATE TABLE IF NOT EXISTS `orders` (
   KEY `number` (`number`),
   KEY `client_id` (`client_id`),
   KEY `state` (`state`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=82 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=89 DEFAULT CHARSET=utf8;
 
 --
 -- Dumping data for table `orders`
 --
 
 INSERT INTO `orders` (`id`, `number`, `client_id`, `state`, `current_route`, `deadline`, `baseline`, `estimated`, `customer`, `comment`, `change_time`, `import_time`, `priority`) VALUES
-(1, 'o-212', 1, 'ASSIGNED', 1, '2021-03-30 11:16:42', '2021-03-26 19:09:41', '2021-04-10 19:19:15', NULL, NULL, '2021-04-07 12:19:15', '2020-11-09 19:38:46', 0),
-(3, 'o-213', 1, 'ASSIGNED', 1, '2021-05-21 11:16:42', '2021-03-27 05:24:41', '2021-04-12 03:19:15', NULL, NULL, '2021-04-07 12:19:15', '2020-11-09 19:39:24', 0),
-(4, 'o-214', 1, 'ASSIGNED', 1, '2021-06-08 11:16:42', '2021-03-28 04:24:41', '2021-04-17 12:19:15', NULL, NULL, '2021-04-07 12:19:15', '2020-11-09 19:39:51', 0),
-(5, 'o-215', 1, 'ASSIGNED', 1, '2021-05-18 11:16:42', '2021-03-28 06:54:41', '2021-04-17 09:49:15', NULL, NULL, '2021-04-07 12:19:15', '2020-11-09 19:40:03', 0),
-(6, 'o-216', 1, 'ASSIGNED', 1, '2021-06-03 11:16:42', '2021-03-26 15:09:41', '2021-04-10 15:19:15', NULL, NULL, '2021-04-07 12:19:15', '2020-11-09 19:40:11', 0),
-(7, 'o-217', 1, 'ASSIGNED', 1, '2021-04-01 11:16:42', '2021-03-28 09:24:41', '2021-04-13 15:04:15', NULL, NULL, '2021-04-07 12:19:15', '2020-11-09 19:40:16', 0),
-(8, 'o-218', 1, 'ASSIGNED', 1, '2021-04-24 11:16:42', '2021-03-28 11:54:41', '2021-04-17 12:19:15', NULL, NULL, '2021-04-07 12:19:15', '2020-11-09 19:40:21', 0),
-(9, 'o-219', 1, 'ASSIGNED', 1, '2021-04-09 11:16:42', '2021-03-28 14:24:41', '2021-04-17 12:19:15', NULL, NULL, '2021-04-07 12:19:15', '2020-11-09 19:40:26', 0),
-(10, 'o-220', 1, 'ASSIGNED', 1, '2021-06-23 11:16:42', '2021-03-28 16:54:41', '2021-04-17 12:19:15', NULL, NULL, '2021-04-07 12:19:15', '2020-11-09 19:40:35', 0),
-(11, 'o-221', 1, 'ASSIGNED', 1, '2021-05-17 11:16:42', '2021-03-31 19:54:41', '2021-04-12 07:19:15', NULL, NULL, '2021-04-07 12:19:15', '2020-11-09 19:40:39', 0),
-(12, 'o-222', 1, 'ASSIGNED', 1, '2021-06-12 11:16:42', '2021-03-28 19:24:41', '2021-04-17 12:19:15', NULL, NULL, '2021-04-07 12:19:15', '2020-11-09 19:40:45', 0),
-(13, 'o-223', 1, 'ASSIGNED', 1, '2021-03-18 11:16:42', '2021-03-27 04:39:41', '2021-04-11 19:19:15', NULL, NULL, '2021-04-07 12:19:15', '2020-11-09 19:40:54', 0),
-(14, 'o-224', 1, 'ASSIGNED', 1, '2021-06-08 11:16:42', '2021-03-26 23:09:41', '2021-04-10 23:19:15', NULL, NULL, '2021-04-07 12:19:15', '2020-11-09 19:41:50', 0),
-(15, 'o-10', 1, 'ASSIGNED', 1, '2021-03-21 19:47:03', '2021-03-31 06:24:41', '2021-04-11 23:19:15', NULL, NULL, '2021-04-07 12:19:15', '2020-11-09 19:48:39', 0),
-(16, 'o-11', 1, 'ASSIGNED', 1, '2021-05-21 19:47:03', '2021-03-31 06:24:41', '2021-04-10 11:19:15', NULL, NULL, '2021-04-07 12:19:15', '2020-11-09 19:48:54', 0),
-(17, 'o-12', 1, 'ASSIGNED', 1, '2021-03-12 19:47:03', '2021-03-29 02:54:42', '2021-04-17 12:19:15', NULL, NULL, '2021-04-07 12:19:15', '2020-11-09 19:49:16', 0),
-(18, 'o-13', 1, 'ASSIGNED', 1, '2021-03-10 19:47:03', '2021-03-27 06:09:42', '2021-04-10 11:19:15', NULL, NULL, '2021-04-07 12:19:15', '2020-11-09 19:49:34', 0),
-(19, 'o-225', 1, 'ASSIGNED', 1, '2020-11-27 19:48:21', '2021-03-26 11:09:42', '2021-04-11 07:19:16', NULL, NULL, '2021-04-07 12:19:16', '2020-11-09 19:50:56', 0),
-(20, 'o-230', 1, 'ASSIGNED', 1, '2020-11-27 19:48:21', '2021-03-27 06:54:42', '2021-04-11 11:19:16', NULL, NULL, '2021-04-07 12:19:16', '2020-11-09 19:51:15', 0),
-(21, 'o-236', 1, 'ASSIGNED', 1, '2020-12-14 19:48:21', '2021-03-27 03:54:42', '2021-04-11 15:19:16', NULL, NULL, '2021-04-07 12:19:16', '2020-11-09 19:51:28', 0),
-(22, 'o-240', 1, 'ASSIGNED', 1, '2020-12-24 19:48:21', '2021-03-31 19:54:42', '2021-04-17 12:19:16', NULL, NULL, '2021-04-07 12:19:16', '2020-11-09 19:51:54', 0),
-(23, 'o-247', 1, 'ASSIGNED', 1, '2020-12-05 19:48:21', '2021-03-28 15:54:42', '2021-04-13 13:34:16', NULL, NULL, '2021-04-07 12:19:16', '2020-11-09 19:52:08', 0),
-(24, 'o-244', 1, 'ASSIGNED', 1, '2020-11-27 19:48:21', '2021-03-29 05:24:42', '2021-04-10 12:04:16', NULL, NULL, '2021-04-07 12:19:16', '2020-11-09 19:52:32', 0),
-(25, 'o-250', 1, 'ASSIGNED', 1, '2020-12-23 19:48:21', '2021-03-31 06:24:42', '2021-04-13 14:19:16', NULL, NULL, '2021-04-07 12:19:16', '2020-11-09 19:53:23', 0),
-(26, 'o-237', 1, 'ASSIGNED', 1, '2020-12-04 19:48:21', '2021-03-29 10:24:42', '2021-04-13 12:49:16', NULL, NULL, '2021-04-07 12:19:16', '2020-11-09 19:55:14', 0),
-(27, 'o-239', 1, 'ASSIGNED', 1, '2020-11-22 19:48:21', '2021-03-29 12:54:42', '2021-04-12 19:19:16', NULL, NULL, '2021-04-07 12:19:16', '2020-11-10 03:24:47', 0),
-(28, 'o-235', 1, 'ASSIGNED', 1, '2020-12-03 19:48:21', '2021-03-29 15:24:42', '2021-04-17 12:19:16', NULL, NULL, '2021-04-07 12:19:16', '2020-11-10 08:41:28', 0),
-(29, 'o-249', 1, 'ASSIGNED', 1, '2020-12-05 19:48:21', '2021-03-29 17:54:42', '2021-04-17 12:19:16', NULL, NULL, '2021-04-07 12:19:16', '2020-11-10 08:41:46', 0),
-(30, 'o-246', 1, 'ASSIGNED', 1, '2020-11-23 19:48:21', '2021-03-27 07:39:42', '2021-04-13 03:19:16', NULL, NULL, '2021-04-07 12:19:16', '2020-11-10 08:42:00', 0),
-(31, 'o-254', 1, 'ASSIGNED', 1, '2020-12-22 19:48:21', '2021-03-29 20:24:42', '2021-04-14 15:49:16', NULL, NULL, '2021-04-07 12:19:16', '2020-11-10 08:42:21', 0),
-(32, 'o-258', 1, 'ASSIGNED', 1, '2020-11-29 19:48:21', '2021-03-29 22:54:42', '2021-04-17 09:49:16', NULL, NULL, '2021-04-07 12:19:16', '2020-11-10 08:42:43', 0),
-(33, 'o-226', 1, 'ASSIGNED', 1, '2020-11-29 19:48:21', '2021-03-30 01:24:42', '2021-04-17 12:19:16', NULL, NULL, '2021-04-07 12:19:16', '2020-11-13 08:38:25', 0),
-(34, 'o-259', 1, 'ASSIGNED', 1, '2020-11-21 19:48:21', '2021-03-27 09:09:42', '2021-04-12 15:19:16', NULL, NULL, '2021-04-07 12:19:16', '2020-11-13 08:46:18', 0),
-(35, 'o-261', 1, 'ASSIGNED', 1, '2020-12-18 19:48:21', '2021-03-30 03:54:42', '2021-04-17 12:19:16', NULL, NULL, '2021-04-07 12:19:16', '2020-11-13 08:46:45', 0),
-(36, 'o-273', 1, 'ASSIGNED', 1, '2020-11-21 19:48:21', '2021-03-27 08:24:42', '2021-04-11 03:19:16', NULL, NULL, '2021-04-07 12:19:16', '2020-11-13 10:43:59', 0),
-(37, 'o-282', 1, 'ASSIGNED', 1, '2020-11-21 19:48:21', '2021-03-30 06:24:42', '2021-04-12 11:19:16', NULL, NULL, '2021-04-07 12:19:16', '2020-11-13 10:44:22', 0),
-(38, 'o-252', 1, 'ASSIGNED', 1, '2020-11-23 19:48:21', '2021-03-30 08:54:42', '2021-04-12 23:19:16', NULL, NULL, '2021-04-07 12:19:16', '2020-11-13 10:48:52', 0),
-(39, 'o-241', 1, 'ASSIGNED', 1, '2020-11-24 19:48:21', '2021-03-30 11:24:42', '2021-04-13 07:19:16', NULL, NULL, '2021-04-07 12:19:16', '2020-11-13 11:19:18', 0),
-(40, 'o-266', 1, 'ASSIGNED', 1, '2020-11-24 19:48:21', '2021-03-30 13:54:42', '2021-04-17 09:49:16', NULL, NULL, '2021-04-07 12:19:16', '2020-11-13 11:19:18', 0),
-(41, 'o-232', 1, 'ASSIGNED', 1, '2020-11-24 19:48:21', '2021-03-30 16:24:42', '2021-04-10 12:04:16', NULL, NULL, '2021-04-07 12:19:16', '2020-11-14 13:43:39', 0),
-(44, 'o-14', 1, 'ASSIGNED', 1, '2021-03-16 19:47:03', '2021-03-30 18:54:42', '2021-04-15 12:49:16', NULL, NULL, '2021-04-07 12:19:16', '2021-03-18 15:32:15', 0),
-(45, 'o-15', 1, 'ASSIGNED', 1, '2021-06-08 19:47:03', '2021-03-30 21:24:42', '2021-04-15 15:19:16', NULL, NULL, '2021-04-07 12:19:16', '2021-03-18 15:36:34', 0),
-(46, 'o-16', 1, 'ASSIGNED', 1, '2021-04-23 19:47:03', '2021-03-30 23:54:43', '2021-04-15 17:49:16', NULL, NULL, '2021-04-07 12:19:16', '2021-03-18 15:40:33', 0),
-(47, 'o-17', 1, 'ASSIGNED', 1, '2021-03-23 19:47:03', '2021-03-31 02:24:43', '2021-04-15 20:19:16', NULL, NULL, '2021-04-07 12:19:16', '2021-03-18 15:42:21', 0),
-(48, 'o-18', 1, 'ASSIGNED', 1, '2021-04-08 19:47:03', '2021-03-31 04:54:43', '2021-04-15 22:49:16', NULL, NULL, '2021-04-07 12:19:16', '2021-03-18 15:42:54', 0),
-(49, 'o-19', 1, 'ASSIGNED', 1, '2021-05-27 19:47:03', '2021-03-31 07:24:43', '2021-04-16 01:19:16', NULL, NULL, '2021-04-07 12:19:16', '2021-03-18 15:42:54', 0),
-(50, 'o-20', 1, 'ASSIGNED', 1, '2021-03-23 19:47:03', '2021-03-31 09:54:43', '2021-04-16 03:49:16', NULL, NULL, '2021-04-07 12:19:16', '2021-03-18 15:42:54', 0),
-(51, 'o-21', 1, 'ASSIGNED', 1, '2021-05-17 19:47:03', '2021-03-31 12:24:43', '2021-04-16 06:19:16', NULL, NULL, '2021-04-07 12:19:16', '2021-03-18 15:42:54', 0),
-(52, 'o-22', 1, 'ASSIGNED', 1, '2021-04-29 19:47:03', '2021-03-31 14:54:43', '2021-04-16 08:49:17', NULL, NULL, '2021-04-07 12:19:17', '2021-03-18 15:42:54', 0),
-(53, 'o-248', 1, 'ASSIGNED', 1, '2020-12-02 19:48:21', '2021-03-31 17:24:43', '2021-04-13 12:04:17', NULL, NULL, '2021-04-07 12:19:17', '2021-03-25 20:08:06', 0),
-(54, 'o-227', 1, 'ASSIGNED', 1, '2020-12-05 19:48:21', '2021-04-06 12:57:37', '2021-04-17 12:19:17', NULL, NULL, '2021-04-07 12:19:17', '2021-03-30 12:12:37', 0),
-(55, 'o-228', 1, 'ASSIGNED', 1, '2020-12-11 19:48:21', '2021-04-06 15:27:37', '2021-04-17 12:19:17', NULL, NULL, '2021-04-07 12:19:17', '2021-03-30 12:12:37', 0),
-(56, 'o-229', 1, 'ASSIGNED', 1, '2020-12-03 19:48:21', '2021-04-06 17:57:37', '2021-04-17 12:19:17', NULL, NULL, '2021-04-07 12:19:17', '2021-03-30 12:12:37', 0),
-(57, 'o-231', 1, 'ASSIGNED', 1, '2020-11-26 19:48:21', '2021-04-06 20:27:37', '2021-04-17 12:19:17', NULL, NULL, '2021-04-07 12:19:17', '2021-03-30 12:12:37', 0),
-(58, 'o-233', 1, 'ASSIGNED', 1, '2020-12-09 19:48:21', '2021-04-06 22:57:37', '2021-04-17 12:19:17', NULL, NULL, '2021-04-07 12:19:17', '2021-03-30 12:12:37', 0),
-(59, 'o-234', 1, 'ASSIGNED', 1, '2020-12-04 19:48:21', '2021-04-07 01:27:37', '2021-04-10 12:04:17', NULL, NULL, '2021-04-07 12:19:17', '2021-03-30 12:12:37', 0),
-(60, 'o-238', 1, 'ASSIGNED', 1, '2020-12-17 19:48:21', '2021-04-07 03:57:37', '2021-04-17 12:19:17', NULL, NULL, '2021-04-07 12:19:17', '2021-03-30 12:12:37', 0),
-(61, 'o-24', 1, 'ASSIGNED', 1, '2021-06-11 19:47:03', '2021-04-17 01:29:47', '2021-04-16 11:19:17', NULL, NULL, '2021-04-07 12:19:17', '2021-04-07 06:59:47', 0),
-(62, 'o-23', 1, 'ASSIGNED', 1, '2021-05-16 19:47:03', '2021-04-17 05:14:04', '2021-04-16 13:49:17', NULL, NULL, '2021-04-07 12:19:17', '2021-04-07 08:14:04', 0),
-(63, 'o-242', 1, 'ASSIGNED', 1, '2020-12-08 19:48:21', '2021-04-17 07:44:04', '2021-04-17 12:19:17', NULL, NULL, '2021-04-07 12:19:17', '2021-04-07 08:14:04', 0),
-(64, 'o-243', 1, 'ASSIGNED', 1, '2020-11-25 19:48:21', '2021-04-17 10:14:04', '2021-04-17 12:19:17', NULL, NULL, '2021-04-07 12:19:17', '2021-04-07 08:14:04', 0),
-(65, 'o-245', 1, 'ASSIGNED', 1, '2020-12-23 19:48:21', '2021-04-17 12:46:11', '2021-04-16 16:19:17', NULL, NULL, '2021-04-07 12:19:17', '2021-04-07 08:16:11', 0),
-(66, 'o-25', 1, 'ASSIGNED', 1, '2021-05-08 19:47:03', '2021-04-17 15:34:09', '2021-04-16 18:49:17', NULL, NULL, '2021-04-07 12:19:17', '2021-04-07 08:34:09', 0),
-(67, 'o-251', 1, 'ASSIGNED', 1, '2020-11-29 19:48:21', '2021-04-17 18:08:28', '2021-04-17 12:19:17', NULL, NULL, '2021-04-07 12:19:17', '2021-04-07 08:38:27', 0),
-(68, 'o-253', 1, 'ASSIGNED', 1, '2020-12-12 19:48:21', '2021-04-17 20:41:02', '2021-04-17 12:19:17', NULL, NULL, '2021-04-07 12:19:17', '2021-04-07 08:41:02', 0),
-(69, 'o-255', 1, 'ASSIGNED', 1, '2020-12-03 19:48:21', '2021-04-17 23:13:29', '2021-04-17 12:19:17', NULL, NULL, '2021-04-07 12:19:17', '2021-04-07 08:43:29', 0),
-(70, 'o-256', 1, 'ASSIGNED', 1, '2020-12-18 19:48:21', '2021-04-18 01:46:18', '2021-04-16 21:19:17', NULL, NULL, '2021-04-07 12:19:17', '2021-04-07 08:46:18', 0),
-(71, 'o-257', 1, 'ASSIGNED', 1, '2020-11-29 19:48:21', '2021-04-18 04:18:53', '2021-04-17 12:19:17', NULL, NULL, '2021-04-07 12:19:17', '2021-04-07 08:46:47', 0),
-(73, 'o-26', 1, 'ASSIGNED', 1, '2021-05-14 19:47:03', '2021-04-18 04:28:19', '2021-04-16 23:49:17', NULL, NULL, '2021-04-07 12:19:17', '2021-04-07 08:58:19', 0),
-(74, 'o-260', 1, 'ASSIGNED', 1, '2020-12-13 19:48:21', '2021-04-18 06:59:19', '2021-04-17 02:19:17', NULL, NULL, '2021-04-07 12:19:17', '2021-04-07 08:59:19', 0),
-(75, 'o-262', 1, 'ASSIGNED', 1, '2020-12-15 19:48:21', '2021-04-18 09:30:20', '2021-04-17 12:19:18', NULL, NULL, '2021-04-07 12:19:18', '2021-04-07 09:00:20', 0),
-(76, 'o-263', 1, 'ASSIGNED', 1, '2020-11-30 19:48:21', '2021-04-18 09:46:00', '2021-04-17 12:19:18', NULL, NULL, '2021-04-07 12:19:18', '2021-04-07 09:16:00', 0),
-(77, 'o-264', 1, 'ASSIGNED', 1, '2020-12-18 19:48:21', '2021-04-18 12:17:40', '2021-04-17 12:19:18', NULL, NULL, '2021-04-07 12:19:18', '2021-04-07 09:17:40', 0),
-(78, 'o-265', 1, 'ASSIGNED', 1, '2020-12-17 19:48:21', '2021-04-18 14:49:13', '2021-04-17 04:49:18', NULL, NULL, '2021-04-07 12:19:18', '2021-04-07 09:19:13', 0),
-(79, 'o-267', 1, 'ASSIGNED', 1, '2020-12-01 19:48:21', '2021-04-18 17:19:45', '2021-04-17 12:19:18', NULL, NULL, '2021-04-07 12:19:18', '2021-04-07 09:19:45', 0),
-(80, 'o-268', 1, 'ASSIGNED', 1, '2020-12-18 19:48:21', '2021-04-17 07:18:51', '2021-04-17 07:19:18', NULL, NULL, '2021-04-07 12:19:18', '2021-04-07 12:18:51', 0),
-(81, 'o-269', 1, 'ASSIGNED', 1, '2020-12-22 19:48:21', '2021-04-17 09:48:55', '2021-04-17 09:49:18', NULL, NULL, '2021-04-07 12:19:18', '2021-04-07 12:18:55', 0);
+(1, 'o-212', 1, 'ASSIGNED', 1, '2021-03-30 11:16:42', '2021-04-22 19:21:33', '2021-04-25 03:24:43', NULL, NULL, '2021-04-24 12:24:43', '2020-11-09 19:38:46', 1),
+(3, 'o-213', 1, 'ASSIGNED', 1, '2021-05-21 11:16:42', '2021-04-26 23:21:33', '2021-04-28 19:24:43', NULL, NULL, '2021-04-24 12:24:43', '2020-11-09 19:39:24', 0),
+(4, 'o-214', 1, 'ASSIGNED', 1, '2021-06-08 11:16:42', '2021-05-02 14:36:33', '2021-05-04 16:09:43', NULL, NULL, '2021-04-24 12:24:43', '2020-11-09 19:39:51', 0),
+(5, 'o-215', 1, 'ASSIGNED', 1, '2021-05-18 11:16:42', '2021-05-02 04:06:33', '2021-05-04 00:09:43', NULL, NULL, '2021-04-24 12:24:43', '2020-11-09 19:40:03', 0),
+(6, 'o-216', 1, 'ASSIGNED', 1, '2021-06-03 11:16:42', '2021-04-25 11:21:33', '2021-04-27 15:24:43', NULL, NULL, '2021-04-24 12:24:43', '2020-11-09 19:40:11', -1),
+(7, 'o-217', 1, 'ASSIGNED', 1, '2021-04-01 11:16:42', '2021-04-28 11:06:33', '2021-04-30 07:09:43', NULL, NULL, '2021-04-24 12:24:43', '2020-11-09 19:40:16', 0),
+(8, 'o-218', 1, 'ASSIGNED', 1, '2021-04-24 11:16:42', '2021-05-02 14:36:33', '2021-05-04 16:09:43', NULL, NULL, '2021-04-24 12:24:43', '2020-11-09 19:40:21', 0),
+(9, 'o-219', 1, 'ASSIGNED', 1, '2021-04-09 11:16:42', '2021-05-02 14:36:33', '2021-05-04 16:09:43', NULL, NULL, '2021-04-24 12:24:43', '2020-11-09 19:40:26', 0),
+(10, 'o-220', 1, 'ASSIGNED', 1, '2021-06-23 11:16:42', '2021-05-02 14:36:33', '2021-05-04 16:09:44', NULL, NULL, '2021-04-24 12:24:44', '2020-11-09 19:40:35', 0),
+(11, 'o-221', 1, 'ASSIGNED', 1, '2021-05-17 11:16:42', '2021-04-27 03:21:33', '2021-04-28 23:24:44', NULL, NULL, '2021-04-24 12:24:44', '2020-11-09 19:40:39', 0),
+(12, 'o-222', 1, 'ASSIGNED', 1, '2021-06-12 11:16:42', '2021-05-02 14:36:33', '2021-05-04 16:09:44', NULL, NULL, '2021-04-24 12:24:44', '2020-11-09 19:40:45', 0),
+(13, 'o-223', 1, 'ASSIGNED', 1, '2021-03-18 11:16:42', '2021-04-26 15:21:33', '2021-04-28 11:24:44', NULL, NULL, '2021-04-24 12:24:44', '2020-11-09 19:40:54', 0),
+(14, 'o-224', 1, 'ASSIGNED', 1, '2021-06-08 11:16:42', '2021-04-25 19:21:33', '2021-04-27 15:24:44', NULL, NULL, '2021-04-24 12:24:44', '2020-11-09 19:41:50', 0),
+(15, 'o-10', 1, 'ASSIGNED', 1, '2021-03-21 19:47:03', '2021-04-26 19:21:33', '2021-04-28 15:24:44', NULL, NULL, '2021-04-24 12:24:44', '2020-11-09 19:48:39', 0),
+(16, 'o-11', 1, 'ASSIGNED', 1, '2021-05-21 19:47:03', '2021-04-25 07:21:33', '2021-04-27 07:24:44', NULL, NULL, '2021-04-24 12:24:44', '2020-11-09 19:48:54', 0),
+(17, 'o-12', 1, 'ASSIGNED', 1, '2021-03-12 19:47:03', '2021-05-02 14:36:33', '2021-05-04 16:09:44', NULL, NULL, '2021-04-24 12:24:44', '2020-11-09 19:49:16', 0),
+(18, 'o-13', 1, 'ASSIGNED', 1, '2021-03-10 19:47:03', '2021-04-25 07:21:33', '2021-04-27 07:24:44', NULL, NULL, '2021-04-24 12:24:44', '2020-11-09 19:49:34', 0),
+(19, 'o-225', 1, 'ASSIGNED', 1, '2020-11-27 19:48:21', '2021-04-23 07:21:33', '2021-04-27 23:24:44', NULL, NULL, '2021-04-24 12:24:44', '2020-11-09 19:50:56', 0),
+(20, 'o-230', 1, 'ASSIGNED', 1, '2020-11-27 19:48:21', '2021-04-26 07:21:33', '2021-04-28 03:24:44', NULL, NULL, '2021-04-24 12:24:44', '2020-11-09 19:51:15', 0),
+(21, 'o-236', 1, 'ASSIGNED', 1, '2020-12-14 19:48:21', '2021-04-26 11:21:33', '2021-04-25 07:24:44', NULL, NULL, '2021-04-24 12:24:44', '2020-11-09 19:51:28', 1),
+(22, 'o-240', 1, 'ASSIGNED', 1, '2020-12-24 19:48:21', '2021-05-02 14:36:33', '2021-05-04 16:09:44', NULL, NULL, '2021-04-24 12:24:44', '2020-11-09 19:51:54', 0),
+(23, 'o-247', 1, 'ASSIGNED', 1, '2020-12-05 19:48:21', '2021-04-28 09:36:33', '2021-04-30 05:39:44', NULL, NULL, '2021-04-24 12:24:44', '2020-11-09 19:52:08', 0),
+(24, 'o-244', 1, 'ASSIGNED', 1, '2020-11-27 19:48:21', '2021-04-25 08:06:33', '2021-04-27 08:09:44', NULL, NULL, '2021-04-24 12:24:44', '2020-11-09 19:52:32', 0),
+(25, 'o-250', 1, 'ASSIGNED', 1, '2020-12-23 19:48:21', '2021-04-28 10:21:33', '2021-04-30 06:24:44', NULL, NULL, '2021-04-24 12:24:44', '2020-11-09 19:53:23', 0),
+(26, 'o-237', 1, 'ASSIGNED', 1, '2020-12-04 19:48:21', '2021-04-28 08:51:33', '2021-04-30 04:54:44', NULL, NULL, '2021-04-24 12:24:44', '2020-11-09 19:55:14', 0),
+(27, 'o-239', 1, 'ASSIGNED', 1, '2020-11-22 19:48:21', '2021-04-27 15:21:33', '2021-04-29 11:24:44', NULL, NULL, '2021-04-24 12:24:44', '2020-11-10 03:24:47', 0),
+(28, 'o-235', 1, 'ASSIGNED', 1, '2020-12-03 19:48:21', '2021-05-02 14:36:33', '2021-05-04 16:09:44', NULL, NULL, '2021-04-24 12:24:44', '2020-11-10 08:41:28', 0),
+(29, 'o-249', 1, 'ASSIGNED', 1, '2020-12-05 19:48:21', '2021-05-02 14:36:33', '2021-05-04 16:09:44', NULL, NULL, '2021-04-24 12:24:44', '2020-11-10 08:41:46', 0),
+(30, 'o-246', 1, 'ASSIGNED', 1, '2020-11-23 19:48:21', '2021-04-27 23:21:34', '2021-04-29 19:24:44', NULL, NULL, '2021-04-24 12:24:44', '2020-11-10 08:42:00', 0),
+(31, 'o-254', 1, 'ASSIGNED', 1, '2020-12-22 19:48:21', '2021-04-29 12:36:34', '2021-05-01 08:39:44', NULL, NULL, '2021-04-24 12:24:44', '2020-11-10 08:42:21', 0),
+(32, 'o-258', 1, 'ASSIGNED', 1, '2020-11-29 19:48:21', '2021-05-02 04:06:34', '2021-05-04 00:09:44', NULL, NULL, '2021-04-24 12:24:44', '2020-11-10 08:42:43', 0),
+(33, 'o-226', 1, 'ASSIGNED', 1, '2020-11-29 19:48:21', '2021-05-02 14:36:34', '2021-05-04 16:09:44', NULL, NULL, '2021-04-24 12:24:44', '2020-11-13 08:38:25', 0),
+(34, 'o-259', 1, 'ASSIGNED', 1, '2020-11-21 19:48:21', '2021-04-27 11:21:34', '2021-04-29 07:24:44', NULL, NULL, '2021-04-24 12:24:44', '2020-11-13 08:46:18', 0),
+(35, 'o-261', 1, 'ASSIGNED', 1, '2020-12-18 19:48:21', '2021-05-02 14:36:34', '2021-05-04 16:09:44', NULL, NULL, '2021-04-24 12:24:44', '2020-11-13 08:46:45', 0),
+(36, 'o-273', 1, 'ASSIGNED', 1, '2020-11-21 19:48:21', '2021-04-25 23:21:34', '2021-04-27 19:24:44', NULL, NULL, '2021-04-24 12:24:44', '2020-11-13 10:43:59', 0),
+(37, 'o-282', 1, 'ASSIGNED', 1, '2020-11-21 19:48:21', '2021-04-27 07:21:34', '2021-04-29 03:24:45', NULL, NULL, '2021-04-24 12:24:45', '2020-11-13 10:44:22', 0),
+(38, 'o-252', 1, 'ASSIGNED', 1, '2020-11-23 19:48:21', '2021-04-27 19:21:34', '2021-04-29 15:24:45', NULL, NULL, '2021-04-24 12:24:45', '2020-11-13 10:48:52', 0),
+(39, 'o-241', 1, 'ASSIGNED', 1, '2020-11-24 19:48:21', '2021-04-28 03:21:34', '2021-04-29 23:24:45', NULL, NULL, '2021-04-24 12:24:45', '2020-11-13 11:19:18', 0),
+(40, 'o-266', 1, 'ASSIGNED', 1, '2020-11-24 19:48:21', '2021-05-02 04:06:34', '2021-05-04 00:09:45', NULL, NULL, '2021-04-24 12:24:45', '2020-11-13 11:19:18', 0),
+(41, 'o-232', 1, 'ASSIGNED', 1, '2020-11-24 19:48:21', '2021-04-25 08:06:34', '2021-04-27 08:09:45', NULL, NULL, '2021-04-24 12:24:45', '2020-11-14 13:43:39', 0),
+(44, 'o-14', 1, 'ASSIGNED', 1, '2021-03-16 19:47:03', '2021-04-30 17:36:34', '2021-05-02 21:39:45', NULL, NULL, '2021-04-24 12:24:45', '2021-03-18 15:32:15', 0),
+(45, 'o-15', 1, 'ASSIGNED', 1, '2021-06-08 19:47:03', '2021-04-30 20:06:34', '2021-05-03 00:09:45', NULL, NULL, '2021-04-24 12:24:45', '2021-03-18 15:36:34', 0),
+(46, 'o-16', 1, 'ASSIGNED', 1, '2021-04-23 19:47:03', '2021-04-30 22:36:34', '2021-04-25 20:09:45', NULL, NULL, '2021-04-24 12:24:45', '2021-03-18 15:40:33', 1),
+(47, 'o-17', 1, 'ASSIGNED', 1, '2021-03-23 19:47:03', '2021-05-01 01:06:34', '2021-05-03 02:39:45', NULL, NULL, '2021-04-24 12:24:45', '2021-03-18 15:42:21', 0),
+(48, 'o-18', 1, 'ASSIGNED', 1, '2021-04-08 19:47:03', '2021-05-01 03:36:34', '2021-05-03 05:09:45', NULL, NULL, '2021-04-24 12:24:45', '2021-03-18 15:42:54', 0),
+(49, 'o-19', 1, 'ASSIGNED', 1, '2021-05-27 19:47:03', '2021-05-01 06:06:34', '2021-05-03 07:39:45', NULL, NULL, '2021-04-24 12:24:45', '2021-03-18 15:42:54', 0),
+(50, 'o-20', 1, 'ASSIGNED', 1, '2021-03-23 19:47:03', '2021-05-01 08:36:34', '2021-05-03 10:09:45', NULL, NULL, '2021-04-24 12:24:45', '2021-03-18 15:42:54', 0),
+(51, 'o-21', 1, 'ASSIGNED', 1, '2021-05-17 19:47:03', '2021-05-01 11:06:34', '2021-05-03 12:39:45', NULL, NULL, '2021-04-24 12:24:45', '2021-03-18 15:42:54', 0),
+(52, 'o-22', 1, 'ASSIGNED', 1, '2021-04-29 19:47:03', '2021-05-01 13:36:34', '2021-05-03 15:09:45', NULL, NULL, '2021-04-24 12:24:45', '2021-03-18 15:42:54', 0),
+(53, 'o-248', 1, 'ASSIGNED', 1, '2020-12-02 19:48:21', '2021-04-28 08:06:34', '2021-04-30 04:09:45', NULL, NULL, '2021-04-24 12:24:45', '2021-03-25 20:08:06', 0),
+(54, 'o-227', 1, 'ASSIGNED', 1, '2020-12-05 19:48:21', '2021-05-02 14:36:34', '2021-05-04 16:09:45', NULL, NULL, '2021-04-24 12:24:45', '2021-03-30 12:12:37', 0),
+(55, 'o-228', 1, 'ASSIGNED', 1, '2020-12-11 19:48:21', '2021-05-02 14:36:34', '2021-05-04 16:09:45', NULL, NULL, '2021-04-24 12:24:45', '2021-03-30 12:12:37', 0),
+(56, 'o-229', 1, 'ASSIGNED', 1, '2020-12-03 19:48:21', '2021-05-02 14:36:34', '2021-05-04 16:09:45', NULL, NULL, '2021-04-24 12:24:45', '2021-03-30 12:12:37', 0),
+(57, 'o-231', 1, 'ASSIGNED', 1, '2020-11-26 19:48:21', '2021-05-02 14:36:34', '2021-05-04 16:09:45', NULL, NULL, '2021-04-24 12:24:45', '2021-03-30 12:12:37', 0),
+(58, 'o-233', 1, 'ASSIGNED', 1, '2020-12-09 19:48:21', '2021-05-02 14:36:35', '2021-05-04 16:09:46', NULL, NULL, '2021-04-24 12:24:46', '2021-03-30 12:12:37', 0),
+(59, 'o-234', 1, 'ASSIGNED', 1, '2020-12-04 19:48:21', '2021-04-25 08:06:35', '2021-04-27 08:09:46', NULL, NULL, '2021-04-24 12:24:46', '2021-03-30 12:12:37', 0),
+(60, 'o-238', 1, 'ASSIGNED', 1, '2020-12-17 19:48:21', '2021-05-02 14:36:35', '2021-05-04 16:09:46', NULL, NULL, '2021-04-24 12:24:46', '2021-03-30 12:12:37', 0),
+(61, 'o-24', 1, 'ASSIGNED', 1, '2021-06-11 19:47:03', '2021-05-01 16:06:35', '2021-05-03 17:39:46', NULL, NULL, '2021-04-24 12:24:46', '2021-04-07 06:59:47', 0),
+(62, 'o-23', 1, 'ASSIGNED', 1, '2021-05-16 19:47:03', '2021-05-01 18:36:35', '2021-05-03 20:09:46', NULL, NULL, '2021-04-24 12:24:46', '2021-04-07 08:14:04', 0),
+(63, 'o-242', 1, 'ASSIGNED', 1, '2020-12-08 19:48:21', '2021-05-02 14:36:35', '2021-05-04 16:09:46', NULL, NULL, '2021-04-24 12:24:46', '2021-04-07 08:14:04', 0),
+(64, 'o-243', 1, 'ASSIGNED', 1, '2020-11-25 19:48:21', '2021-05-02 04:06:35', '2021-05-04 00:09:46', NULL, NULL, '2021-04-24 12:24:46', '2021-04-07 08:14:04', 0),
+(65, 'o-245', 1, 'ASSIGNED', 1, '2020-12-23 19:48:21', '2021-05-01 21:06:35', '2021-05-03 22:39:46', NULL, NULL, '2021-04-24 12:24:46', '2021-04-07 08:16:11', 0),
+(66, 'o-25', 1, 'ASSIGNED', 1, '2021-05-08 19:47:03', '2021-05-01 23:36:35', '2021-05-04 01:09:46', NULL, NULL, '2021-04-24 12:24:46', '2021-04-07 08:34:09', 0),
+(67, 'o-251', 1, 'ASSIGNED', 1, '2020-11-29 19:48:21', '2021-05-02 14:36:35', '2021-05-04 16:09:46', NULL, NULL, '2021-04-24 12:24:46', '2021-04-07 08:38:27', 0),
+(68, 'o-253', 1, 'ASSIGNED', 1, '2020-12-12 19:48:21', '2021-05-02 14:36:35', '2021-05-04 16:09:46', NULL, NULL, '2021-04-24 12:24:46', '2021-04-07 08:41:02', 0),
+(69, 'o-255', 1, 'ASSIGNED', 1, '2020-12-03 19:48:21', '2021-05-02 14:36:35', '2021-05-04 16:09:46', NULL, NULL, '2021-04-24 12:24:46', '2021-04-07 08:43:29', 0),
+(70, 'o-256', 1, 'ASSIGNED', 1, '2020-12-18 19:48:21', '2021-05-02 02:06:35', '2021-05-04 03:39:46', NULL, NULL, '2021-04-24 12:24:46', '2021-04-07 08:46:18', 0),
+(71, 'o-257', 1, 'ASSIGNED', 1, '2020-11-29 19:48:21', '2021-05-02 14:36:35', '2021-05-04 16:09:46', NULL, NULL, '2021-04-24 12:24:46', '2021-04-07 08:46:47', 0),
+(73, 'o-26', 1, 'ASSIGNED', 1, '2021-05-14 19:47:03', '2021-05-02 04:36:35', '2021-05-04 06:09:46', NULL, NULL, '2021-04-24 12:24:46', '2021-04-07 08:58:19', 0),
+(74, 'o-260', 1, 'ASSIGNED', 1, '2020-12-13 19:48:21', '2021-04-28 11:51:35', '2021-04-30 07:54:46', NULL, NULL, '2021-04-24 12:24:46', '2021-04-07 08:59:19', 0),
+(75, 'o-262', 1, 'ASSIGNED', 1, '2020-12-15 19:48:21', '2021-05-02 14:36:35', '2021-05-04 16:09:47', NULL, NULL, '2021-04-24 12:24:47', '2021-04-07 09:00:20', 0),
+(76, 'o-263', 1, 'ASSIGNED', 1, '2020-11-30 19:48:21', '2021-05-02 14:36:35', '2021-05-04 16:09:47', NULL, NULL, '2021-04-24 12:24:47', '2021-04-07 09:16:00', 0),
+(77, 'o-264', 1, 'ASSIGNED', 1, '2020-12-18 19:48:21', '2021-05-02 14:36:35', '2021-05-04 16:09:47', NULL, NULL, '2021-04-24 12:24:47', '2021-04-07 09:17:40', 0),
+(78, 'o-265', 1, 'ASSIGNED', 1, '2020-12-17 19:48:21', '2021-05-02 07:06:35', '2021-04-26 06:39:47', NULL, NULL, '2021-04-24 12:24:47', '2021-04-07 09:19:13', 1),
+(79, 'o-267', 1, 'ASSIGNED', 1, '2020-12-01 19:48:21', '2021-05-02 14:36:35', '2021-05-04 16:09:47', NULL, NULL, '2021-04-24 12:24:47', '2021-04-07 09:19:45', 0),
+(80, 'o-268', 1, 'ASSIGNED', 1, '2020-12-18 19:48:21', '2021-05-02 09:36:35', '2021-05-04 11:09:47', NULL, NULL, '2021-04-24 12:24:47', '2021-04-07 12:18:51', 0),
+(81, 'o-269', 1, 'ASSIGNED', 1, '2020-12-22 19:48:21', '2021-05-02 12:06:36', '2021-05-04 13:39:47', NULL, NULL, '2021-04-24 12:24:47', '2021-04-07 12:18:55', 0),
+(84, 'o-27', 1, 'ASSIGNED', 1, '2021-05-29 19:47:03', '2021-05-04 16:14:06', '2021-05-04 16:14:06', NULL, NULL, '2021-04-24 12:29:06', '2021-04-24 12:29:06', 0),
+(85, 'o-270', 1, 'ASSIGNED', 1, '2020-12-23 19:48:21', '2021-05-04 18:47:16', '2021-05-04 18:47:16', NULL, NULL, '2021-04-24 12:32:16', '2021-04-24 12:32:16', 0),
+(86, 'o-271', 1, 'ASSIGNED', 1, '2020-12-14 19:48:21', '2021-05-04 21:18:43', '2021-05-04 21:18:43', NULL, NULL, '2021-04-24 12:33:43', '2021-04-24 12:33:43', 0),
+(87, 'o-272', 1, 'ASSIGNED', 1, '2020-11-28 19:48:21', '2021-05-04 23:49:51', '2021-05-04 23:49:51', NULL, NULL, '2021-04-24 12:34:51', '2021-04-24 12:34:51', 0),
+(88, 'o-274', 1, 'ASSIGNED', 1, '2020-12-14 19:48:21', '2021-05-05 02:22:07', '2021-05-05 02:22:07', NULL, NULL, '2021-04-24 12:37:07', '2021-04-24 12:37:07', 0);
 
 -- --------------------------------------------------------
 
@@ -1131,21 +1218,25 @@ CREATE TABLE IF NOT EXISTS `users` (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   `client_id` bigint(20) UNSIGNED NOT NULL,
   `name` varchar(50) NOT NULL,
-  `hash` varchar(36) NOT NULL,
+  `ban` tinyint(1) DEFAULT NULL,
+  `hash` varchar(36) DEFAULT NULL,
   `roles` varchar(2048) NOT NULL,
   `subscriptions` varchar(4096) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `name` (`name`,`client_id`) USING BTREE,
   KEY `client_id` (`client_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COMMENT='users table referenced to factory xml';
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8 COMMENT='users table referenced to factory xml';
 
 --
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `client_id`, `name`, `hash`, `roles`, `subscriptions`) VALUES
-(1, 1, 'David Rhuxel', '27f02d4e066a8bbe8c055ec420dad009', '', ';#o-25;#o-253;#o-255;#o-256;#o-257;#o-26;#o-260;#o-262;#o-263;#o-264;#o-265;#o-267;#o-268;#o-269'),
-(2, 1, 'pavel', '53e6074ce8ba130220b13613bedca72b', '', '#o-252;#o-253;#o-217;#o-266;#o-254;#o-220;#o-25;#o-251;#o-264;#o-265;#o-267;#o-268;#o-269;#o-260');
+INSERT INTO `users` (`id`, `client_id`, `name`, `ban`, `hash`, `roles`, `subscriptions`) VALUES
+(1, 1, 'David Rhuxel', 0, '27f02d4e066a8bbe8c055ec420dad009', 'SUPER_USER', ';#o-25;#o-253;#o-255;#o-256;#o-257;#o-26;#o-260;#o-262;#o-263;#o-264;#o-265;#o-267;#o-268;#o-269'),
+(2, 1, 'pavel', 0, '53e6074ce8ba130220b13613bedca72b', 'MOVE_ORDER_WC%wc1_3;USER_MANAGEMENT', '#o-252;#o-253;#o-217;#o-266;#o-254;#o-220;#o-25;#o-251;#o-264;#o-265;#o-267;#o-268;#o-269;#o-260;#o-212;#o-213'),
+(3, 1, 'test', 0, '5a105e8b9d40e1329780d62ea2265d8a', 'IMPORT_ORDER;MOVE_ORDER_WC;MOVE_ORDER_ROAD;USER_MANAGEMENT', ';#o-27;#o-270;#o-271;#o-272;#o-274'),
+(4, 1, 'test1', 0, NULL, 'MOVE_ORDER_WC%wc1_1', ''),
+(5, 1, 'test2', NULL, NULL, '', '');
 
 -- --------------------------------------------------------
 

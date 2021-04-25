@@ -3,12 +3,77 @@ class ORMNaviException extends Exception {
 
 }
 
-abstract class ORMNaviRoles {
-	const SUPER_USER = "SUPER_USER";
-	const IMPORT_ORDER = "IMPORT_ORDER";
-	const TAKE_ORDER = "TAKE_ORDER";
-	const PROCESS_ORDER_WC = "PROCESS_ORDER_WC";
-	const PROCESS_ORDER_ROAD = "PROCESS_ORDER_ROAD";
+class ORMNaviRole implements JsonSerializable {
+	protected $name;
+	protected $context=null;
+	protected $description;
+	function __construct(string $name, string $description) {
+		$this->name = $name;
+		$this->description = $description;
+	}
+	public function jsonSerialize() {
+		return [
+			'name'=>$this->name,
+			'description'=>$this->description,
+			'context'=>($this->context?$this->context:null)
+		];
+	}
+	public function addContext(array $context) {
+		$this->context = $context;
+	}
+	function __get($name){
+		switch ($name) {
+			case 'description':
+				return $this->description;
+				break;
+			
+			default:
+				# code...
+				break;
+		}
+	}
+}
+
+class ORMNaviRoles implements JsonSerializable {
+	protected $factory;
+	protected $roles = [];
+	function __construct(ORMNaviFactory $factory) {
+		$this->factory = $factory;
+		$this->roles = [
+			"SUPER_USER"=>new ORMNaviRole("SUPER_USER", "The user can do everything"),
+			"IMPORT_ORDER"=>new ORMNaviRole("IMPORT_ORDER", "The user can import order for other users and for himself"),
+			"MOVE_ORDER_WC"=>new ORMNaviRole("MOVE_ORDER_WC", "The user can move order from a bucket to a bucket in workcenter"),
+			"MOVE_ORDER_ROAD"=>new ORMNaviRole("MOVE_ORDER_ROAD", "The user can move order from a workcenter to another in road"),
+			"USER_MANAGEMENT"=>new ORMNaviRole("USER_MANAGEMENT", "The user can add new user, grant or deny permissions, and block the user, subscribe or unsubscribe others"),
+			"CHANGE_ORDERS_PRIORITY"=>new ORMNaviRole("CHANGE_ORDERS_PRIORITY", "The user can change orders' priority"),
+			"CHANGE_ASSIGN_PRIORITY"=>new ORMNaviRole("CHANGE_ASSIGN_PRIORITY", "The user can change orders' assigns priority"),
+			"UPDATE_ESTIMATED"=>new ORMNaviRole("UPDATE_ESTIMATED", "The user can update estimated time of order"),
+			"UPDATE_BASELINE"=>new ORMNaviRole("UPDATE_BASELINE", "The user can update baseline and estimated time for order")
+		];
+		$wc = [];
+		$wx = $this->factory->getWorkcentersList();
+		foreach ($wx as $wcx) {
+			$wcxid = (string)$wcx["id"];
+			$wcname = trim($wcx);
+			$wc[$wcxid] = $wcname;
+		}
+		$this->roles["MOVE_ORDER_WC"]->addContext($wc);
+
+		$roads = [];
+		$rx = $this->factory->getRoadsList();
+		foreach ($rx as $rdx) {
+			$rdxid = (string)$rdx["id"];
+			$rdname = trim($rdx);
+			$roads[$rdxid] = $rdname;
+		}
+		$this->roles["MOVE_ORDER_ROAD"]->addContext($roads);
+	}
+	function jsonSerialize() {
+		return $this->roles;
+	}
+	function __get($name) {
+		return $this->roles[$name];
+	}
 }
 class ORMNaviTag implements JsonSerializable {
 	protected $factory; 
@@ -52,7 +117,7 @@ class ORMNaviUser implements JsonSerializable {
 		$this->hash = md5($user_name . $password);
 	}
 	protected function getUserByName() {
-		$sql = "call getUser('".$this->factory->name."', '".$this->user_name."');";
+		$sql = "call getUser('".$this->factory->name."', '".$this->user_name."', '".$this->hash."');";
 		$x = $this->factory->dblink->query($sql);
 		if (!$x) throw new ORMNaviException("User '" . $this->user_name . "' not found in factory '" . $this->factory->name. "': " . $this->factory->dblink->errno . " - " . $this->factory->dblink->error);
 		$y = $x->fetch_assoc();
@@ -72,10 +137,10 @@ class ORMNaviUser implements JsonSerializable {
 		$this->subscriptions = $user["subscriptions"];
 	}
 
-	public function hasRole(string $role, ?string $context= null) {
-		if (in_array(ORMNaviRoles::SUPER_USER, $this->roles)) return true;
+	public function hasRole(string $role, ?string $context= null):bool {
+		if (in_array("SUPER_USER", $this->roles)) return true;
 		if (!is_null($context)) {
-			return in_array([$role, $context], $this->roles);
+			return in_array($role, $this->roles) || in_array([$role, $context], $this->roles);
 		} else {
 			return in_array($role, $this->roles);
 		}
@@ -611,6 +676,11 @@ class ORMNaviOrder implements JsonSerializable {
 	}
 
 	public function updateEstimatedTime(bool $updateBaseline = false) {
+		if ($updateBaseline) {
+			if (!$this->factory->user->hasRole("UPDATE_BASELINE")) throw new ORMNaviException("User has no rights");
+		} else {
+			if (!$this->factory->user->hasRole("UPDATE_ESTIMATED")) throw new ORMNaviException("User has no rights");
+		}
         $c = $this->calcEstimatedTime();
 		$fet = new DateTime('now', $this->factory->timezone);
 		$fet->modify("+" . $c . " minutes");
@@ -623,7 +693,16 @@ class ORMNaviOrder implements JsonSerializable {
 		}
         $this->factory->dblink->next_result();
 	}
-
+	public function incPriority (int $delta) {
+		if (!$this->factory->user->hasRole("CHANGE_ORDERS_PRIORITY")) throw new ORMNaviException("User has no rights");
+		$sql = "call incOrderPriority(" . $this->id . ", ".$delta.");";
+		$this->factory->dblink->query($sql);
+		if ($this->factory->dblink->errno) {
+		    throw new ORMNaviException("Unexpected error while change order priority" . "': " . $this->factory->dblink->errno . " - " . $this->factory->dblink->error . $sql);
+		}
+		$this->priority += $delta;
+        $this->factory->dblink->next_result();
+	}
 	protected function _assignOrderRouteRecur(SimpleXMLElement $routeEl) {
 	    if (count($routeEl->children()) == 0 && $routeEl->getName() == "operation" ) {
 			$sql = "call assignWorkcenterToRoutePart('" . $this->factory->name . "', '" . $this->id . "', '" . $routeEl["ref"] . "', '" . $routeEl["refref"] . "', '" . $routeEl["workcenter"] . "', 'INCOME', " . $routeEl["consumption"] . ")";
@@ -642,6 +721,7 @@ class ORMNaviOrder implements JsonSerializable {
 	    }
 	}
 	function assignOrderRoute(int $route_id) {
+		if (!$this->factory->user->hasRole("IMPORT_ORDER")) throw new ORMNaviException("User has no rights");
 	    $this->factory->dblink->autocommit(false);
 		$sql = "select addOrder('" . $this->factory->name . "', '" . $this->number . "', 'ASSIGNED', " . $route_id . ", '" . $this->deadline->format('Y-m-d H:i:s') . "') as order_id;";
         $x = $this->factory->dblink->query($sql);
@@ -743,7 +823,6 @@ class ORMNaviFactory implements JsonSerializable {
 	}
 	function __destruct() {
 		$this->dblink->close();
-
 	}
 	function __get($name) {
 		switch ($name) {
@@ -780,6 +859,12 @@ class ORMNaviFactory implements JsonSerializable {
 				break;
 		}
 	}
+	function getWorkcentersList() {
+		return $this->factory_xml->xpath('workcenter');
+	}
+	function getRoadsList() {
+		return $this->factory_xml->xpath('road');
+	}
 	public function jsonSerialize(){
 		$ret = [];
 		$ret['currentUser'] = $this->user;
@@ -791,7 +876,7 @@ class ORMNaviFactory implements JsonSerializable {
 		$wcwl = $this->getWorkcentersWorkload();
 		$rdwl = $this->getRoadsWorkload();
 		$workcenters = [];
-		$wx = $this->factory_xml->xpath('workcenter');
+		$wx = $this->getWorkcentersList();
 		foreach ($wx as $wcx) {
 			$wc = [];
 			$wcxid = (string)$wcx["id"];
@@ -811,7 +896,7 @@ class ORMNaviFactory implements JsonSerializable {
 		}
 		$ret['workcenters'] = $workcenters;
 		$roads = [];
-		$rx = $this->factory_xml->xpath('road');
+		$rx = $this->getRoadsList();
 		foreach ($rx as $rdx) {
 			$rd = [];
 			$rdxid = (string)$rdx["id"];
@@ -834,6 +919,7 @@ class ORMNaviFactory implements JsonSerializable {
 		}
 		$ret['roads'] = $roads;
 		$ret['users'] = $this->getUsersList();
+		$ret['roles'] = new ORMNaviRoles($this);
 		return $ret;
 	}
 
@@ -991,6 +1077,13 @@ class ORMNaviFactory implements JsonSerializable {
 		return $found[0];
 	}
 	function moveAssignToNextBucket($assign_id) {
+		$sql = "call getWorkcenterByAssignID(".$assign_id.");";
+	    $x = $this->dblink->query($sql);
+		if (!$x) throw new ORMNaviException("Could not get workcenter" . "': " . $this->dblink->errno . " - " . $this->dblink->error . $sql); 	    
+		$y = $x->fetch_assoc();
+	    $this->dblink->next_result();
+
+		if (!$this->user->hasRole("MOVE_ORDER_WC", $y["name"])) throw new ORMNaviException("User has no rights");
 	    $this->dblink->autocommit(false);
 		$sql = "call moveAssignToNextBucket(" . $assign_id . ");";
 		$x = $this->dblink->query($sql);
@@ -1068,6 +1161,13 @@ class ORMNaviFactory implements JsonSerializable {
 	}
 
 	function moveAssignToNextWorkcenter($assign_id) {
+		$sql = "call getRoadByAssignID(".$assign_id.");";
+	    $x = $this->dblink->query($sql);
+		if (!$x) throw new ORMNaviException("Could not get road" . "': " . $this->dblink->errno . " - " . $this->dblink->error . $sql); 	    
+		$y = $x->fetch_assoc();
+	    $this->dblink->next_result();
+		if (!$this->user->hasRole("MOVE_ORDER_ROAD", $y["name"])) throw new ORMNaviException("User has no rights");
+
 		$sql = "call getAssignInfo(" . $assign_id . ");";
 	    $x = $this->dblink->query($sql);
 		if (!$x) throw new ORMNaviException("Could not get assign info" . "': " . $this->dblink->errno . " - " . $this->dblink->error . $sql);
@@ -1117,7 +1217,7 @@ class ORMNaviFactory implements JsonSerializable {
 		return $ret;
 	}
 	function subscribeUser(string $user_name, string $tag) {
-		$sql = "call getUser('".$this->name."', '".$user_name."');";
+		$sql = "call getUser('".$this->name."', '".$user_name."', null);";
 		$x = $this->dblink->query($sql);
 		if (!$x) throw new ORMNaviException("User '" . $user_name . "' not found in factory '" . $this->name. "': " . $this->dblink->errno . " - " . $this->dblink->error);
 		$y = $x->fetch_assoc();
@@ -1140,6 +1240,34 @@ class ORMNaviFactory implements JsonSerializable {
 		$x = $this->dblink->query($sql);
 		if (!$x) throw new ORMNaviException("Could not set flag label to message': " . $this->dblink->errno . " - " . $this->dblink->error);
 		$x = $this->dblink->next_result();
+	}
+	function saveUser(?int $id, ?string $user_name, ?bool $ban, ?string $roles, ?string $subscriptions):array{
+		if (!$this->user->hasRole("USER_MANAGEMENT")) throw new ORMNaviException("User has no rights");
+		/* id, factory, user_name, ban, roles, suscriptions */
+		$sql = "call saveUser(".($id?$id:"null").", '".$this->name."', ".($user_name?"'".$user_name."'":"null").", ".($ban?1:0).", ".($roles?"'".$roles."'":"null").", ".($subscriptions?"'".$subscriptions."'":"null").");";
+		$x = $this->dblink->query($sql);
+		if (!$x) throw new ORMNaviException("Could not set flag label to message': " . $this->dblink->errno . " - " . $this->dblink->error);
+		$y = $x->fetch_assoc();
+		$x = $this->dblink->next_result();
+		return $y;
+	}
+	function hasRoleOrDie(array $roles) {
+		$rr = new ORMNaviRoles($this);
+		$q = false;
+		$s = "";
+		foreach ($roles as $role) {
+			if (strpos($role, "%")) {
+				$r = explode("%", $role);
+				$k = $r[0];
+				$q = $q || $this->user->hasRole($r[0], $r[1]);
+				$s .= ($s?"' or '":"'").$rr->$k->description." for ".$r[1];
+			} else {
+				$q = $q || $this->user->hasRole($role);
+				$s .= ($s?"' or '":"'").$rr->$role->description;
+			}
+
+		}
+		$q || die("User has no rights. Request administrator to grant you: ".$s."'");
 	}
 }
 ?>

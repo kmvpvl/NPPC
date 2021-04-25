@@ -234,7 +234,7 @@ messages {
     background-color: white;
     color: black;
     padding: 5px;
-    border: solid 2px grey;
+    border: solid 1px grey;
     width: 80%;
     height: 80%;
     margin: auto;
@@ -423,7 +423,7 @@ order.brief > order-timing > estimated > absolute-date,
 order.brief > order-history {
     display: none;
 }
-order.brief > order-header > number {
+order.brief > order-header > order-number {
     display: inline-block;
     text-align: center;
     width: 5em;
@@ -453,7 +453,16 @@ orderinfo > order-header {
 orderinfo > order-header > order-caption {
     font-size: larger;
 }
-orderinfo > order-header > number {
+orderinfo > order-header > order-priority {
+    display: inline-block;
+    color: white;
+    background-color: darkblue;
+    border-radius: 3px;
+    min-width: 2em;
+    text-align: center;
+    font-size: smaller;
+}
+orderinfo > order-header > order-number {
     font-size: larger;
     font-weight: bold;
     text-align: center;
@@ -618,4 +627,44 @@ orders-to-import-list::before {
 }
 select {
     border: white 0px solid;
+}
+factory-user {
+    display:block;
+    margin: 5px;
+    padding: 5px;
+    border-radius: 2px;
+    border: darkgray 1px solid;
+    cursor: pointer;
+}
+factory-user.selected {
+    color: white;
+    background-color: navy;
+}
+factory-user > user-name {
+    font-size: larger;
+    display: block;
+}
+factory-user > user-roles,
+factory-user > user-subscriptions
+{
+    font-size: smaller;
+    display: block;
+}
+factory-user > user-roles::before {
+    content: "Roles: ";
+    font-weight: bold;
+}
+factory-user > user-subscriptions::before{
+    content: "Subscriptions: ";
+    font-weight: bold;
+}
+factory-user > user-controls {
+    cursor: pointer;
+    font-size: x-large;
+}
+.role-context {
+    padding-left: 2em;
+}
+#btn-new-user {
+    cursor: pointer;
 }

@@ -1,9 +1,7 @@
 <?php
 include "checkORMNavi.php";
-try {
+printNaviData(function($factory){
     $factory->moveAssignToNextWorkcenter($_POST["data"]["assign"]);
-} catch (ORMNaviException | Exception $e) {
-	http_response_code(400);
-	die ($e->getMessage());
-}
+    return null;
+});
 ?>

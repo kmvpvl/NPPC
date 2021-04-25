@@ -1,5 +1,6 @@
 <?php
 include "checkORMNavi.php";
+$factory->hasRoleOrDie(["IMPORT_ORDER"]);
 ?>
 <script>
 $(".nav-link.active").removeClass("active");
@@ -7,46 +8,41 @@ $(".nav-item.active").removeClass("active");
 $("#menuOrders").addClass("active");
 $(".navbar-brand").text(NaviFactory.name + ": Orders");
 function ordersUpdated(data, status) {
-	hideLoading();
 	$("orders_to_import").html("");
 	$("orders_inprocess").html("");
-	switch (status) {
-		case "success":
-			ls = JSON.parse(data);
-			for (ind in ls.data) {
-				o = ls.data[ind];
-				if (o.id) {
-					$("orders_inprocess").append('<order class="brief" number="'+o.number+'"/>');
-				} else {
-					$("orders_to_import").append('<order class="brief" number="'+o.number+'"/>');
-				}
-				ot = new ORMNaviOrder(o);
+	var ls = recieveDataFromNavi(data, status);
+	if (ls && ls.result=='OK') {
+		for (ind in ls.data) {
+			o = ls.data[ind];
+			if (o.id) {
+				$("orders_inprocess").append('<order class="brief" number="'+o.number+'"/>');
+			} else {
+				$("orders_to_import").append('<order class="brief" number="'+o.number+'"/>');
 			}
-			$("order[number]").on('click', function() {
+			ot = new ORMNaviOrder(o);
+		}
+		$("order[number]").on('click', function() {
+			//debugger;
+			var n = $(this).attr("number");
+			if ($('order[number="'+n+'"]').hasClass("selected")) $('order[number="'+n+'"]').removeClass("selected");
+			else $('order[number="'+n+'"]').addClass("selected");
+			if ($("order[number].selected").length == 1) {
 				//debugger;
-				var n = $(this).attr("number");
-				if ($('order[number="'+n+'"]').hasClass("selected")) $('order[number="'+n+'"]').removeClass("selected");
-				else $('order[number="'+n+'"]').addClass("selected");
-				if ($("order[number].selected").length == 1) {
-					//debugger;
-					$("#btnOrderInfo").show();
-					$("#btnOrderInfo").css({
-						left: $("order[number].selected").position().left/*+$("order[number].selected").outerWidth()*/+'px',
-						top: $("order[number].selected").position().top+$("order[number].selected").outerHeight()+'px'
-					});
-					$("#btnsPriority").show();
-					$("#btnsPriority").css({
-						left: ($("order[number].selected").position().left+$("#btnOrderInfo").outerWidth())+'px',
-						top: $("order[number].selected").position().top+$("order[number].selected").outerHeight()+'px'
-					});
-				} else {
-					$("#btnsPriority").hide();
-					$("#btnOrderInfo").hide();
-				}
-			})
-			break;
-		default:
-			;
+				$("#btnOrderInfo").show();
+				$("#btnOrderInfo").css({
+					left: $("order[number].selected").position().left/*+$("order[number].selected").outerWidth()*/+'px',
+					top: $("order[number].selected").position().top+$("order[number].selected").outerHeight()+'px'
+				});
+				$("#btnsPriority").show();
+				$("#btnsPriority").css({
+					left: ($("order[number].selected").position().left+$("#btnOrderInfo").outerWidth())+'px',
+					top: $("order[number].selected").position().top+$("order[number].selected").outerHeight()+'px'
+				});
+			} else {
+				$("#btnsPriority").hide();
+				$("#btnOrderInfo").hide();
+			}
+		});
 	}
 }
 function updateAllOrders() {
@@ -77,14 +73,10 @@ $("#btnImportOrders").on('click', function() {
 	$("#dlgImportOrderModal").modal('show');
 })
 function estimatedUpdated(data, status) {
-	hideLoading();
-	switch (status) {
-		case "success":
-			updateAllOrders();
-			showInformation("Estimated dates were updated!");
-			break;
-		default:
-			;
+	var ls = recieveDataFromNavi(data, status);
+	if (ls && ls.result=='OK') {
+		updateAllOrders();
+		showInformation("Estimated dates were updated!");
 	}
 }
 $("#btnInprocessSelectAll").on('click', function(){
@@ -123,8 +115,18 @@ $("#btnOrderInfo").on('click', function(){
 	</div>
 	<div>
 		<button id="btnInprocessSelectAll">Select All</button>
+<?php
+if ($factory->user->hasRole("UPDATE_ESTIMATED")) {
+?>
 		<button id="btnUpdateEstimated">Update est.</button>
+<?php
+}
+if ($factory->user->hasRole("UPDATE_BASELINE")) {
+?>
 		<button id="btnUpdateBaseline">Update plan</button>
+<?php
+}
+?>
 	</div>
 </orders>
 <div id="dlg-orderImport" style="display:none;">
@@ -134,7 +136,7 @@ $("#btnOrderInfo").on('click', function(){
 	<textarea class="form-control" id="message-text"></textarea>
 </div>
 <span id="btnOrderInfo"><i class="fa fa-info-circle" aria-hidden="true"></i></span>
-<span id="btnsPriority"><i class="fa fa-arrow-circle-up" aria-hidden="true"></i><i class="fa fa-arrow-circle-down" aria-hidden="true"></i></span>
+<span id="btnsPriority"><i id="btnPriorityUp" class="fa fa-arrow-circle-up" aria-hidden="true"></i><i id="btnPriorityDown" class="fa fa-arrow-circle-down" aria-hidden="true"></i></span>
 <div class="modal fade" id="dlgImportOrderModal" tabindex="-1" role="dialog" aria-labelledby="dlgOrderImportModalLongTitle" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
@@ -192,16 +194,36 @@ $("#btn-import-order").click(function(){
 		subscribe_user: $("#slct-import-order-owner").val()?$("#slct-import-order-owner").val():undefined,
 		message_text: $("#text-import-order-text").val()
 	}, function (data, status) {
-		hideLoading();
-		switch (status) {
-			case "success":
-				updateAllOrders();
-				showInformation("Orders were imported");
-				break;
-			default:
-				;
-		}
+        var ls = recieveDataFromNavi(data, status);
+        if (ls && ls.result=='OK') {
+			updateAllOrders();
+			showInformation("Orders were imported");
+        }
 	});
+});
+$('#btnPriorityUp').click(function(){
+    if ($("order[number].selected").length == 1) {
+        var order = $("order[number].selected").attr("number");
+		sendDataToNavi('apiIncOrderPriority', {order: order, delta: 1}, function(data, status){
+			var ls = recieveDataFromNavi(data, status);
+			if (ls && ls.result=='OK') {
+				updateAllOrders();
+				showInformation("Priority was changed!");
+			}
+		});
+    }
+});
+$('#btnPriorityDown').click(function(){
+    if ($("order[number].selected").length == 1) {
+        var order = $("order[number].selected").attr("number");
+		sendDataToNavi('apiIncOrderPriority', {order: order, delta: -1}, function(data, status){
+			var ls = recieveDataFromNavi(data, status);
+			if (ls && ls.result=='OK') {
+				updateAllOrders();
+				showInformation("Priority was changed!");
+			}
+		});
+    }
 });
 if (NaviFactory.users) {
 	$("#slct-import-order-owner").html("");
