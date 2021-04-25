@@ -316,6 +316,10 @@ function tryLogin() {
 		return;
 	}
 	NaviFactory = new ORMNaviFactory();
+	NaviFactory.on('change', function(){
+		updateMessages();
+		loadInstance();
+	});
 }
 function loadInstance() {
 	if ($('instance').html()) return;

@@ -23,6 +23,9 @@ function resizeOn(){
 	redraw();
 };
 redraw();
+NaviFactory.on('change', function(){
+	redraw();
+});
 </script>
 <factory>
 <input type="text" class="form-control" placeholder="Search orders or anything..."></input>
