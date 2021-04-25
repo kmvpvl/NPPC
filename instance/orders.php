@@ -7,28 +7,6 @@ $(".nav-link.active").removeClass("active");
 $(".nav-item.active").removeClass("active");
 $("#menuOrders").addClass("active");
 $(".navbar-brand").text(NaviFactory.name + ": Orders");
-function resizeOn1(){
-	$('orders-inprocess > order').each(function(){
-		var n = $(this).find('order-number');
-		var lr = $(this).find('order-timing');
-		if($(this).height() <= n.height()) {
-			var w = $(this).position().left+$(this).width();
-			var x = lr.position().left+lr.width();
-			if ($(this).find('order-products').is(':visible')) {
-				$(this).find('order-products').outerWidth(w-x+$(this).find('order-products').width());
-				return;
-			}
-			$(this).find('order-products').outerWidth(w-x);
-			$(this).find('order-products').css({"max-height":lr.height(), "overflow-x": "hidden", "display":"inline-flex"});
-		} else {
-			//$(this).find('order-products').hide();
-			var d = $(this).find('order-products').outerWidth() - 2*($(this).width() - lr.width());
-			if (d>=0) {
-				$(this).find('order-products').css({"max-height":lr.height(), "overflow-x": "hidden", "display":"inline-flex"});
-			}
-		}
-	});
-}
 
 function updateAllOrders() {
 	sendDataToNavi("apiGetAllOrders", undefined, function(data, status) {
@@ -45,7 +23,6 @@ function updateAllOrders() {
 				}
 				var ot = new ORMNaviOrder(o);
 			}
-			//resizeOn();
 			$("order[number]").on('click', function() {
 				var n = $(this).attr("number");
 				if ($('order[number="'+n+'"]').hasClass("selected")) $('order[number="'+n+'"]').removeClass("selected");

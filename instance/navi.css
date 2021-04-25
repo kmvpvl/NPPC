@@ -410,13 +410,19 @@ order.brief {
     border-bottom: black 1px solid;
     background-color: white;
     color: black;
-    display: inline-block;
+    display: grid;
+    grid-template-rows: auto;
+    grid-template-columns: minmax(60%, 1fr) minmax(5em, 13em);
+    grid-gap: 0em;
     width: 100%;
     cursor: pointer;
 }
+order.brief > order-header{
+    display:inline-flexbox;
+    flex-wrap: nowrap;
+}
 order.brief > order-header > order-caption,
 order.brief > order-header > order-customer,
-order.brief > order-header > order-products,
 order.brief > order-timing > due > diff-date,
 order.brief > order-timing > baseline > absolute-date,
 order.brief > order-timing > estimated > absolute-date,
@@ -426,9 +432,20 @@ order.brief > order-history {
 order.brief > order-header > order-number {
     display: inline-block;
     text-align: center;
-    width: 5em;
+    min-width: 5em;
 }
-
+order.brief > order-header > order-products {
+    display: inline-flex;
+    text-align: center;
+    min-width: 0em;
+    flex-wrap: nowrap;
+}
+order.brief > order-header > order-products > order-product{
+    display: flex;
+    text-align: left;
+    min-width: 0em;
+    flex-wrap: nowrap;
+}
 order[full="0"] {
     color: red;
 }
