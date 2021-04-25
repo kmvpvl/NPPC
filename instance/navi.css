@@ -344,21 +344,21 @@ orders {
     grid-template-columns: 1fr 1.5fr;
     grid-gap: 0.1em;
 }
-orders_in_workcenter {
+orders-in-workcenter {
     height: 100%;
     display: grid;
     grid-template-rows: auto auto 1fr;
     grid-template-columns: 1fr 1fr 1fr;
     grid-gap: 0.1em;
 }
-orders_in_road {
+orders-in-road {
     height: 100%;
     display: grid;
     grid-template-rows: auto auto 1fr;
     grid-template-columns: 1fr 1fr;
     grid-gap: 0.1em;
 }
-orders_to_import {
+orders-to-import {
     margin: 0;
     width: 100%;
     padding: 0vw;
@@ -366,7 +366,7 @@ orders_to_import {
     overflow-y: auto;
     border: black 1px solid;
 }
-orders_inprocess {
+orders-inprocess {
     margin: 0;
     padding: 0vw;
     width: 100%;

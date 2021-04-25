@@ -87,13 +87,13 @@ $("#btnOrderInfo").on('click', function(){
     }
 });
 </script>
-<orders_in_road>
+<orders-in-road>
     <input id="edt-search" type="text" class="form-control" placeholder="Search orders..."></input>
     <span></span>
     <span class="bucket"><b><?=$wc_from_desc?></b> (ord, due, est, plan)</span>
     <span class="bucket"><b><?=$wc_to_desc?></b> (ord, due, est, plan)</span>
     <income></income>
     <outcome></outcome>
-</orders_in_road>
+</orders-in-road>
 <span id="btnOrderInfo"><i class="fa fa-info-circle" aria-hidden="true"></i></span>
 <span id="btnOrderMove"><i class="fa fa-arrow-circle-right" aria-hidden="true"></i></span>

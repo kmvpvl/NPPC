@@ -7,49 +7,70 @@ $(".nav-link.active").removeClass("active");
 $(".nav-item.active").removeClass("active");
 $("#menuOrders").addClass("active");
 $(".navbar-brand").text(NaviFactory.name + ": Orders");
-function ordersUpdated(data, status) {
-	$("orders_to_import").html("");
-	$("orders_inprocess").html("");
-	var ls = recieveDataFromNavi(data, status);
-	if (ls && ls.result=='OK') {
-		for (ind in ls.data) {
-			o = ls.data[ind];
-			if (o.id) {
-				$("orders_inprocess").append('<order class="brief" number="'+o.number+'"/>');
-			} else {
-				$("orders_to_import").append('<order class="brief" number="'+o.number+'"/>');
+function resizeOn1(){
+	$('orders-inprocess > order').each(function(){
+		var n = $(this).find('order-number');
+		var lr = $(this).find('order-timing');
+		if($(this).height() <= n.height()) {
+			var w = $(this).position().left+$(this).width();
+			var x = lr.position().left+lr.width();
+			if ($(this).find('order-products').is(':visible')) {
+				$(this).find('order-products').outerWidth(w-x+$(this).find('order-products').width());
+				return;
 			}
-			ot = new ORMNaviOrder(o);
+			$(this).find('order-products').outerWidth(w-x);
+			$(this).find('order-products').css({"max-height":lr.height(), "overflow-x": "hidden", "display":"inline-flex"});
+		} else {
+			//$(this).find('order-products').hide();
+			var d = $(this).find('order-products').outerWidth() - 2*($(this).width() - lr.width());
+			if (d>=0) {
+				$(this).find('order-products').css({"max-height":lr.height(), "overflow-x": "hidden", "display":"inline-flex"});
+			}
 		}
-		$("order[number]").on('click', function() {
-			//debugger;
-			var n = $(this).attr("number");
-			if ($('order[number="'+n+'"]').hasClass("selected")) $('order[number="'+n+'"]').removeClass("selected");
-			else $('order[number="'+n+'"]').addClass("selected");
-			if ($("order[number].selected").length == 1) {
-				//debugger;
-				$("#btnOrderInfo").show();
-				$("#btnOrderInfo").css({
-					left: $("order[number].selected").position().left/*+$("order[number].selected").outerWidth()*/+'px',
-					top: $("order[number].selected").position().top+$("order[number].selected").outerHeight()+'px'
-				});
-				$("#btnsPriority").show();
-				$("#btnsPriority").css({
-					left: ($("order[number].selected").position().left+$("#btnOrderInfo").outerWidth())+'px',
-					top: $("order[number].selected").position().top+$("order[number].selected").outerHeight()+'px'
-				});
-			} else {
-				$("#btnsPriority").hide();
-				$("#btnOrderInfo").hide();
-			}
-		});
-	}
+	});
 }
+
 function updateAllOrders() {
-	sendDataToNavi("apiGetAllOrders", undefined, ordersUpdated);
+	sendDataToNavi("apiGetAllOrders", undefined, function(data, status) {
+		$("orders-to-import").html("");
+		$("orders-inprocess").html("");
+		var ls = recieveDataFromNavi(data, status);
+		if (ls && ls.result=='OK') {
+			for (ind in ls.data) {
+				var o = ls.data[ind];
+				if (o.id) {
+					$("orders-inprocess").append('<order class="brief" number="'+o.number+'"/>');
+				} else {
+					$("orders-to-import").append('<order class="brief" number="'+o.number+'"/>');
+				}
+				var ot = new ORMNaviOrder(o);
+			}
+			//resizeOn();
+			$("order[number]").on('click', function() {
+				var n = $(this).attr("number");
+				if ($('order[number="'+n+'"]').hasClass("selected")) $('order[number="'+n+'"]').removeClass("selected");
+				else $('order[number="'+n+'"]').addClass("selected");
+				if ($("order[number].selected").length == 1) {
+					$("#btnOrderInfo").show();
+					$("#btnOrderInfo").css({
+						left: $("order[number].selected").position().left/*+$("order[number].selected").outerWidth()*/+'px',
+						top: $("order[number].selected").position().top+$("order[number].selected").outerHeight()+'px'
+					});
+					$("#btnsPriority").show();
+					$("#btnsPriority").css({
+						left: ($("order[number].selected").position().left+$("#btnOrderInfo").outerWidth())+'px',
+						top: $("order[number].selected").position().top+$("order[number].selected").outerHeight()+'px'
+					});
+				} else {
+					$("#btnsPriority").hide();
+					$("#btnOrderInfo").hide();
+				}
+			});
+		}
+	});
 }
 $("#btnUpdateEstimated").on('click', function() {
-	var a = $("orders_inprocess > order.selected");
+	var a = $("orders-inprocess > order.selected");
 	var data = [];
 	a.each(function(ind, value){
 		data.push($(value).attr("number"));
@@ -57,7 +78,7 @@ $("#btnUpdateEstimated").on('click', function() {
 	sendDataToNavi("apiUpdateEstimated", {updatebaseline: 0, orders: data}, estimatedUpdated);
 })
 $("#btnUpdateBaseline").on('click', function() {
-	var a = $("orders_inprocess > order.selected");
+	var a = $("orders-inprocess > order.selected");
 	var data = [];
 	a.each(function(ind, value){
 		data.push($(value).attr("number"));
@@ -65,7 +86,7 @@ $("#btnUpdateBaseline").on('click', function() {
 	sendDataToNavi("apiUpdateEstimated", {updatebaseline: 1, orders: data}, estimatedUpdated);
 })
 $("#btnImportOrders").on('click', function() {
-	var a = $("orders_to_import > order.selected");
+	var a = $("orders-to-import > order.selected");
 	$("orders-to-import-list").text("");
 	a.each(function(ind, value){
 		$("orders-to-import-list").append($(value).attr("number") + " ");
@@ -80,7 +101,7 @@ function estimatedUpdated(data, status) {
 	}
 }
 $("#btnInprocessSelectAll").on('click', function(){
-	$("orders_inprocess > order").addClass("selected");
+	$("orders-inprocess > order").addClass("selected");
 })
 updateAllOrders();
 $("#btnOrderInfo").on('click', function(){
@@ -105,10 +126,10 @@ $("#btnOrderInfo").on('click', function(){
 		<span class="th-4">Est</span>
 		<span class="th-4">Plan</span>
 	</div>
-	<orders_to_import>
-	</orders_to_import>
-	<orders_inprocess>
-	</orders_inprocess>
+	<orders-to-import>
+	</orders-to-import>
+	<orders-inprocess>
+	</orders-inprocess>
 	<div>
 		<button>Select All</button>
 		<button id="btnImportOrders">Import</button>
@@ -180,7 +201,7 @@ $("#chk-subscribe-user").change(function(){
 	if (!$("#chk-subscribe-user").prop("checked")) $("#slct-import-order-owner").val("");
 });
 $("#btn-import-order").click(function(){
-	var a = $("orders_to_import > order.selected");
+	var a = $("orders-to-import > order.selected");
 	var o = [];
 	var r = [];
 	a.each(function(ind, value){

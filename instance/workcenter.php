@@ -100,7 +100,7 @@ $("#slct-operation").change(function(){
     filterOrders();
 });
 </script>
-<orders_in_workcenter>
+<orders-in-workcenter>
     <select class="custom-select" id="slct-operation">
     <option value="">All operations</option>
 <?php
@@ -117,6 +117,6 @@ $("#slct-operation").change(function(){
     <income></income>
     <processing></processing>
     <outcome></outcome>
-</orders_in_workcenter>
+</orders-in-workcenter>
 <span id="btnOrderInfo"><i class="fa fa-info-circle" aria-hidden="true"></i></span>
 <span id="btnOrderMove"><i class="fa fa-arrow-circle-right" aria-hidden="true"></i></span>

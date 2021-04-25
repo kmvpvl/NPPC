@@ -24,6 +24,6 @@ name="Wheelpair factory" img="" map="53.3834919,50.1689624;53.3780572,50.1744053
 	</workcenter>
 	<workcenter id="wc2_4" location="53.37947567768339,50.17231187692308;53.37820408378374,50.17432156307690">
 		Quality check
-		<operation ref="qualitycheck" capacity="8"></operation>
+		<operation ref="qualitycheck" capacity="60"></operation>
 	</workcenter>
 </factory>
