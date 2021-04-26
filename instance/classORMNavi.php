@@ -680,9 +680,9 @@ class ORMNaviOrder implements JsonSerializable {
 
 	public function updateEstimatedTime(bool $updateBaseline = false) {
 		if ($updateBaseline) {
-			if (!$this->factory->user->hasRole("UPDATE_BASELINE")) throw new ORMNaviException("User has no rights");
+			if (!$this->factory->user->hasRole("UPDATE_BASELINE") && !$this->factory->user->hasRole("IMPORT_ORDER")) throw new ORMNaviException("User has no rights");
 		} else {
-			if (!$this->factory->user->hasRole("UPDATE_ESTIMATED")) throw new ORMNaviException("User has no rights");
+			if (!$this->factory->user->hasRole("UPDATE_ESTIMATED") && !$this->factory->user->hasRole("IMPORT_ORDER")) throw new ORMNaviException("User has no rights");
 		}
         $c = $this->calcEstimatedTime();
 		$fet = new DateTime('now', $this->factory->timezone);

@@ -14,6 +14,8 @@ function updateAllOrders() {
 		$("orders-inprocess").html("");
 		var ls = recieveDataFromNavi(data, status);
 		if (ls && ls.result=='OK') {
+			$("#btnsPriority").hide();
+			$("#btnOrderInfo").hide();
 			for (ind in ls.data) {
 				var o = ls.data[ind];
 				if (o.id) {
