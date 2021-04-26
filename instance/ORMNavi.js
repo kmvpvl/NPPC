@@ -195,15 +195,18 @@ class ORMNaviMessage {
 	}
 }
 
-class ORMNaviOrder {
+class ORMNaviOrder extends EventHandlerPrototype {
     el = null;
     constructor (obj, htmlelement = null) {
+		super();
         Object.assign(this, obj);
 		if (!htmlelement) {
-			this.el = $('order[number="'+this.number+'"]');
+			this.el = $('<order/>');
 		} else {
 			this.el = htmlelement;
 		}
+		this.el.attr('number', obj.number);
+
         this.drawOrder();
         this.el[0].ORMNaviOrder = this;
     }
@@ -211,8 +214,23 @@ class ORMNaviOrder {
 	drawOrder() {
 		var dl = new Date(this.deadline);
 		var cd = new Date();
-		
-		var tmp = '<order-header>';
+		var tmp = '<order-operations>';
+		tmp += '<i operation="info" class="fa fa-info-circle" aria-hidden="true"></i>'; //info
+		tmp += '<i operation="next" class="fa fa-arrow-circle-right" aria-hidden="true"></i>'; //next
+		tmp += '<i operation="finish" class="fa fa-check-circle" aria-hidden="true"></i>'; //finish
+		tmp += '<i operation="priority-up" id="btnPriorityUp" class="fa fa-arrow-circle-up" aria-hidden="true"></i>'; //priority-up
+		tmp += '<i operation="priority-down" id="btnPriorityDown" class="fa fa-arrow-circle-down" aria-hidden="true"></i>'; //priority-down
+		tmp += '<i operation="pause" class="fa fa-pause-circle" aria-hidden="true"></i>'; //pause
+		tmp += '<i operation="continue" class="fa fa-play-circle" aria-hidden="true"></i>'; //continue
+		tmp += '<i operation="defect" class="fa fa-bug" aria-hidden="true"></i>'; //defect alarm
+		tmp += '<i operation="print-label" class="fa fa-barcode" aria-hidden="true"></i>'; //barcode ticket
+		tmp += '<i operation="subscribe" class="fa fa-link" aria-hidden="true"></i>'; //subscribe ticket
+		tmp += '<i operation="unsubscribe" class="fa fa-chain-broken" aria-hidden="true"></i>'; //unsubscribe ticket
+		tmp += '<i operation="message" class="fa fa-commenting" aria-hidden="true"></i>';
+		tmp += '<i operation="update-estimated" class="fa fa-hourglass-end" aria-hidden="true"></i>';
+		tmp += '<i operation="update-baseline" class="fa fa-thumb-tack" aria-hidden="true"></i>';
+		tmp += '</order-operations>'
+		tmp += '<order-header>';
 		if (this.priority && this.priority !=0) {
 			if (this.priority > 0) {
 				tmp += '<order-priority>'+this.priority+'<i class="fa fa-long-arrow-up" aria-hidden="true"></i>'+"</order-priority>"
@@ -253,14 +271,31 @@ class ORMNaviOrder {
 		tmp += '</order-history>';
 		this.el.html(tmp);
 	}
-	static getBucket(obj, workcenter) {
-		for (ind in obj.history) {
-			if (workcenter == obj.history[ind].workcenter_name) {
-				//debugger;
-				return {bucket: obj.history[ind].bucket, assign: obj.history[ind].id, fullset:obj.history[ind].fullset, operation: obj.history[ind].operation}; 
-			}
+	getHistoryByWorkcenterName(wc_name) {
+		for (const o of this.history) {
+			if (wc_name == o.workcenter_name) return o;
 		}
 		return null;
+	}
+	showOperation(operations, showOrHide){
+		var i;
+		var th = this;
+		if (operations)	{
+			if (typeof(operations) === 'object'){
+				var s = '';
+				for (let [k, op] of Object.entries(operations)){
+					if (s.length > 0) s += ',';
+					s += 'i[operation="'+op+'"]';
+				}
+				i = this.el.find(s);
+			} else i = this.el.find('i[operation="'+operations+'"]');
+		} else i = this.el.find('i[operation]');
+		if (showOrHide) {
+			i.show();
+			i.click(function(){
+				fireEvent('operation', {order: th, operation:$(this).attr('operation')});
+			});
+		} else i.hide();
 	}
 }
 
@@ -375,6 +410,7 @@ function modalOrderInfo(order_number) {
 		var ls = recieveDataFromNavi(data, status);
 		if (ls && ls.result=='OK') {
 			var temp = new ORMNaviOrder(ls.data, $("orderinfo"));
+			$('orderinfo > order-operations').append('<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>');
 			$("orderinfo > order-history > event > workcenter").each (function () {
 				var w = $(this).attr("name");
 				var o = $(this).attr("operation");

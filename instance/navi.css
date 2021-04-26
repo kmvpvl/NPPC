@@ -417,10 +417,15 @@ order.brief {
     width: 100%;
     cursor: pointer;
 }
+i[operation]{
+    font-size: x-large;
+    cursor: pointer;
+}
 order.brief > order-header{
     display:inline-flexbox;
     flex-wrap: nowrap;
 }
+order.brief > order-operations,
 order.brief > order-header > order-caption,
 order.brief > order-header > order-customer,
 order.brief > order-timing > due > diff-date,

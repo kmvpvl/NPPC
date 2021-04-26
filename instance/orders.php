@@ -16,12 +16,13 @@ function updateAllOrders() {
 		if (ls && ls.result=='OK') {
 			$("#btnsPriority").hide();
 			$("#btnOrderInfo").hide();
-			for (ind in ls.data) {
-				var o = ls.data[ind];
+			for (let [i, o] of Object.entries(ls.data)) {
+                var $o = $('<order class="brief"/>');
+                var ot = new ORMNaviOrder(o, $o);
 				if (o.id) {
-					$("orders-inprocess").append('<order class="brief" number="'+o.number+'"/>');
+					$("orders-inprocess").append($o);
 				} else {
-					$("orders-to-import").append('<order class="brief" number="'+o.number+'"/>');
+					$("orders-to-import").append($o);
 				}
 				var ot = new ORMNaviOrder(o);
 			}

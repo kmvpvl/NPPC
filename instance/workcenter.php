@@ -20,15 +20,20 @@ function updateOrders() {
             $("#btnOrderMove").hide();
             $("#btnOrderInfo").hide();
             for (ind in ls.data) {
-                o = ls.data[ind];
-                //debugger;
-                var b = ORMNaviOrder.getBucket(o, '<?=$workcenter?>');
-                if (b) {
-                    $(b.bucket).append('<order class="brief" number="'+o.number+'" assign="'+b.assign+'" full="'+(b.fullset=='1'?"1":"0")+'" operation="'+b.operation+'"/>');
+                var o = ls.data[ind];
+                var $o = $('<order class="brief"/>');
+                var ot = new ORMNaviOrder(o, $o);
+                var h = ot.getHistoryByWorkcenterName('<?=$workcenter?>');
+                if (h) {
+                    $o.attr({'assign': h.id,
+                        'full': h.fullset=='1'?"1":"0",
+                        'operation': h.operation});
+                    $(h.bucket).append($o);
                 } else {
                 }
-                ot = new ORMNaviOrder(o);
             }
+            //if (!$('outcome').html()) $('outcome').hide();
+            //else $('outcome').show();
             $('order[full="0"]').prepend('<span class="order-bage">partly</span>');
             if (ORMNaviCurrentOrder)
                 $('order[number="'+ORMNaviCurrentOrder+'"]').addClass("highlight");

@@ -22,17 +22,29 @@ function updateOrders() {
             $("outcome").html("");
             $("#btnOrderMove").hide();
             $("#btnOrderInfo").hide();
-            for (ind in ls.data['<?=$wc_from?>']) {
-                o = ls.data['<?=$wc_from?>'][ind];
-                var b = ORMNaviOrder.getBucket(o, '<?=$wc_from?>');
-                $('income').append('<order class="brief" number="'+o.number+'" assign="'+b.assign+'" full="'+o.fullset+'"/>');
-                ot = new ORMNaviOrder(o);
+            for (const o of ls.data['<?=$wc_from?>']) {
+                var $o = $('<order class="brief"/>');
+                var ot = new ORMNaviOrder(o, $o);
+                var h = ot.getHistoryByWorkcenterName('<?=$wc_from?>');
+                if (h) {
+                    $o.attr({'assign': h.id,
+                        'full': h.fullset=='1'?"1":"0",
+                        'operation': h.operation});
+                    $('income').append($o);
+                } else {
+                }
             }
-            for (ind in ls.data['<?=$wc_to?>']) {
-                o = ls.data['<?=$wc_to?>'][ind];
-                var b = ORMNaviOrder.getBucket(o, '<?=$wc_to?>');
-                $('outcome').append('<order class="brief" number="'+o.number+'" assign="'+b.assign+'" full="'+o.fullset+'"/>');
-                ot = new ORMNaviOrder(o);
+            for (const o of ls.data['<?=$wc_to?>']) {
+                var $o = $('<order class="brief"/>');
+                var ot = new ORMNaviOrder(o, $o);
+                var h = ot.getHistoryByWorkcenterName('<?=$wc_to?>');
+                if (h) {
+                    $o.attr({'assign': h.id,
+                        'full': h.fullset=='1'?"1":"0",
+                        'operation': h.operation});
+                    $('outcome').append($o);
+                } else {
+                }
             }
             if (ORMNaviCurrentOrder) $('order[number="'+ORMNaviCurrentOrder+'"]').addClass("highlight");
             $("order[number]").on('click', function() {
