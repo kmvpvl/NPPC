@@ -127,12 +127,6 @@ if ($factory->user->hasRole("UPDATE_BASELINE")) {
 ?>
 	</div>
 </orders>
-<div id="dlg-orderImport" style="display:none;">
-	<label for="recipient-name" class="col-form-label">Recipient:</label>
-	<input type="text" class="form-control" id="recipient-name"></input>
-	<label for="message-text" class="col-form-label">Message:</label>
-	<textarea class="form-control" id="message-text"></textarea>
-</div>
 <span id="btnOrderInfo"><i class="fa fa-info-circle" aria-hidden="true"></i></span>
 <span id="btnsPriority"><i id="btnPriorityUp" class="fa fa-arrow-circle-up" aria-hidden="true"></i><i id="btnPriorityDown" class="fa fa-arrow-circle-down" aria-hidden="true"></i></span>
 <div class="modal fade" id="dlgImportOrderModal" tabindex="-1" role="dialog" aria-labelledby="dlgOrderImportModalLongTitle" aria-hidden="true">

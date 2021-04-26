@@ -38,7 +38,7 @@ function recieveDataFromNavi(data, status) {
 			try {
 				ls = JSON.parse(data);
 				if (ls.result == 'FAIL') {
-					showLoadingError("Error on server: " + ls.description);
+					showLoadingError("Application says: " + ls.description);
 				} 
 			} catch(e) {
 				showLoadingError("Wrong data from server: " + e + " - " + data);
@@ -418,10 +418,10 @@ function modalOrderInfo(order_number) {
 						if (NaviFactory.currentUser && 
 							NaviFactory.currentUser.subscriptions.includes("#"+$("orderinfo order-header order-number").text())) {
 							showInformation("You're subscribed!");
-							$("#btn-subscribe").text("Unsubscribe");
+							$("#btn-subscribe").text("Unsubscribe me");
 						} else {
 							showInformation("You're unsubscribed!");
-							$("#btn-subscribe").text("Subscribe");
+							$("#btn-subscribe").text("Subscribe me");
 						}
 						updateMessages();
 					}
@@ -429,9 +429,9 @@ function modalOrderInfo(order_number) {
 			});
 			if (NaviFactory.currentUser && 
 				NaviFactory.currentUser.subscriptions.includes("#"+$("orderinfo order-header order-number").text())) {
-				$("#btn-subscribe").text("Unsubscribe");
+				$("#btn-subscribe").text("Unsubscribe me");
 			} else {
-				$("#btn-subscribe").text("Subscribe");
+				$("#btn-subscribe").text("Subscribe me");
 			}
 			$("orderinfo > order-history > event > road").on ('click', function(){
 				ORMNaviCurrentOrder = $("orderinfo order-header order-number").text();

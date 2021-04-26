@@ -8,6 +8,9 @@ $(".nav-link.active").removeClass("active");
 $(".nav-item.active").removeClass("active");
 $("#menuUsers").addClass("active");
 $(".navbar-brand").text(NaviFactory.name+": Users");
+NaviFactory.on('change', function(){
+    redraw();
+})
 function drawRoles() {
     var s = '';
     for (let [irole, orole] of Object.entries(NaviFactory.roles)){
@@ -20,10 +23,15 @@ function drawRoles() {
         }
         s += '</div>';
     }
-    $("#dlgUserModalBody").html(s);
+    $("#roles-tab").html(s);
+}
+function drawSubscriptions(){
+
 }
 
 function redraw() {
+    var selected_user = null;
+    if ($('factory-user.selected').length == 1) selected_user = $('factory-user.selected').attr('user_id');
     s = '';
     for (let [iuser, ouser] of Object.entries(NaviFactory.users)) {
         s += '<factory-user user_name="'+ouser.name+'" user_id="'+ouser.id+'"><user-controls></user-controls><user-name>'+iuser+'</user-name><user-roles>'+ouser.roles+'</user-roles><user-subscriptions>'+ouser.subscriptions+'</user-subscriptions></factory-user>';
@@ -44,10 +52,13 @@ function redraw() {
                 $('input[type="checkbox"][role="'+arr_user_roles[r]+'"]').prop('checked', 1);
             }
             $("#txt-user-name").val(user_name);
-            $("#txt-user-name").prop("readonly", true)
+            $("#txt-user-name").prop("readonly", true);
+            $('#text-user-subscriptions').val(NaviFactory.users[user_name].subscriptions);
+            $('#tabs-user a:first').tab('show');
             $('#dlgUserModal').modal('show');
         });
-    });
+  });
+  if (selected_user) $('factory-user[user_id="'+selected_user+'"]').click();
 }
 redraw();
 $('#btn-save-user').click(function(){
@@ -64,9 +75,7 @@ $('#btn-save-user').click(function(){
     } else {
         user_name = $("#txt-user-name").val();
     }
-
-
-    sendDataToNavi("apiSaveUser", {id: user_id, name: user_name, roles: s, ban: null, subscriptions: null}, function(data, status){
+    sendDataToNavi("apiSaveUser", {id: user_id, name: user_name, roles: s, ban: null, subscriptions: $('#text-user-subscriptions').val()}, function(data, status){
         var ls = recieveDataFromNavi(data, status);
         if (ls && ls.result=='OK') {
           showInformation("User saved successfully...");
@@ -80,7 +89,9 @@ $('#btn-new-user').click(function(){
     $('factory-user > user-controls').html('');
     $("#txt-user-name").val('');
     $("#txt-user-name").prop("readonly", false)
+    $('#text-user-subscriptions').val('');
     drawRoles();
+    $('#tabs-user a:first').tab('show');
     $('#dlgUserModal').modal('show');
 });
 function searchUsers(){
@@ -115,13 +126,28 @@ $('#btn-search-user').click(function(){
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <input type="text" class="form-control" placeholder="Enter user name..." id="txt-user-name"></input>
+      <h3>User&nbsp;</h3>
+      <input type="text" class="form-control" placeholder="Enter user name..." id="txt-user-name"></input>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
-      <div id="dlgUserModalBody" class="modal-body">
-        ...
+      <div class="modal-body">
+        <ul id="tabs-user" class="nav nav-tabs">
+        <li class="nav-item">
+          <a class="nav-link active" data-toggle="tab" href="#roles-tab">Roles</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-toggle="tab" href="#subscriptions-tab">Subscriptions</a>
+        </li>
+        </ul>
+      </div>
+      <div class="tab-content">
+        <div id="roles-tab" class="container tab-pane active">
+        </div>
+        <div id="subscriptions-tab" class="container tab-pane fade">
+          <textarea id="text-user-subscriptions" class="form-control" aria-label="With textarea" rows="5"></textarea>
+        </div>
       </div>
       <div class="modal-footer">
 		<button type="button" id="btn-save-user" class="btn btn-success" data-dismiss="modal">Apply</button>

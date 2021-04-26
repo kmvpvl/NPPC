@@ -20,10 +20,8 @@
 		<li class="nav-item dropdown">
 			<a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Master Data</a>
 			<div class="dropdown-menu" aria-labelledby="navbarDropdown">
-				<a class="dropdown-item" href="#">Factory, workcentres, routes</a>
 				<a class="dropdown-item" href="#">Products</a>
 				<a class="dropdown-item" href="#">Customers</a>
-				<a class="dropdown-item" href="#">Suppliers</a>
 				<div class="dropdown-divider"></div>
 				<a class="dropdown-item" instance="users" id="menuUsers" data-toggle="collapse" data-target=".navbar-collapse.show">Users</a>
 				<a class="dropdown-item" href="#">Settings</a>
@@ -35,7 +33,7 @@
 			<a class="nav-link dropdown-toggle" href="" id="menu-user" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></a>
 			<div class="dropdown-menu" aria-labelledby="menu-user">
 				<a class="dropdown-item" href="#">My settings</a>
-				<a class="dropdown-item" href="#">My subscriptions</a>
+				<a class="dropdown-item" instance="subscriptions" id="menuSubscriptions" data-toggle="collapse" data-target=".navbar-collapse.show">My subscriptions</a>
 				<a class="dropdown-item" id="menu-logout" data-toggle="collapse" data-target=".navbar-collapse.show">Logout</a>
 			</div>
 		</li>
@@ -116,7 +114,7 @@
 </div>
 </div>
 <div id="errorLoadingMessage" class="alert alert-danger alert-dismissible">
-    <button type="button" class="close" data-dismiss="alert">&times;</button>
+    <!--button type="button" class="close" data-dismiss="alert">&times;</button-->
     <span></span>
 </div>
 <div id="loadingSpinner" class="spinner-border"></div>
@@ -367,7 +365,7 @@ function road(id) {
         ...
       </div>
       <div class="modal-footer">
-		<button type="button" id="btn-subscribe" class="btn btn-success" data-dismiss="">Subscribe</button>
+		<button type="button" id="btn-subscribe" class="btn btn-success" data-dismiss="">Subscribe me</button>
 		<!--button type="button" class="btn btn-success" data-dismiss="">Update Est.</button>
 		<button type="button" class="btn btn-success" data-dismiss="">Update Plan</button-->
     	<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>

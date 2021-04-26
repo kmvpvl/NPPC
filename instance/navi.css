@@ -438,7 +438,7 @@ order.brief > order-header > order-products {
     display: inline-flex;
     text-align: center;
     min-width: 0em;
-    flex-wrap: nowrap;
+    overflow: hidden;
 }
 order.brief > order-header > order-products > order-product{
     display: flex;
