@@ -224,7 +224,7 @@ class ORMNaviOrder extends EventHandlerPrototype {
 		var tmp = '<order-operations>';
 		tmp += '<i operation="info" class="fa fa-info-circle" aria-hidden="true"></i>'; //info
 		tmp += '<i operation="next" class="fa fa-arrow-circle-right" aria-hidden="true"></i>'; //next
-		tmp += '<i operation="finish" class="fa fa-check-circle" aria-hidden="true"></i>'; //finish
+		tmp += '<i operation="finish" class="fa fa-flag-checkered" aria-hidden="true"></i>'; //finish
 		tmp += '<i operation="priority-up" id="btnPriorityUp" class="fa fa-arrow-circle-up" aria-hidden="true"></i>'; //priority-up
 		tmp += '<i operation="priority-down" id="btnPriorityDown" class="fa fa-arrow-circle-down" aria-hidden="true"></i>'; //priority-down
 		tmp += '<i operation="pause" class="fa fa-pause-circle" aria-hidden="true"></i>'; //pause

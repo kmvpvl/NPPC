@@ -38,6 +38,7 @@ function updateOrders() {
                         if (h.fullset != '1') ot.showOperation('next', false);
                         break;
                         case 'OUTCOME': ot.showOperation(['info', 'defect'], true);
+                        if (!h.next_workcenter_id) ot.showOperation('finish', true);
                         break;
                     }
                 } else {
@@ -50,7 +51,7 @@ function updateOrders() {
 						case 'priority-up':
 							break;
 						case 'priority-down':
-						break;
+						    break;
                         case 'next':
                             var a = order.el.attr("assign");
                             ORMNaviCurrentOrder = order.number;
@@ -61,7 +62,10 @@ function updateOrders() {
                                     updateOrders();
                                 }
                             });
-                        break;
+                            break;
+                        case 'finish':
+                            $('#dlgFinishOrderModal').modal('show');
+                            break;
 						default:
 					}
 				});
@@ -116,3 +120,31 @@ $("#slct-operation").change(function(){
     <processing></processing>
     <outcome></outcome>
 </orders-in-workcenter>
+<div class="modal fade" id="dlgFinishOrderModal" tabindex="-1" role="dialog" aria-labelledby="dlgOrderFinishModalLongTitle" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="dlgOrderFinishModalLongTitle">Finish order</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input id="chk-unsubscribe-all" type="checkbox" checked>Unsubscribe all users</input>
+		<div class="input-group">
+		<div class="input-group-prepend">
+    		<span class="input-group-text">Text</span>
+		</div>
+		<textarea id="text-import-order-text" class="form-control" aria-label="With textarea" rows="1"></textarea>
+		<div class="input-group-append">
+			<button id="btn-finish-order" class="btn btn-outline-secondary" type="button">Finish</button>
+		</div>
+		</div>
+      </div>
+      <!--div class="modal-footer">
+    	<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+    	<button id="btn-import-order" type="button" class="btn btn-success" data-dismiss="modal">Import</button>
+      </div-->
+    </div>
+  </div>
+</div>
