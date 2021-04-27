@@ -358,12 +358,6 @@ function road(id) {
       <div id="dlgOrderModalBody" class="modal-body">
         ...
       </div>
-      <div class="modal-footer">
-		<button type="button" id="btn-subscribe" class="btn btn-success" data-dismiss="">Subscribe me</button>
-		<!--button type="button" class="btn btn-success" data-dismiss="">Update Est.</button>
-		<button type="button" class="btn btn-success" data-dismiss="">Update Plan</button-->
-    	<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-      </div>
     </div>
   </div>
 </div>

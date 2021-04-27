@@ -121,7 +121,14 @@ class EventHandlerPrototype {
 		if (!(event_name in this.events_handlers)) {
 			this.events_handlers[event_name] = [];
 		}
-		this.events_handlers[event_name].push(callback);
+		var exists = false;
+		for (let [i, f] of Object.entries(this.events_handlers[event_name])){
+			if (callback.toString() == f.toString) {
+				exists = true;
+				break;
+			}
+		}
+		if (!exists) this.events_handlers[event_name].push(callback);
 	}
 	fireEvent(event_name, obj){
 		if (event_name in this.events_handlers){
@@ -270,6 +277,11 @@ class ORMNaviOrder extends EventHandlerPrototype {
 		}
 		tmp += '</order-history>';
 		this.el.html(tmp);
+		var th = this;
+		this.el.find('i[operation]').click(function(event){
+			th.fireEvent('operation', {order: th, operation:$(this).attr('operation')});
+			event.stopPropagation();
+		});
 	}
 	getHistoryByWorkcenterName(wc_name) {
 		for (const o of this.history) {
@@ -277,9 +289,8 @@ class ORMNaviOrder extends EventHandlerPrototype {
 		}
 		return null;
 	}
-	showOperation(operations, showOrHide){
+	showOperation(operations, showOrHide = true){
 		var i;
-		var th = this;
 		if (operations)	{
 			if (typeof(operations) === 'object'){
 				var s = '';
@@ -292,9 +303,6 @@ class ORMNaviOrder extends EventHandlerPrototype {
 		} else i = this.el.find('i[operation]');
 		if (showOrHide) {
 			i.show();
-			i.click(function(){
-				fireEvent('operation', {order: th, operation:$(this).attr('operation')});
-			});
 		} else i.hide();
 	}
 }
@@ -410,6 +418,8 @@ function modalOrderInfo(order_number) {
 		var ls = recieveDataFromNavi(data, status);
 		if (ls && ls.result=='OK') {
 			var temp = new ORMNaviOrder(ls.data, $("orderinfo"));
+			temp.showOperation(null, false);
+			temp.showOperation(['defect', 'message', 'label', 'update-estimated', 'update-baseline']);
 			$('orderinfo > order-operations').append('<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>');
 			$("orderinfo > order-history > event > workcenter").each (function () {
 				var w = $(this).attr("name");
@@ -445,29 +455,40 @@ function modalOrderInfo(order_number) {
 					$(this).addClass("noduty");
 				}
 			});
-			$("#btn-subscribe").click(function(){
-				sendDataToNavi("apiSubscribe", {tag: "#"+$("orderinfo order-header order-number").text()},
-				function(data, status){
-					var ls = recieveDataFromNavi(data, status);
-					if (ls && ls.result=='OK') {
-						NaviFactory.currentUser = ls.data;
-						if (NaviFactory.currentUser && 
-							NaviFactory.currentUser.subscriptions.includes("#"+$("orderinfo order-header order-number").text())) {
-							showInformation("You're subscribed!");
-							$("#btn-subscribe").text("Unsubscribe me");
-						} else {
-							showInformation("You're unsubscribed!");
-							$("#btn-subscribe").text("Subscribe me");
-						}
-						updateMessages();
-					}
-				});
+			temp.on('operation', function(o, c){
+				switch(c.operation){
+					case 'subscribe':
+					case 'unsubscribe':
+						sendDataToNavi("apiSubscribe", {tag: "#"+$("orderinfo order-header order-number").text()},
+						function(data, status){
+							var ls = recieveDataFromNavi(data, status);
+							if (ls && ls.result=='OK') {
+								NaviFactory.currentUser = ls.data;
+								if (NaviFactory.currentUser && 
+									NaviFactory.currentUser.subscriptions.includes("#"+$("orderinfo order-header order-number").text())) {
+									showInformation("You're subscribed!");
+									temp.showOperation('subscribe', false);
+									temp.showOperation('unsubscribe', true);
+								} else {
+									showInformation("You're unsubscribed!");
+									temp.showOperation('subscribe', true);
+									temp.showOperation('unsubscribe', false);
+								}
+								updateMessages();
+							}
+						});
+						break;
+					default:
+
+				}
 			});
 			if (NaviFactory.currentUser && 
-				NaviFactory.currentUser.subscriptions.includes("#"+$("orderinfo order-header order-number").text())) {
-				$("#btn-subscribe").text("Unsubscribe me");
+				NaviFactory.currentUser.subscriptions.indexOf("#"+temp.number)>=0) {
+				temp.showOperation('subscribe', false);
+				temp.showOperation('unsubscribe', true);
 			} else {
-				$("#btn-subscribe").text("Subscribe me");
+				temp.showOperation('subscribe', true);
+				temp.showOperation('unsubscribe', false);
 			}
 			$("orderinfo > order-history > event > road").on ('click', function(){
 				ORMNaviCurrentOrder = $("orderinfo order-header order-number").text();

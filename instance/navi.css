@@ -150,44 +150,7 @@ instance {
     min-height: 100%;
 }
 
-#btnOrderInfo {
-    position: absolute;
-    display: none;
-    color: darkblue;
-    background-color: white;
-    cursor: pointer;
-    text-align: center;
-    z-index: 1;
-    animation: btnContext 3s infinite;
-    margin:auto;
-    font-size: x-large;
-}
 
-#btnOrderMove {
-    position: absolute;
-    display: none;
-    color: goldenrod;
-    background-color: white;
-    cursor: pointer;
-    text-align: center;
-    z-index: 1;
-    animation: btnContext 3s infinite;
-    margin:auto;
-    font-size: x-large;
-}
-
-#btnsPriority {
-    position: absolute;
-    background-color: white;
-    display: none;
-    cursor: pointer;
-    color: darkblue;
-    z-index: 1;
-    animation: btnContext 3s infinite;
-    margin:auto;
-    font-size: x-large;
-    text-align: center;
-}
 #informationMessage{
     z-index: 2;
     display: none;
@@ -199,9 +162,11 @@ instance {
 @keyframes order-highlight {
     0%, 100% {
         background-color: white;
+        color: black;
     }
     50% {
         background-color:greenyellow;
+        color: black;
     }
 }
 
@@ -417,13 +382,19 @@ order.brief {
     width: 100%;
     cursor: pointer;
 }
+order.brief.selected {
+    grid-template-columns: auto minmax(60%, 1fr) minmax(5em, 13em);
+}
 i[operation]{
     font-size: x-large;
     cursor: pointer;
 }
+i[operation]:hover{
+    color: brown;
+}
 order.brief > order-header{
     display:inline-flexbox;
-    flex-wrap: nowrap;
+    overflow:hidden;
 }
 order.brief > order-operations,
 order.brief > order-header > order-caption,
@@ -441,7 +412,7 @@ order.brief > order-header > order-number {
 }
 order.brief > order-header > order-products {
     display: inline-flex;
-    text-align: center;
+    text-align: left;
     min-width: 0em;
     overflow: hidden;
 }
@@ -449,10 +420,18 @@ order.brief > order-header > order-products > order-product{
     display: flex;
     text-align: left;
     min-width: 0em;
-    flex-wrap: nowrap;
+    white-space: nowrap;
+    width:100%;
+    overflow:hidden;
+    text-overflow: "...";
 }
 order[full="0"] {
     color: red;
+}
+order.selected > order-operations {
+    display: flex;
+    flex-flow: row wrap;
+    width:auto;
 }
 order.selected[full="0"]{
     background-color: grey;

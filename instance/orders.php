@@ -14,36 +14,49 @@ function updateAllOrders() {
 		$("orders-inprocess").html("");
 		var ls = recieveDataFromNavi(data, status);
 		if (ls && ls.result=='OK') {
-			$("#btnsPriority").hide();
-			$("#btnOrderInfo").hide();
 			for (let [i, o] of Object.entries(ls.data)) {
                 var $o = $('<order class="brief"/>');
                 var ot = new ORMNaviOrder(o, $o);
+				ot.showOperation(null, false);
 				if (o.id) {
 					$("orders-inprocess").append($o);
+					ot.showOperation(['info','priority-up', 'priority-down'], true);
 				} else {
 					$("orders-to-import").append($o);
+					ot.showOperation(['info'], true);
 				}
-				var ot = new ORMNaviOrder(o);
+				ot.on('operation', function(order, cntxt){
+					switch (cntxt.operation){
+						case 'info':
+							modalOrderInfo(order.number);
+							break;
+						case 'priority-up':
+							sendDataToNavi('apiIncOrderPriority', {order: order.number, delta: 1}, function(data, status){
+								var ls = recieveDataFromNavi(data, status);
+								if (ls && ls.result=='OK') {
+									updateAllOrders();
+									showInformation("Priority was changed!");
+								}
+							});
+							break;
+						case 'priority-down':
+							sendDataToNavi('apiIncOrderPriority', {order: order.number, delta: -1}, function(data, status){
+								var ls = recieveDataFromNavi(data, status);
+								if (ls && ls.result=='OK') {
+									updateAllOrders();
+									showInformation("Priority was changed!");
+								}
+							});
+						break;
+						default:
+					}
+				});
 			}
 			$("order[number]").on('click', function() {
 				var n = $(this).attr("number");
 				if ($('order[number="'+n+'"]').hasClass("selected")) $('order[number="'+n+'"]').removeClass("selected");
 				else $('order[number="'+n+'"]').addClass("selected");
 				if ($("order[number].selected").length == 1) {
-					$("#btnOrderInfo").show();
-					$("#btnOrderInfo").css({
-						left: $("order[number].selected").position().left/*+$("order[number].selected").outerWidth()*/+'px',
-						top: $("order[number].selected").position().top+$("order[number].selected").outerHeight()+'px'
-					});
-					$("#btnsPriority").show();
-					$("#btnsPriority").css({
-						left: ($("order[number].selected").position().left+$("#btnOrderInfo").outerWidth())+'px',
-						top: $("order[number].selected").position().top+$("order[number].selected").outerHeight()+'px'
-					});
-				} else {
-					$("#btnsPriority").hide();
-					$("#btnOrderInfo").hide();
 				}
 			});
 		}
@@ -84,12 +97,6 @@ $("#btnInprocessSelectAll").on('click', function(){
 	$("orders-inprocess > order").addClass("selected");
 })
 updateAllOrders();
-$("#btnOrderInfo").on('click', function(){
-    if ($("order[number].selected").length == 1) {
-        var order = $("order[number].selected").attr("number");
-        modalOrderInfo(order);
-    }
-});
 </script>
 <?php
 ?>
@@ -130,8 +137,6 @@ if ($factory->user->hasRole("UPDATE_BASELINE")) {
 ?>
 	</div>
 </orders>
-<span id="btnOrderInfo"><i class="fa fa-info-circle" aria-hidden="true"></i></span>
-<span id="btnsPriority"><i id="btnPriorityUp" class="fa fa-arrow-circle-up" aria-hidden="true"></i><i id="btnPriorityDown" class="fa fa-arrow-circle-down" aria-hidden="true"></i></span>
 <div class="modal fade" id="dlgImportOrderModal" tabindex="-1" role="dialog" aria-labelledby="dlgOrderImportModalLongTitle" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
@@ -195,30 +200,6 @@ $("#btn-import-order").click(function(){
 			showInformation("Orders were imported");
         }
 	});
-});
-$('#btnPriorityUp').click(function(){
-    if ($("order[number].selected").length == 1) {
-        var order = $("order[number].selected").attr("number");
-		sendDataToNavi('apiIncOrderPriority', {order: order, delta: 1}, function(data, status){
-			var ls = recieveDataFromNavi(data, status);
-			if (ls && ls.result=='OK') {
-				updateAllOrders();
-				showInformation("Priority was changed!");
-			}
-		});
-    }
-});
-$('#btnPriorityDown').click(function(){
-    if ($("order[number].selected").length == 1) {
-        var order = $("order[number].selected").attr("number");
-		sendDataToNavi('apiIncOrderPriority', {order: order, delta: -1}, function(data, status){
-			var ls = recieveDataFromNavi(data, status);
-			if (ls && ls.result=='OK') {
-				updateAllOrders();
-				showInformation("Priority was changed!");
-			}
-		});
-    }
 });
 if (NaviFactory.users) {
 	$("#slct-import-order-owner").html("");
