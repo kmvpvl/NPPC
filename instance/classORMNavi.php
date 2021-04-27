@@ -1124,37 +1124,55 @@ class ORMNaviFactory implements JsonSerializable {
 		    }
 		    $nextworkcenter = (string)$found[0]["workcenter"];
 		    $nextoperation = (string)$found[0]["refref"];
-		    if ($found[0]->getName() == 'route') $nextorderpart = "";
-		    else $nextorderpart = (string)$found[0]["ref"];
-			$sql = "call updateAssignOrderPart(" . $assign_id . ", '" . $readyorderpart . "', '" . $nextworkcenter . "', '" . $nextorderpart . "', '" . $nextoperation . "', " . $found[0]["consumption"] . ")";
-	        $this->dblink->query($sql);
-	        if ($this->dblink->errno) {
-    		    $this->dblink->rollback();
-        	    $this->dblink->autocommit(true);
-		        throw new ORMNaviException("Unexpected error while update Assign to OUTCOME bucket" . "': " . $this->dblink->errno . " - " . $this->dblink->error . $sql);
-            }
-			$this->dblink->next_result();
-			// check for autodelivery
-			$sql = "call getOutcomeRoad(".$assign_id.")";
-	        $x = $this->dblink->query($sql);
-	        if ($this->dblink->errno || !$x) {
-    		    $this->dblink->rollback();
-        	    $this->dblink->autocommit(true);
-		        throw new ORMNaviException("Unexpected error while getting OUTCOME road for assign" . "': " . $this->dblink->errno . " - " . $this->dblink->error . $sql);
-            }
-			$x = $x->fetch_assoc();
-	        if (!$x) {
-    		    $this->dblink->rollback();
-        	    $this->dblink->autocommit(true);
-		        throw new ORMNaviException("OUTCOME road for assign not found" . "': " . $this->dblink->errno . " - " . $this->dblink->error . $sql);
-            }
-			$this->dblink->next_result();
-			$x = $this->getRoadInfo($x["name"]);
-			if ($x["autodelivery"]) $this->moveAssignToNextWorkcenter($assign_id);
-			$wc_info = trim($this->getWorkcenterInfo($nextworkcenter));
-			$tmp = $this->dblink->escape_string("Order #" . $ordernum . " processed '" . $readyorderpart . "' and ready to @\"" . $wc_info . "\"");
-	        $msg = new ORMNaviMessage($this, $tmp, ORMNaviMessageType::INFO);
-			$msg->send();
+		    if ($found[0]->getName() == 'route') {
+				// redy to load/finish. Move order to outcome with 'ready to load' attribute
+				$nextorderpart = "";
+				//set OUTCOME bucket and NULL to nextworkcenter to markup order as 'ready to load'
+				$sql = "call updateAssignOrderPart(" . $assign_id . ", '" . $readyorderpart . "', null, null, null, null)";
+				$this->dblink->query($sql);
+				if ($this->dblink->errno) {
+					$this->dblink->rollback();
+					$this->dblink->autocommit(true);
+					throw new ORMNaviException("Unexpected error while update Assign to OUTCOME bucket for 'ready to load' order" . "': " . $this->dblink->errno . " - " . $this->dblink->error . $sql);
+				}
+				$this->dblink->next_result();
+
+				$tmp = $this->dblink->escape_string("Order #" . $ordernum . " ready-to-load '" . $readyorderpart . "' ");
+				$msg = new ORMNaviMessage($this, $tmp, ORMNaviMessageType::INFO);
+				$msg->send();
+			} else {
+				// not-finish workcenter on route
+				$nextorderpart = (string)$found[0]["ref"];
+				$sql = "call updateAssignOrderPart(" . $assign_id . ", '" . $readyorderpart . "', '" . $nextworkcenter . "', '" . $nextorderpart . "', '" . $nextoperation . "', " . $found[0]["consumption"] . ")";
+				$this->dblink->query($sql);
+				if ($this->dblink->errno) {
+					$this->dblink->rollback();
+					$this->dblink->autocommit(true);
+					throw new ORMNaviException("Unexpected error while update Assign to OUTCOME bucket" . "': " . $this->dblink->errno . " - " . $this->dblink->error . $sql);
+				}
+				$this->dblink->next_result();
+				// check for autodelivery
+				$sql = "call getOutcomeRoad(".$assign_id.")";
+				$x = $this->dblink->query($sql);
+				if ($this->dblink->errno || !$x) {
+					$this->dblink->rollback();
+					$this->dblink->autocommit(true);
+					throw new ORMNaviException("Unexpected error while getting OUTCOME road for assign" . "': " . $this->dblink->errno . " - " . $this->dblink->error . $sql);
+				}
+				$x = $x->fetch_assoc();
+				if (!$x) {
+					$this->dblink->rollback();
+					$this->dblink->autocommit(true);
+					throw new ORMNaviException("OUTCOME road for assign not found" . "': " . $this->dblink->errno . " - " . $this->dblink->error . $sql);
+				}
+				$this->dblink->next_result();
+				$x = $this->getRoadInfo($x["name"]);
+				if ($x["autodelivery"]) $this->moveAssignToNextWorkcenter($assign_id);
+				$wc_info = trim($this->getWorkcenterInfo($nextworkcenter));
+				$tmp = $this->dblink->escape_string("Order #" . $ordernum . " processed '" . $readyorderpart . "' and ready to @\"" . $wc_info . "\"");
+				$msg = new ORMNaviMessage($this, $tmp, ORMNaviMessageType::INFO);
+				$msg->send();
+			}
 		}
 		if (!$this->dblink->commit()) {
     	    $this->dblink->autocommit(true);

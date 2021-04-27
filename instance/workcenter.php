@@ -38,6 +38,7 @@ function updateOrders() {
                         if (h.fullset != '1') ot.showOperation('next', false);
                         break;
                         case 'OUTCOME': ot.showOperation(['info', 'defect'], true);
+                        if (!h.next_workcenter_id) ot.showOperation('finish', true);
                         break;
                     }
                 } else {
