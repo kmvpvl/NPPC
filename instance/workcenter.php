@@ -64,6 +64,7 @@ function updateOrders() {
                             });
                             break;
                         case 'finish':
+                            $('#str-order-number').text(order.number);
                             $('#dlgFinishOrderModal').modal('show');
                             break;
 						default:
@@ -101,6 +102,15 @@ $("#edt-search").change(function(){
 $("#slct-operation").change(function(){
     filterOrders();
 });
+$("#btn-finish-order").click(function(){
+    sendDataToNavi("apiFinishOrder", {order: $('#str-order-number').text(), conclusion: $("#text-conclusion").val()}, 
+    function(data, status) {
+        var ls = recieveDataFromNavi(data, status);
+        if (ls && ls.result=='OK') {
+            updateOrders();
+        }
+    });
+});
 </script>
 <orders-in-workcenter>
     <select class="custom-select" id="slct-operation">
@@ -124,20 +134,21 @@ $("#slct-operation").change(function(){
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="dlgOrderFinishModalLongTitle">Finish order</h5>
+        <h3 class="modal-title" id="dlgOrderFinishModalLongTitle">Finish order #
+        <span id="str-order-number"></span></h3>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
       <div class="modal-body">
-        <input id="chk-unsubscribe-all" type="checkbox" checked>Unsubscribe all users</input>
+        <!--input id="chk-unsubscribe-all" type="checkbox" checked>Unsubscribe all users</input-->
 		<div class="input-group">
 		<div class="input-group-prepend">
     		<span class="input-group-text">Text</span>
 		</div>
-		<textarea id="text-import-order-text" class="form-control" aria-label="With textarea" rows="1"></textarea>
+		<textarea id="text-conclusion" class="form-control" aria-label="With textarea" rows="1"></textarea>
 		<div class="input-group-append">
-			<button id="btn-finish-order" class="btn btn-outline-secondary" type="button">Finish</button>
+			<button id="btn-finish-order" class="btn btn-outline-secondary" type="button" data-dismiss="modal">Finish</button>
 		</div>
 		</div>
       </div>

@@ -48,7 +48,8 @@ class ORMNaviRoles implements JsonSerializable {
 			"CHANGE_ORDERS_PRIORITY"=>new ORMNaviRole("CHANGE_ORDERS_PRIORITY", "The user can change orders' priority"),
 			"CHANGE_ASSIGN_PRIORITY"=>new ORMNaviRole("CHANGE_ASSIGN_PRIORITY", "The user can change orders' assigns priority"),
 			"UPDATE_ESTIMATED"=>new ORMNaviRole("UPDATE_ESTIMATED", "The user can update estimated time of order"),
-			"UPDATE_BASELINE"=>new ORMNaviRole("UPDATE_BASELINE", "The user can update baseline and estimated time for order")
+			"UPDATE_BASELINE"=>new ORMNaviRole("UPDATE_BASELINE", "The user can update baseline and estimated time for order"),
+			"FINISH_ORDER"=>new ORMNaviRole("FINISH_ORDER", "The user can finish order")
 		];
 		$wc = [];
 		$wx = $this->factory->getWorkcentersList();
@@ -760,6 +761,25 @@ class ORMNaviOrder implements JsonSerializable {
 		} 
 	    $this->factory->dblink->autocommit(true);
 	}
+	function finish($conclusion_text){
+		// check all history records: if OUTCOME then next WC is empty or bucket is empty
+		if (!$this->factory->user->hasRole("FINISH_ORDER")) throw new ORMNaviException("User has no rights");
+		foreach ($this->history as $event) {
+			if($event->bucket && ($event->bucket != 'OUTCOME' || $event->next_workcenter_id)) throw ORMNaviException("Order could not be finished");
+		}
+		$sql = "call finishOrder('" . $this->factory->name . "', '" . $this->number . "')";
+        $x = $this->factory->dblink->query($sql);
+		if ($this->factory->dblink->errno) {
+		    throw new ORMNaviException("Unexpected error while finish order" . "': " . $this->factory->dblink->errno . " - " . $this->factory->dblink->error . $sql);
+		}
+		$y = $x->fetch_assoc();
+        $this->factory->dblink->next_result();
+		$this->_arrayImport($y);
+
+		$tmp = $this->factory->dblink->escape_string("Order #" . $this->number . " finished - '" . $conclusion_text . "' ");
+		$msg = new ORMNaviMessage($this->factory, $tmp, ORMNaviMessageType::INFO);
+		$msg->send();
+}
 }
 class ORMNaviFactory implements JsonSerializable {
     // factory mnemonic unique ID in this instance
